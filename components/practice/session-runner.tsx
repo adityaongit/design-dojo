@@ -443,8 +443,8 @@ export function SessionRunner({
       >
         <ResizablePanel
           ref={promptPanelRef}
-          defaultSize={28}
-          minSize={20}
+          defaultSize={30}
+          minSize={26}
           maxSize={50}
           collapsible
           collapsedSize={0}
@@ -503,7 +503,7 @@ export function SessionRunner({
             </span>
           </button>
         ) : null}
-        <ResizablePanel defaultSize={72} minSize={50}>
+        <ResizablePanel defaultSize={70} minSize={50}>
           <main className="relative flex h-full min-w-0 flex-col gap-2 p-3">
             {hydrated ? (
               isLLD ? (
