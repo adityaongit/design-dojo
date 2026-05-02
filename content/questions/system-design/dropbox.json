@@ -1,0 +1,134 @@
+{
+  "id": "dropbox",
+  "title": "Dropbox",
+  "difficulty": "easy",
+  "type": "system-design",
+  "prompt": "Design a file storage and synchronization service like Dropbox. Users upload files from one device and have them available — and kept in sync — on every other device they're signed in on. Target ~500M users with an average of 2GB stored per user.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "Focus on the must-have user actions. Sync, upload, download, sharing. Skip versioning and admin features unless asked.",
+      "rubric": {
+        "must": [
+          "Users can upload a file from any device",
+          "Files appear on other signed-in devices automatically",
+          "Users can download files"
+        ],
+        "should": [
+          "File sharing with other users",
+          "Conflict resolution when two devices edit at once"
+        ],
+        "avoid": [
+          "Drifting into Dropbox Paper / Spaces / collaboration features",
+          "Designing the desktop client UI"
+        ]
+      },
+      "sampleAnswer": "1. Users can upload a file from any device.\n2. The file appears on every other device the user is signed in on (sync).\n3. Users can download any of their files.\n4. Users can share a file with other users via a link or by adding their email."
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Storage scale, durability, sync latency, bandwidth efficiency for large files. Quantify.",
+      "rubric": {
+        "must": [
+          "Durability — files must not be lost",
+          "Concrete sync latency target (seconds, not minutes)",
+          "Quantified scale (users, total storage)"
+        ],
+        "should": [
+          "Bandwidth-efficient sync (don't re-upload unchanged blocks)",
+          "Availability target (99.9%+)",
+          "Read-heavy workload"
+        ],
+        "avoid": [
+          "Forgetting durability — this is the headline NFR",
+          "Conflating sync latency with upload latency"
+        ]
+      },
+      "sampleAnswer": "- Durability: 11 nines (no data loss).\n- Sync latency: <5s p99 from upload completion to availability on a peer device.\n- Scale: 500M users, 2GB avg → ~1 EB total. Read:write ~5:1.\n- Bandwidth: never re-upload unchanged content (block-level dedupe).\n- Availability: 99.9%."
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "Nouns only. Don't define schemas yet.",
+      "rubric": {
+        "must": ["File", "FileBlock (chunk)", "User"],
+        "should": ["Device", "ShareLink"],
+        "avoid": ["Adding entities the requirements don't justify"]
+      },
+      "sampleAnswer": "- User: who owns the files.\n- File: a logical file (path, name, current version).\n- FileBlock: a chunk of a file's content, content-addressed.\n- Device: an installation that syncs."
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "Upload, download, list/sync changes, share. Show what's in the body and what comes back.",
+      "rubric": {
+        "must": [
+          "Upload endpoint (or chunked-upload)",
+          "Download endpoint",
+          "Sync / list-changes endpoint that returns deltas since a cursor"
+        ],
+        "should": [
+          "Block-level upload (deduplicates)",
+          "Share-link creation",
+          "Long-polling or websocket for sync notifications"
+        ],
+        "avoid": [
+          "Sending entire file content over a single REST POST for large files",
+          "Pull-only sync with no push channel"
+        ]
+      },
+      "sampleAnswer": "POST /files/upload\n  body: { path, blocks: [{ hash, size }] }\n  → 200 { missingBlockHashes: [...] }\n\nPUT /blocks/:hash  (binary body) → 201\n\nGET /files/:id → file metadata + block list\nGET /blocks/:hash → binary block\n\nGET /sync?cursor=... → { changes: [...], nextCursor }\nWS /sync/subscribe → push 'cursor advanced' notifications.\n\nPOST /share { fileId, scope } → { shareUrl }"
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the architecture and walk through the upload/sync paths.",
+      "howToAnswer": "Show: client → API → metadata DB + blob store. Add a notification path for sync. Mention dedupe by block hash.",
+      "rubric": {
+        "must": [
+          "Separation of metadata DB and blob storage",
+          "Block-level upload with content-hash dedupe",
+          "Push channel for sync (websocket or long poll)"
+        ],
+        "should": [
+          "CDN for downloads",
+          "Encryption at rest",
+          "Client-side block hashing before upload"
+        ],
+        "avoid": [
+          "Storing file bytes in the metadata database",
+          "Polling-only sync"
+        ]
+      },
+      "sampleAnswer": "Client computes SHA-256 of each 4MB block before uploading. Calls POST /files/upload with the block hashes. Server checks which hashes are missing in the blob store; client uploads only those via PUT /blocks/:hash to S3-compatible storage.\n\nMetadata (file paths, current block list per file, version, owner) lives in a sharded relational store keyed by user_id.\n\nOn write, server appends an entry to a per-user change log and publishes a notification on a Pub/Sub topic the user's devices subscribe to via websocket. Devices then call GET /sync?cursor=... to pull the deltas.\n\nDownloads go via CDN edge → blob store."
+    },
+    {
+      "slug": "deep-dives",
+      "title": "Deep Dives",
+      "questionPrompt": "Harden the design. Pick 2-3 of: sync conflicts, large-file resumable upload, device-offline behavior, sharing permissions.",
+      "howToAnswer": "Pick the highest-risk areas given the NFRs and address each with a concrete mechanism.",
+      "rubric": {
+        "must": [
+          "A concrete conflict-resolution policy (last-write-wins with version vector OR rename-on-conflict)",
+          "Resumable upload for large files"
+        ],
+        "should": [
+          "Offline support with local change log replayed on reconnect",
+          "Permission model for sharing",
+          "Block-level encryption keys per file"
+        ],
+        "avoid": [
+          "Hand-waving 'CRDTs' without specifying which",
+          "Ignoring the offline case"
+        ]
+      },
+      "sampleAnswer": "Conflicts: each file row has a (version, lastWriterDevice). On upload, server compares against the cursor the client had when it started; if they don't match, the server keeps both — current-version stays, the client's upload is renamed `name (Conflicted copy from <device>).ext`. Simple and predictable; matches what real Dropbox does.\n\nResumable upload: client breaks file into 4MB blocks, uploads each independently with PUT /blocks/:hash. Block-level dedupe means partial uploads survive a disconnect. Once all blocks are present, POST /files/commit finalizes the metadata.\n\nOffline: desktop client maintains a local SQLite copy of metadata + a pending-changes queue. On reconnect, it pushes its queue then pulls /sync.\n\nSharing: ACL table (resourceId, granteeUserId, role). Share-links are signed tokens that grant a specific role for a window."
+    }
+  ]
+}

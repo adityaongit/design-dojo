@@ -1,0 +1,93 @@
+{
+  "type": "system-design",
+  "label": "System Design",
+  "totalMinutes": 40,
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "minutes": 5,
+      "description": "Clarify functional and non-functional requirements.",
+      "subStages": [
+        {
+          "slug": "functional-requirements",
+          "title": "Functional Requirements",
+          "minutes": 3,
+          "prompt": "What are the core functional requirements? List 3-5 'Users should be able to...' statements that capture the must-have behavior.",
+          "tip": {
+            "icon": "ListChecks",
+            "label": "Use 'Users should be able to...'",
+            "description": "Keep them as user actions, not implementation details."
+          }
+        },
+        {
+          "slug": "non-functional-requirements",
+          "title": "Non-Functional Requirements",
+          "minutes": 2,
+          "prompt": "What are the non-functional requirements? Cover availability vs consistency, latency targets, scale (DAU/QPS), durability, and security where relevant.",
+          "tip": {
+            "icon": "Gauge",
+            "label": "Quantify everything",
+            "description": "Latency, scale, availability — every NFR needs a number."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "minutes": 2,
+      "prompt": "What are the core entities (the 'nouns') in this system? List them — schemas come later.",
+      "tip": {
+        "icon": "List",
+        "label": "Just a List",
+        "description": "Don't worry about schemas yet. Just the names of the nouns."
+      }
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "minutes": 5,
+      "prompt": "Define the API surface: endpoints, methods, request/response shapes. One row per functional requirement.",
+      "tip": {
+        "icon": "Plug",
+        "label": "Method + Path + Body",
+        "description": "One line per endpoint. REST is the default."
+      }
+    },
+    {
+      "slug": "data-flow",
+      "title": "Data Flow",
+      "minutes": 5,
+      "optional": true,
+      "prompt": "For data-processing systems only: describe the high-level sequence from input to output.",
+      "tip": {
+        "icon": "ArrowRight",
+        "label": "Steps in order",
+        "description": "Number each step from input → output."
+      }
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "minutes": 12,
+      "prompt": "Draw boxes and arrows for the major components. Walk through each API endpoint end-to-end. Note schema fields next to databases.",
+      "tip": {
+        "icon": "Boxes",
+        "label": "Boxes and Arrows",
+        "description": "Walk through each API endpoint end-to-end."
+      }
+    },
+    {
+      "slug": "deep-dives",
+      "title": "Deep Dives",
+      "minutes": 10,
+      "prompt": "Harden the design against the non-functional requirements. Address scaling, bottlenecks, edge cases, failure modes.",
+      "tip": {
+        "icon": "Search",
+        "label": "Address NFRs concretely",
+        "description": "Pick the riskiest two and walk through mechanisms."
+      }
+    }
+  ]
+}

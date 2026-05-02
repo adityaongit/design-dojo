@@ -1,0 +1,162 @@
+{
+  "id": "bitly",
+  "title": "Bitly",
+  "difficulty": "easy",
+  "type": "system-design",
+  "prompt": "Design a URL shortener like Bitly. Users paste a long URL and receive a short URL; visiting the short URL redirects to the original. Target ~100M daily active users and ~1B URLs over the lifetime of the service.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering the must-have behavior. Skip nice-to-haves like analytics or custom domains unless explicitly asked.",
+      "exampleHints": {
+        "headline": "Example (Twitter):",
+        "bullets": [
+          "Users can post a tweet",
+          "Users can follow other users",
+          "Users see a feed of tweets from people they follow"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can submit a long URL and receive a short URL",
+          "Visiting the short URL redirects to the long URL"
+        ],
+        "should": [
+          "Custom alias support",
+          "Expiration / TTL for shortened URLs"
+        ],
+        "avoid": [
+          "Drifting into analytics, dashboards, or accounts unless asked",
+          "Vague phrasing without explicit user actions"
+        ]
+      },
+      "sampleAnswer": "1. Users should be able to submit a long URL and receive a shortened URL.\n2. Users should be able to specify an optional custom alias and/or expiration.\n3. Users should be able to access the original URL by visiting the shortened URL."
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover availability vs consistency, latency targets with concrete numbers, scale (DAU/QPS/storage), and any uniqueness/durability constraints. Tie each requirement to a real product concern.",
+      "exampleHints": {
+        "headline": "Example (Twitter):",
+        "bullets": [
+          "Availability > consistency",
+          "Low latency feed gen",
+          "System should be scalable",
+          "..."
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Short URL uniqueness",
+          "Low redirect latency with a concrete target (e.g., <100ms p99)",
+          "Availability prioritized over consistency",
+          "Quantified scale: ~100M DAU, ~1B URLs"
+        ],
+        "should": [
+          "Read-heavy workload acknowledgment (~100:1 read:write)",
+          "Durability of the URL mapping"
+        ],
+        "avoid": [
+          "Listing requirements without numbers",
+          "Conflating functional and non-functional"
+        ]
+      },
+      "sampleAnswer": "- Short URLs must be unique.\n- Redirect latency: <100ms p99.\n- Availability > consistency: a brief read-after-write delay is acceptable.\n- Scale: ~1B URLs lifetime, ~100M DAU, read:write ~100:1.\n- Durability: a URL mapping must not be lost once written."
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (Twitter):",
+        "bullets": ["User", "Tweet", "Follow"]
+      },
+      "rubric": {
+        "must": ["URL mapping (short code ↔ long URL)"],
+        "should": ["User (if accounts are in scope)", "Click event (if analytics are in scope)"],
+        "avoid": ["Inventing entities the requirements don't justify"]
+      },
+      "sampleAnswer": "- URLMapping: shortCode → longURL, with optional expiration.\n- (Optional) User: owns mappings if accounts are in scope."
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement. REST is the default — show method, path, request body shape, and response.",
+      "exampleHints": {
+        "headline": "Example (Twitter):",
+        "bullets": [
+          "GET /feed → Tweet[]",
+          "POST /tweet  body: { content: string }",
+          "POST /follow body: { userId: string }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST endpoint to create a short URL",
+          "GET endpoint that redirects from short URL to long URL",
+          "Returns the short URL on creation"
+        ],
+        "should": [
+          "Accepts optional custom alias",
+          "Accepts optional expiration",
+          "Returns 301/302 with proper Location header on redirect"
+        ],
+        "avoid": [
+          "Putting URL details in URL path instead of body for create",
+          "Forgetting the redirect status code"
+        ]
+      },
+      "sampleAnswer": "POST /urls\n  body: { longUrl, customAlias?, expiresAt? }\n  → 201 { shortUrl }\n\nGET /:shortCode\n  → 302 redirect to longUrl"
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through each endpoint.",
+      "howToAnswer": "Boxes and arrows: client → load balancer → API service → database. Note schema fields next to the database. Walk through both endpoints end-to-end.",
+      "rubric": {
+        "must": [
+          "Client / Load balancer / API service / Database",
+          "Strategy for generating unique short codes (counter, hash, or random)",
+          "Database choice with justification"
+        ],
+        "should": [
+          "Cache layer for hot redirects",
+          "CDN consideration for the redirect path",
+          "Schema fields on the database (shortCode PK, longUrl, createdAt, expiresAt)"
+        ],
+        "avoid": [
+          "Skipping how short codes are generated",
+          "Not addressing collisions"
+        ]
+      },
+      "sampleAnswer": "Client → ALB → URL Service (stateless) → Cache (Redis) → DB (key-value, e.g. DynamoDB)\n\nShort code generation: 7-char base62 derived from a centrally-issued counter (e.g., a Redis INCR or a sharded counter service). Avoids collisions by construction.\n\nWrite path: API validates URL, allocates next counter, encodes to base62, writes mapping to DB, returns short URL.\n\nRead path: short code → cache (hit: return). Cache miss → DB → populate cache → 302 redirect."
+    },
+    {
+      "slug": "deep-dives",
+      "title": "Deep Dives",
+      "questionPrompt": "Harden the design against the non-functional requirements.",
+      "howToAnswer": "Pick 2-3 of: scaling reads, hot keys, ID-generation bottlenecks, abuse/spam, expiration, geo-distribution. Address each with a concrete mechanism.",
+      "rubric": {
+        "must": [
+          "Scaling reads (cache, replicas, or CDN)",
+          "Avoiding ID-generation bottleneck (sharded counter or pre-allocation batches)"
+        ],
+        "should": [
+          "Handling expired URLs (TTL job or lazy deletion)",
+          "Abuse prevention (rate limit on POST, URL reputation check)",
+          "Geo-distribution for global latency"
+        ],
+        "avoid": [
+          "Adding components without a justifying NFR",
+          "Hand-waving 'just add more servers'"
+        ]
+      },
+      "sampleAnswer": "Reads (~100:1): Redis cache in front of DB; CloudFront in front of Redis for the most popular short codes.\n\nID generation: a counter service hands out ranges of 1000 IDs per API instance, instances encode locally with base62. Eliminates per-write coordination.\n\nExpiration: lazy — on read, check expiresAt; if expired, return 410 and async-delete. Daily compaction job removes long-expired rows.\n\nAbuse: per-IP rate limit on POST + Google Safe Browsing check on the long URL before storing."
+    }
+  ]
+}

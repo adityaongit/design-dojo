@@ -1,0 +1,63 @@
+{
+  "type": "low-level-design",
+  "label": "Low-Level Design",
+  "totalMinutes": 33,
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "minutes": 5,
+      "prompt": "Clarify the prompt: primary capabilities, completion conditions, error handling, and scope boundaries. State what's in and out of scope.",
+      "tip": {
+        "icon": "ListChecks",
+        "label": "Scope it tight",
+        "description": "Bullet list of in-scope behaviors + an 'Out of Scope' line."
+      }
+    },
+    {
+      "slug": "entities-relationships",
+      "title": "Entities & Relationships",
+      "minutes": 3,
+      "prompt": "Extract the meaningful nouns from requirements. Sketch how they interact and which entity orchestrates the main workflow.",
+      "tip": {
+        "icon": "Network",
+        "label": "Pick the orchestrator",
+        "description": "Name the entity that drives the main workflow."
+      }
+    },
+    {
+      "slug": "class-design",
+      "title": "Class Design",
+      "minutes": 12,
+      "prompt": "For each entity, define state (fields) and behavior (methods). Keep rules with the entity that owns the relevant state.",
+      "tip": {
+        "icon": "Boxes",
+        "label": "State + Behavior per class",
+        "description": "Fields + methods. Encapsulate rules with the owner."
+      }
+    },
+    {
+      "slug": "implementation",
+      "title": "Implementation",
+      "minutes": 10,
+      "prompt": "Pseudo-code the major methods. Start with the happy path, then edge cases. Trace through one concrete scenario.",
+      "tip": {
+        "icon": "Code2",
+        "label": "Happy path first",
+        "description": "Pseudo-code the key methods, then handle edge cases."
+      }
+    },
+    {
+      "slug": "extensibility",
+      "title": "Extensibility",
+      "minutes": 5,
+      "optional": true,
+      "prompt": "How would the design evolve to support a follow-up feature? Stay high-level — point to the parts that make the change clean.",
+      "tip": {
+        "icon": "GitBranch",
+        "label": "Point at the seams",
+        "description": "Stay high-level. Where does the design flex?"
+      }
+    }
+  ]
+}

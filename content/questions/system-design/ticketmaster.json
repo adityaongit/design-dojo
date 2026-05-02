@@ -1,0 +1,141 @@
+{
+  "id": "ticketmaster",
+  "title": "Ticketmaster",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design a ticketing system like Ticketmaster. Users browse events, see available seats, hold a seat while paying, and complete purchase. The system must handle flash-sale spikes (e.g. a Taylor Swift on-sale) without overselling. Target 100M users globally and peak loads of 1M concurrent buyers per popular event.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "Browse, view seats, reserve, purchase. Skip account features.",
+      "rubric": {
+        "must": [
+          "Users can browse events",
+          "Users can see available seats for an event",
+          "Users can reserve / hold a seat",
+          "Users can purchase a held seat"
+        ],
+        "should": [
+          "Hold expires automatically if not purchased",
+          "Refunds / cancellations"
+        ],
+        "avoid": [
+          "Designing the artist-onboarding side",
+          "Mixing search and recommendations into the core"
+        ]
+      },
+      "sampleAnswer": "1. Users can browse events.\n2. Users can see which seats are available for a given event.\n3. Users can reserve (hold) a specific seat.\n4. Users can complete payment within the hold window to purchase it."
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "The headline NFR here is no-double-booking — strong consistency on seat state. Then talk scale (peak concurrent buyers) and availability.",
+      "rubric": {
+        "must": [
+          "No double-booking — strong consistency on seat reservation",
+          "Handle peak load (e.g., 1M concurrent buyers)",
+          "Low-latency seat availability reads"
+        ],
+        "should": [
+          "Hold timeout (e.g., 10 minutes)",
+          "Fairness during flash sales (queue, no front-running)",
+          "Availability target"
+        ],
+        "avoid": [
+          "Saying 'eventual consistency is fine' for seat state",
+          "Forgetting the flash-sale spike scenario"
+        ]
+      },
+      "sampleAnswer": "- Strong consistency: a seat can only be held by one user at a time. No double-bookings, ever.\n- Scale: 1M concurrent buyers on a popular sale. Browsing reads must remain <200ms.\n- Hold semantics: 10-min TTL. Auto-released on expiry.\n- Fairness: a virtual waiting queue during high-demand sales.\n- Availability: 99.95% during sales."
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "List the nouns. Be precise about what's a Seat vs SeatHold vs Ticket.",
+      "rubric": {
+        "must": [
+          "Event",
+          "Venue / SeatMap",
+          "Seat",
+          "SeatHold (transient)",
+          "Booking / Ticket"
+        ],
+        "should": ["User", "Payment"],
+        "avoid": ["Conflating Seat and Ticket"]
+      },
+      "sampleAnswer": "- Event: name, datetime, venue.\n- Venue: contains a SeatMap (rows × columns, sections).\n- Seat: belongs to a SeatMap. State per Event: AVAILABLE / HELD / SOLD.\n- SeatHold: (seatId, eventId, userId, expiresAt). Transient.\n- Booking: persistent record of a sold seat (seatId, eventId, userId, paymentId)."
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "Browse, get seats with state, reserve atomically, purchase. Reservation is the interesting one.",
+      "rubric": {
+        "must": [
+          "Endpoint to list events",
+          "Endpoint to get seat availability for an event",
+          "Endpoint to reserve a seat (must be atomic)",
+          "Endpoint to confirm purchase against a hold"
+        ],
+        "should": [
+          "Hold extension or cancellation endpoint",
+          "Idempotency key on reserve / purchase"
+        ],
+        "avoid": [
+          "GET /seats returning the entire venue every poll (use sparse delta)",
+          "Reserve endpoint that doesn't return a hold token"
+        ]
+      },
+      "sampleAnswer": "GET /events?city&date → [Event]\nGET /events/:id/seats → { sections: [{ id, seats: [{ id, status }] }] }\nPOST /events/:id/holds  body: { seatIds: [..] }, header: Idempotency-Key\n  → 201 { holdId, expiresAt }  OR  409 if any seat unavailable\nPOST /holds/:holdId/purchase  body: { paymentToken }\n  → 200 { bookingId }\nDELETE /holds/:holdId → 204"
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the architecture. The hot path is reserve.",
+      "howToAnswer": "API → reservation service → DB with row-level locking OR Redis with a Lua script. Reads can be served from a cache. Mention fan-out for the queue during spikes.",
+      "rubric": {
+        "must": [
+          "An atomic reserve mechanism (DB transaction with row lock OR Redis SETNX/Lua)",
+          "Separation of read path (cached availability) and write path (reservation)",
+          "Hold expiration mechanism"
+        ],
+        "should": [
+          "CDN / cache for static event metadata",
+          "Read replicas for availability reads",
+          "Async pipeline for purchase confirmation (payment is slow)"
+        ],
+        "avoid": [
+          "'Just lock the seat row in Postgres' without addressing connection-pool exhaustion at 1M concurrent",
+          "Optimistic concurrency on the seat row alone (livelock under contention)"
+        ]
+      },
+      "sampleAnswer": "Reads (browsing, seat availability): served from Redis with the seat-state map per event. Background job rebuilds from authoritative DB on changes. CDN in front for /events.\n\nWrites (reserve): client POSTs to Reservation Service. Service runs a Redis Lua script that atomically checks each seat is AVAILABLE, marks them HELD with the holdId, and sets a 10-min TTL on the hold key. If the script fails on any seat, the entire reserve fails atomically. Successful holds are also written-through to the authoritative Postgres for durability.\n\nExpiration: Redis TTL fires → a sweeper picks up expired holds and flips the seat back to AVAILABLE in both Redis and Postgres.\n\nPurchase: POST /holds/:id/purchase enqueues a payment job (idempotent). Worker calls payment provider, on success flips seat from HELD to SOLD and writes a Booking row."
+    },
+    {
+      "slug": "deep-dives",
+      "title": "Deep Dives",
+      "questionPrompt": "Harden against flash sales: 1M users hitting reserve in the same second.",
+      "howToAnswer": "Pick: virtual waiting room, sharding, hot-event isolation, bot defense.",
+      "rubric": {
+        "must": [
+          "A waiting-room / queue mechanism to admit users at a controlled rate",
+          "How to scale Redis under contention (shard by event-section)"
+        ],
+        "should": [
+          "Bot defense (CAPTCHA, BotID, rate-limit per account)",
+          "Hot-event isolation (dedicated capacity)",
+          "Backpressure / graceful degradation"
+        ],
+        "avoid": [
+          "Auto-scaling Redis without acknowledging that all writes for one event hit the same shard",
+          "Treating every event as flash-sale (most aren't)"
+        ]
+      },
+      "sampleAnswer": "Waiting room: when load on an event exceeds a threshold, the API returns a queue token instead of letting the user reach reserve. The token gives a position; clients long-poll. The queue admits N users per second based on the reservation throughput we can sustain. Users who try to skip the queue are 401'd.\n\nSharding: Redis is keyed by `event_id:section_id` so contention is bounded — a single section's seats live on one shard, but a venue with 50 sections spreads across 50 shards. Cross-section reservations are rare but handled by a 2-phase reserve (reserve per section, rollback if any failed).\n\nBots: Cloudflare Turnstile / BotID at the edge, plus per-account rate limit (e.g., 4 reserves/min). Account age + payment-method age are signals for ML-based scoring.\n\nHot-event isolation: known high-demand events (Taylor Swift, World Cup) get dedicated Redis clusters and their own API pool so they can't starve normal traffic."
+    }
+  ]
+}

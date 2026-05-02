@@ -1,0 +1,114 @@
+{
+  "id": "connect-four",
+  "title": "Connect Four",
+  "difficulty": "easy",
+  "type": "low-level-design",
+  "prompt": "Design the classes for a Connect Four game. Two players take turns dropping discs into a 7-column × 6-row grid. A disc falls to the lowest empty cell in the chosen column. The first player to align four of their discs horizontally, vertically, or diagonally wins. The game ends in a draw if the grid fills with no winner.",
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "questionPrompt": "Clarify the requirements. What's in scope and what isn't?",
+      "howToAnswer": "Capture the rules tightly. Decide whether to scope: AI opponent, multi-game match, network play. State assumptions out loud.",
+      "rubric": {
+        "must": [
+          "Two players, alternating turns",
+          "Drop disc into a column → falls to lowest empty row",
+          "Win condition: 4 in a row (horizontal/vertical/diagonal)",
+          "Draw when grid is full",
+          "Reject moves into a full column"
+        ],
+        "should": [
+          "Configurable grid dimensions (7×6 default)",
+          "Reset / new-game"
+        ],
+        "avoid": [
+          "Building an AI opponent unless asked",
+          "Designing a UI"
+        ]
+      },
+      "sampleAnswer": "Scope:\n- 2 human players, alternating turns. Player 1 = RED, Player 2 = YELLOW.\n- 7 columns × 6 rows. Discs fall to the lowest empty row in the chosen column.\n- Win = 4 same-colored discs in a row, column, or diagonal.\n- Draw if grid full with no winner.\n- Reject moves into a full column.\n\nOut of scope: AI opponent, networking, persistent rankings."
+    },
+    {
+      "slug": "entities-relationships",
+      "title": "Entities & Relationships",
+      "questionPrompt": "What are the core entities and how do they relate?",
+      "howToAnswer": "Pick the orchestrator. Decide what owns the board state. Avoid an anaemic God class.",
+      "rubric": {
+        "must": [
+          "Game (orchestrator)",
+          "Board (grid state)",
+          "Player",
+          "Disc / Cell with color enum"
+        ],
+        "should": ["Move / Turn", "WinChecker as a separate concern"],
+        "avoid": ["Putting all logic on Game and treating Board as a dumb 2D array"]
+      },
+      "sampleAnswer": "- Game: orchestrates turns, holds the Board and the two Players, reports state.\n- Board: owns the 2D cell grid. Knows how to drop a disc and how to check whether a recently-placed disc is part of a winning line.\n- Player: { name, color }.\n- Color: enum RED | YELLOW.\n- Cell: holds Optional<Color>.\n\nGame depends on Board and Player. Board is the rule-keeper for placement and win-detection."
+    },
+    {
+      "slug": "class-design",
+      "title": "Class Design",
+      "questionPrompt": "Define the classes — fields and methods. Keep rules with the entity that owns the state.",
+      "howToAnswer": "Sketch each class with explicit method signatures and what they return / throw. Decide return type for `dropDisc` (e.g., enum: WIN/DRAW/CONTINUE).",
+      "rubric": {
+        "must": [
+          "Board.dropDisc(column, color) returns the placed cell's row or throws on full column",
+          "Board.checkWin(row, col) → bool",
+          "Game.playMove(column) advances turn and returns the resulting state",
+          "Color enum"
+        ],
+        "should": [
+          "Board.isFull() for draw detection",
+          "GameState enum (RED_WINS / YELLOW_WINS / DRAW / IN_PROGRESS)",
+          "Board configurable via constructor (rows, cols, winLength)"
+        ],
+        "avoid": [
+          "Returning bool from playMove — too lossy for a UI to render",
+          "Hard-coded 7×6 in multiple places"
+        ]
+      },
+      "sampleAnswer": "```\nenum Color { RED, YELLOW }\nenum GameState { IN_PROGRESS, RED_WINS, YELLOW_WINS, DRAW }\n\nclass Board(rows=6, cols=7, winLength=4):\n  cells: Color?[rows][cols]\n  heights: int[cols]   // next empty row per column\n  dropDisc(col, color) -> (row, col):\n    if heights[col] == rows: throw ColumnFullError\n    row = heights[col]++\n    cells[row][col] = color\n    return (row, col)\n  checkWin(row, col) -> bool:\n    color = cells[row][col]\n    for each direction (horiz, vert, two diagonals):\n      count consecutive `color` cells through (row, col)\n      if count >= winLength: return true\n    return false\n  isFull() -> bool: sum(heights) == rows * cols\n\nclass Player:\n  name: str\n  color: Color\n\nclass Game:\n  board: Board\n  players: [Player, Player]\n  turn: int = 0\n  state: GameState = IN_PROGRESS\n  playMove(col) -> GameState:\n    if state != IN_PROGRESS: throw GameOverError\n    p = players[turn % 2]\n    (row, col) = board.dropDisc(col, p.color)\n    if board.checkWin(row, col):\n      state = p.color == RED ? RED_WINS : YELLOW_WINS\n    elif board.isFull():\n      state = DRAW\n    else:\n      turn += 1\n    return state\n```"
+    },
+    {
+      "slug": "implementation",
+      "title": "Implementation",
+      "questionPrompt": "Pseudo-code the win check and trace through one game.",
+      "howToAnswer": "Win check is the meaty method — write it carefully. Then trace a sample sequence: alternate moves, eventual win.",
+      "rubric": {
+        "must": [
+          "Win check considers all 4 directions",
+          "Win check counts consecutive cells through the just-placed cell (not naive O(rows*cols) full scan)",
+          "Bounds-checked array access"
+        ],
+        "should": [
+          "Single helper that walks a (dx, dy) direction and counts matching cells",
+          "Trace through one win condition end-to-end"
+        ],
+        "avoid": [
+          "Recomputing the entire board on every move",
+          "Off-by-one in the diagonal walks"
+        ]
+      },
+      "sampleAnswer": "```\ncheckWin(row, col):\n  color = cells[row][col]\n  directions = [(0,1), (1,0), (1,1), (1,-1)]\n  for (dr, dc) in directions:\n    count = 1\n    count += walk(row, col, dr, dc, color)\n    count += walk(row, col, -dr, -dc, color)\n    if count >= winLength: return true\n  return false\n\nwalk(row, col, dr, dc, color):\n  count = 0\n  r, c = row + dr, col + dc\n  while 0 <= r < rows and 0 <= c < cols and cells[r][c] == color:\n    count += 1\n    r += dr; c += dc\n  return count\n```\n\nTrace: P1 drops col=3 → (row=0, col=3, RED). checkWin walks all four directions from (0,3). All counts == 1 < 4 → IN_PROGRESS, turn flips. P2 drops col=3 → (1,3, YELLOW). … Eventually RED has discs at (0,0), (1,1), (2,2), (3,3) — checkWin from (3,3) walks (-1,-1) direction, finds 3 RED, total 4 → RED_WINS."
+    },
+    {
+      "slug": "extensibility",
+      "title": "Extensibility",
+      "questionPrompt": "How would you extend this for: an AI opponent, an N-in-a-row variant (e.g., Connect 5), or networked play?",
+      "howToAnswer": "Stay high-level. Point at the seams in the design that make the change clean.",
+      "rubric": {
+        "must": [
+          "AI opponent: Player becomes an interface; HumanPlayer / AIPlayer implementations",
+          "N-in-a-row: winLength is already a Board constructor parameter — done"
+        ],
+        "should": [
+          "Networked play: introduce a MoveSource abstraction (local input vs websocket)",
+          "Match (best-of-N) wraps Game"
+        ],
+        "avoid": ["Rewriting Board to support N-in-a-row when it already takes winLength"]
+      },
+      "sampleAnswer": "AI opponent: lift Player to an interface with `chooseColumn(board) -> int`. HumanPlayer prompts the UI; AIPlayer runs minimax / MCTS. Game just calls `currentPlayer.chooseColumn(board)`.\n\nN-in-a-row: nothing to change — Board's constructor already accepts winLength. Pass 5 instead of 4.\n\nNetworked play: introduce a MoveSource abstraction. Local games use a LocalMoveSource (keyboard input). Networked games use a WebsocketMoveSource that blocks until a move arrives from the peer. Game.playMove stays the same; only the source of the column number changes. Authoritative state lives on a server-side Game; clients receive state diffs."
+    }
+  ]
+}

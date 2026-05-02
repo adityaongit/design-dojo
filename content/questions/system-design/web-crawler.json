@@ -1,0 +1,132 @@
+{
+  "id": "web-crawler",
+  "title": "Web Crawler",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design a polite, deduplicating web crawler at internet scale. Given a seed list, the crawler should fetch and store the HTML of every reachable page on the public web. Target ~1B pages crawled per month, respecting robots.txt and per-domain rate limits.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "Fetch HTML, extract links, store, recur. Respect robots.txt. Don't drift into search indexing or ranking.",
+      "rubric": {
+        "must": [
+          "Fetch HTML for a given URL",
+          "Discover new URLs from fetched pages",
+          "Store fetched content",
+          "Respect robots.txt and per-domain rate limits"
+        ],
+        "should": [
+          "Avoid re-crawling unchanged pages too often",
+          "Detect and skip duplicate content"
+        ],
+        "avoid": [
+          "Designing the search index — that's a different system",
+          "Designing PageRank / ranking"
+        ]
+      },
+      "sampleAnswer": "1. Given a URL, fetch the HTML and store it.\n2. Extract outbound links from each fetched page and enqueue them.\n3. Respect robots.txt and per-domain crawl-delay rules.\n4. Avoid fetching the same URL twice within a refresh window.\n5. Detect near-duplicate content and skip storing it twice."
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Throughput, politeness, fault tolerance, storage scale, freshness. Quantify.",
+      "rubric": {
+        "must": [
+          "Throughput target (pages/sec)",
+          "Politeness — no domain hammering",
+          "Fault tolerance — single fetcher failure must not lose URLs",
+          "Storage scale — petabytes"
+        ],
+        "should": [
+          "Freshness target — recrawl interval per content type",
+          "Extensibility for new content types (RSS, sitemaps)"
+        ],
+        "avoid": [
+          "Forgetting politeness — the most common failure mode of bad crawler designs",
+          "Promising consistency on a globally-distributed crawl frontier"
+        ]
+      },
+      "sampleAnswer": "- Throughput: ~400 pages/sec sustained (1B / 30d ≈ 386).\n- Politeness: max 1 concurrent request per host, default 1 req/sec unless robots.txt specifies otherwise.\n- Fault tolerance: any single fetcher / parser failure does not lose URLs in flight.\n- Storage: avg 100KB/page → ~100TB/month, ~1.2PB/year.\n- Freshness: news domains recrawled daily; long-tail every 30 days.\n- Eventual consistency on the URL frontier is fine."
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "URL, Page (the fetched content), Frontier (the queue), HostPolicy.",
+      "rubric": {
+        "must": ["URL (to-fetch)", "Page (fetched content)", "Frontier (queue)"],
+        "should": ["HostPolicy (robots.txt + crawl-delay)", "ContentHash (for dedupe)"],
+        "avoid": ["Mixing the queue and the storage as one entity"]
+      },
+      "sampleAnswer": "- URL: { url, priority, discoveredAt, lastFetchedAt? }\n- Frontier: priority queue of URLs to fetch, partitioned by host.\n- HostPolicy: cached robots.txt + crawl-delay per host.\n- Page: { url, fetchedAt, status, contentHash, html }.\n- LinkGraph: outbound links extracted, used to rediscover."
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API surface.",
+      "howToAnswer": "Crawler is mostly internal — there's an admin API for seeds and metrics, plus internal queues. Don't over-spec REST.",
+      "rubric": {
+        "must": [
+          "Submit-seed endpoint",
+          "Status / progress endpoint",
+          "Internal queue protocol described (even if not REST)"
+        ],
+        "should": [
+          "Per-host policy override endpoint",
+          "Bulk seed submission"
+        ],
+        "avoid": ["Inventing user-facing APIs the system doesn't need"]
+      },
+      "sampleAnswer": "Admin API:\nPOST /seeds  body: { urls: [...], priority }  → enqueues into frontier\nGET /status → { pagesPerSec, queueDepth, errorRate }\nPOST /hosts/:host/policy  body: { crawlDelayMs, maxConcurrency }\n\nInternal: fetcher workers pull URLs from the frontier (Kafka topic partitioned by host), publish fetched-pages and discovered-links events to other topics."
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the components and walk through the fetch path.",
+      "howToAnswer": "Frontier → fetcher pool → parser → URL filter → dedupe → storage. Show how host politeness is enforced. Show the recursive discovery loop.",
+      "rubric": {
+        "must": [
+          "Distributed frontier partitioned by host (so politeness is local to one worker)",
+          "Fetcher pool that respects per-host rate limit",
+          "Parser that extracts outbound links",
+          "Dedupe before re-enqueue (URL seen-before? content seen-before?)",
+          "Storage of fetched HTML"
+        ],
+        "should": [
+          "Bloom filter for cheap URL-seen check",
+          "DNS cache",
+          "robots.txt cache"
+        ],
+        "avoid": [
+          "Single-process queue that doesn't scale horizontally",
+          "Re-fetching robots.txt for every URL"
+        ]
+      },
+      "sampleAnswer": "Frontier: Kafka topic, partitioned by host hash → each fetcher consumer is responsible for a stable subset of hosts. This is the key trick — it means politeness can be enforced in-process without distributed locks.\n\nFetcher pool (1000s of stateless workers): for each URL, check the in-memory robots.txt cache (refresh every 24h). Apply the host crawl-delay (sleep if needed). Fetch via HTTP client with timeouts. Publish 'page fetched' event with raw HTML to a Kafka topic.\n\nParser (separate worker pool): consumes 'page fetched' events. Extracts outbound links. Normalizes URLs (strip fragments, canonical case, sort query params). Publishes 'link discovered' events.\n\nURL filter: dedupe via a sharded Bloom filter — if probably-seen, drop. Otherwise compute hash, check authoritative seen-set in a sharded KV store, write-through, enqueue back into the frontier.\n\nContent dedupe: SHA-256 of normalized HTML. If we've already stored a page with this hash, just record the additional URL pointing at it.\n\nStorage: HTML compressed and written to S3 (one object per page, keyed by content hash). Metadata in Cassandra keyed by URL."
+    },
+    {
+      "slug": "deep-dives",
+      "title": "Deep Dives",
+      "questionPrompt": "Harden against the hardest problems: spider traps, freshness, JavaScript-rendered pages.",
+      "howToAnswer": "Pick 2-3 of: spider traps, freshness scheduling, JS rendering, sitemap usage, 404 handling, IP rotation.",
+      "rubric": {
+        "must": [
+          "A spider-trap defense (max depth or per-host page cap)",
+          "A freshness strategy that doesn't recrawl everything uniformly"
+        ],
+        "should": [
+          "JavaScript rendering for SPAs (separate worker pool with headless browsers)",
+          "Sitemap.xml as a hint",
+          "Adaptive recrawl based on observed change rate"
+        ],
+        "avoid": [
+          "Recrawling every page on a fixed cadence (wastes most of the budget)"
+        ]
+      },
+      "sampleAnswer": "Spider traps: cap pages-per-host (e.g., 100K) and per-page outbound links (1K). Detect URL patterns where the path keeps growing (`/cal/2024/01/15/event/foo/cal/2024/01/16/...`) and stop following them.\n\nFreshness: each URL has a recrawl-after-timestamp. We schedule based on observed change frequency — pages whose content hash changed last time get shorter intervals; static pages get pushed to 30+ days. News-domain hostnames are tagged 'high freshness' and get a 1-day floor.\n\nJS rendering: 90% of pages don't need it. We render only pages tagged as SPAs (detected by zero text outside <script> tags after initial fetch) on a separate, expensive headless-Chrome worker pool. Otherwise we'd burn 100x the compute for marginal gain.\n\nSitemaps: when fetching robots.txt, also fetch sitemap.xml. Treat its URLs as priority-elevated seeds."
+    }
+  ]
+}

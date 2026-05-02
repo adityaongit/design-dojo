@@ -1,0 +1,42 @@
+{
+  "system-design": [
+    { "id": "bitly", "title": "Bitly", "difficulty": "easy", "ready": true, "summary": "Design a URL shortening service like Bitly that handles 100M DAU and 1B URLs." },
+    { "id": "dropbox", "title": "Dropbox", "difficulty": "easy", "ready": true, "summary": "Design a file storage and sync service like Dropbox." },
+    { "id": "local-delivery", "title": "Local Delivery Service", "difficulty": "easy", "ready": false, "summary": "Design a local courier service that matches couriers with packages within a city." },
+    { "id": "news-aggregator", "title": "News Aggregator", "difficulty": "easy", "ready": false, "summary": "Design a service that fetches and ranks news from multiple sources." },
+    { "id": "ticketmaster", "title": "Ticketmaster", "difficulty": "medium", "ready": true, "summary": "Design a ticketing system that handles flash-sale concerts without overselling." },
+    { "id": "fb-news-feed", "title": "FB News Feed", "difficulty": "medium", "ready": false, "summary": "Design Facebook's news feed: ranking, fan-out, and serving." },
+    { "id": "tinder", "title": "Tinder", "difficulty": "medium", "ready": false, "summary": "Design a swipe-based dating app with matching and chat." },
+    { "id": "leetcode", "title": "LeetCode", "difficulty": "medium", "ready": false, "summary": "Design an online judge for programming contests." },
+    { "id": "whatsapp", "title": "WhatsApp", "difficulty": "medium", "ready": false, "summary": "Design a 1:1 and group messaging service with delivery receipts." },
+    { "id": "yelp", "title": "Yelp", "difficulty": "medium", "ready": false, "summary": "Design a location-based business review and discovery service." },
+    { "id": "strava", "title": "Strava", "difficulty": "medium", "ready": false, "summary": "Design a fitness tracking app with social feeds and leaderboards." },
+    { "id": "rate-limiter", "title": "Rate Limiter", "difficulty": "medium", "ready": false, "summary": "Design a distributed rate limiter for API gateways." },
+    { "id": "online-auction", "title": "Online Auction", "difficulty": "medium", "ready": false, "summary": "Design an eBay-style real-time auction service." },
+    { "id": "fb-live-comments", "title": "FB Live Comments", "difficulty": "medium", "ready": false, "summary": "Design real-time comments fan-out for live video streams." },
+    { "id": "fb-post-search", "title": "FB Post Search", "difficulty": "medium", "ready": false, "summary": "Design search across all Facebook posts." },
+    { "id": "price-tracker", "title": "Price Tracking Service", "difficulty": "medium", "ready": false, "summary": "Design a service that tracks product prices and alerts on drops." },
+    { "id": "instagram", "title": "Instagram", "difficulty": "hard", "ready": false, "summary": "Design Instagram: photo posting, feeds, stories, and DMs at scale." },
+    { "id": "youtube-top-k", "title": "YouTube Top K", "difficulty": "hard", "ready": false, "summary": "Design the YouTube top-K trending videos pipeline." },
+    { "id": "uber", "title": "Uber", "difficulty": "hard", "ready": false, "summary": "Design Uber: rider-driver matching, dispatch, and real-time tracking." },
+    { "id": "robinhood", "title": "Robinhood", "difficulty": "hard", "ready": false, "summary": "Design a stock trading platform with real-time quotes and orders." },
+    { "id": "google-docs", "title": "Google Docs", "difficulty": "hard", "ready": false, "summary": "Design real-time collaborative document editing." },
+    { "id": "distributed-cache", "title": "Distributed Cache", "difficulty": "hard", "ready": false, "summary": "Design a Memcached/Redis-style distributed in-memory cache." },
+    { "id": "youtube", "title": "YouTube", "difficulty": "hard", "ready": false, "summary": "Design YouTube: video upload, encoding, storage, and serving." },
+    { "id": "job-scheduler", "title": "Job Scheduler", "difficulty": "hard", "ready": false, "summary": "Design a distributed cron / job scheduling system." },
+    { "id": "web-crawler", "title": "Web Crawler", "difficulty": "hard", "ready": true, "summary": "Design a polite, deduplicating web crawler at internet scale." },
+    { "id": "ad-click-aggregator", "title": "Ad Click Aggregator", "difficulty": "hard", "ready": false, "summary": "Design a real-time ad click tracking and aggregation pipeline." },
+    { "id": "payment-system", "title": "Payment System", "difficulty": "hard", "ready": false, "summary": "Design a payment processing system with idempotency and reconciliation." },
+    { "id": "metrics-monitoring", "title": "Metrics Monitoring", "difficulty": "hard", "ready": false, "summary": "Design a metrics ingestion, storage, and querying system like Prometheus." }
+  ],
+  "low-level-design": [
+    { "id": "connect-four", "title": "Connect Four", "difficulty": "easy", "ready": true, "summary": "Design the classes for a Connect Four game in detail." },
+    { "id": "amazon-locker", "title": "Amazon Locker", "difficulty": "easy", "ready": false, "summary": "Design the locker assignment and pickup system." },
+    { "id": "elevator", "title": "Elevator", "difficulty": "medium", "ready": false, "summary": "Design an elevator control system for a multi-elevator building." },
+    { "id": "parking-lot", "title": "Parking Lot", "difficulty": "medium", "ready": false, "summary": "Design a parking lot with multiple vehicle types and pricing tiers." },
+    { "id": "file-system", "title": "File System", "difficulty": "medium", "ready": false, "summary": "Design an in-memory hierarchical file system." },
+    { "id": "movie-booking", "title": "Movie Ticket Booking", "difficulty": "medium", "ready": false, "summary": "Design a movie ticket booking system with seat selection." },
+    { "id": "rate-limiter-lld", "title": "Rate Limiter", "difficulty": "hard", "ready": false, "summary": "Design rate limiter classes supporting multiple algorithms." },
+    { "id": "inventory-management", "title": "Inventory Management", "difficulty": "hard", "ready": false, "summary": "Design an inventory management system with multi-warehouse stock." }
+  ]
+}
