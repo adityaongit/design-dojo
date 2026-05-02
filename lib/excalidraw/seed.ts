@@ -37,23 +37,23 @@ type Palette = {
 
 const PALETTE: Record<"light" | "dark", Palette> = {
   light: {
-    border: "#94a3b8", // slate-400
+    border: "#64748b", // slate-500
     borderActive: "#10b981", // emerald-500
-    title: "#1e293b", // slate-800
+    title: "#020617", // slate-950 — near-black
     body: "#0f172a", // slate-900
-    muted: "#475569", // slate-600
+    muted: "#334155", // slate-700 — readable, not faded
     exampleLabel: "#475569", // slate-600
-    exampleBody: "#64748b", // slate-500
-    arrow: "#94a3b8", // slate-400
+    exampleBody: "#475569", // slate-600
+    arrow: "#64748b", // slate-500
   },
   dark: {
-    border: "#475569", // slate-600
+    border: "#64748b", // slate-500
     borderActive: "#10b981", // emerald-500
-    title: "#cbd5e1", // slate-300
-    body: "#f1f5f9", // slate-100
-    muted: "#94a3b8", // slate-400
-    exampleLabel: "#a3b8d4",
-    exampleBody: "#7c8fa8",
+    title: "#f8fafc", // slate-50 — near-white
+    body: "#e2e8f0", // slate-200
+    muted: "#cbd5e1", // slate-300
+    exampleLabel: "#cbd5e1",
+    exampleBody: "#94a3b8",
     arrow: "#94a3b8",
   },
 };
@@ -328,11 +328,11 @@ export function buildSeedScene(
     text(COLOR, {
       id: `header-prompt-${question.id}`,
       x: 80,
-      y: HEADER_Y + 40,
+      y: HEADER_Y + 44,
       width: 1200,
       height: 60,
       text: question.prompt,
-      fontSize: 14,
+      fontSize: 16,
       color: COLOR.muted,
       locked: true,
     }),
