@@ -56,7 +56,7 @@ import type { ByokConfig } from "@/lib/ai/types";
 import { gradeAnswer } from "@/lib/ai/grade-client";
 import type { Framework, Question, QuestionType } from "@/lib/content/schema";
 import { getStageMeta } from "@/lib/content/meta";
-import { buildSeedScene } from "@/lib/excalidraw/seed";
+import { buildSeedScene, SEED_VERSION } from "@/lib/excalidraw/seed";
 import { StageTimer } from "@/components/practice/timer";
 
 const SAVE_DEBOUNCE_MS = 600;
@@ -124,9 +124,22 @@ export function SessionRunner({
         setInitialCode(seed);
         codeRef.current = seed;
       } else {
-        const seed = s?.canvas ?? buildSeedScene(question, themeKey);
+        const savedVersion = (
+          s?.canvas?.appState as Record<string, unknown> | undefined
+        )?.seedVersion;
+        const seedStale =
+          !s?.canvas ||
+          typeof savedVersion !== "number" ||
+          savedVersion < SEED_VERSION;
+        const seed = seedStale
+          ? buildSeedScene(question, themeKey)
+          : s.canvas!;
         setInitialCanvas(seed);
         canvasRef.current = seed;
+        if (seedStale && s?.canvas) {
+          // Persist the rebuilt seed so a refresh keeps the new colors.
+          void saveCanvas(type, question.id, seed);
+        }
       }
       setHydrated(true);
     });

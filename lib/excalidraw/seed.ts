@@ -37,26 +37,34 @@ type Palette = {
 
 const PALETTE: Record<"light" | "dark", Palette> = {
   light: {
-    border: "#64748b", // slate-500
+    border: "#1e293b", // slate-800
     borderActive: "#10b981", // emerald-500
-    title: "#020617", // slate-950 — near-black
-    body: "#0f172a", // slate-900
-    muted: "#334155", // slate-700 — readable, not faded
-    exampleLabel: "#475569", // slate-600
-    exampleBody: "#475569", // slate-600
-    arrow: "#64748b", // slate-500
+    title: "#000000", // pure black
+    body: "#000000",
+    muted: "#1e293b", // slate-800
+    exampleLabel: "#334155", // slate-700
+    exampleBody: "#334155",
+    arrow: "#475569", // slate-600
   },
   dark: {
-    border: "#64748b", // slate-500
+    border: "#cbd5e1", // slate-300
     borderActive: "#10b981", // emerald-500
-    title: "#f8fafc", // slate-50 — near-white
-    body: "#e2e8f0", // slate-200
-    muted: "#cbd5e1", // slate-300
+    title: "#ffffff", // pure white
+    body: "#ffffff",
+    muted: "#e2e8f0", // slate-200
     exampleLabel: "#cbd5e1",
-    exampleBody: "#94a3b8",
+    exampleBody: "#cbd5e1",
     arrow: "#94a3b8",
   },
 };
+
+/**
+ * Bump this whenever the seed shape / colors change in a way that
+ * existing saved canvases should pick up. The runner checks the saved
+ * canvas's appState.seedVersion on hydrate; if it's behind, the canvas
+ * is re-seeded silently so users don't have to click 'Reset whiteboard'.
+ */
+export const SEED_VERSION = 3;
 
 let seedCounter = 1;
 const nextSeed = () => ++seedCounter * 7919;
@@ -482,6 +490,7 @@ export function buildSeedScene(
       scrollX: -300,
       scrollY: -60,
       zoom: { value: 0.65 },
+      seedVersion: SEED_VERSION,
     },
   };
 }
