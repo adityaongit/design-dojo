@@ -1,0 +1,110 @@
+{
+  "id": "REPLACE-WITH-KEBAB-SLUG",
+  "title": "REPLACE With Question Title",
+  "difficulty": "easy",
+  "type": "low-level-design",
+  "prompt": "REPLACE with the full LLD prompt. Describe the rules clearly. Include any out-of-scope notes the candidate should hear.",
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "questionPrompt": "Clarify the requirements. What's in scope and what isn't?",
+      "howToAnswer": "Capture the rules tightly. Decide whether to scope: AI opponent, multi-game match, network play. State assumptions out loud.",
+      "exampleHints": {
+        "headline": "Example (ANALOG-PROBLEM):",
+        "bullets": [
+          "REPLACE — primary capability",
+          "REPLACE — completion condition",
+          "Out of Scope: REPLACE"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "REPLACE — primary capability",
+          "REPLACE — termination / completion condition",
+          "REPLACE — error handling"
+        ],
+        "should": ["REPLACE — secondary capability"],
+        "avoid": [
+          "Building features not requested (AI opponent, networking)",
+          "Designing the UI"
+        ]
+      },
+      "sampleAnswer": "Scope:\n- REPLACE\n- REPLACE\n\nOut of scope:\n- REPLACE"
+    },
+    {
+      "slug": "entities-relationships",
+      "title": "Entities & Relationships",
+      "questionPrompt": "What are the core entities and how do they relate?",
+      "howToAnswer": "Pick the orchestrator. Decide what owns each piece of state. Avoid an anaemic God class.",
+      "exampleHints": {
+        "headline": "Example (ANALOG-PROBLEM):",
+        "bullets": ["EntityA (orchestrator)", "EntityB", "EntityC"]
+      },
+      "rubric": {
+        "must": ["REPLACE orchestrator", "REPLACE primary entity"],
+        "should": ["REPLACE secondary entity"],
+        "avoid": ["Putting all logic on a single God class"]
+      },
+      "sampleAnswer": "- REPLACE: orchestrates the workflow.\n- REPLACE: owns the state.\n- REPLACE: action / move primitive."
+    },
+    {
+      "slug": "class-design",
+      "title": "Class Design",
+      "questionPrompt": "Define the classes — fields and methods. Keep rules with the entity that owns the state.",
+      "howToAnswer": "Sketch each class with explicit method signatures and what they return / throw. Use enums for fixed states.",
+      "exampleHints": {
+        "headline": "Example (ANALOG-PROBLEM):",
+        "bullets": [
+          "class A: + method(args) -> ReturnType",
+          "class B: + method() -> ReturnType",
+          "enum State { ... }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "REPLACE primary class signature",
+          "REPLACE termination/state enum",
+          "Methods return useful types (not bare bool)"
+        ],
+        "should": [
+          "REPLACE additional helper class",
+          "Configurable via constructor params"
+        ],
+        "avoid": [
+          "Returning bool from methods that need richer state",
+          "Hard-coded constants in multiple places"
+        ]
+      },
+      "sampleAnswer": "```\nenum State { IN_PROGRESS, ... }\n\nclass A:\n  field1: Type\n  field2: Type\n  method(args) -> ReturnType:\n    REPLACE\n```"
+    },
+    {
+      "slug": "implementation",
+      "title": "Implementation",
+      "questionPrompt": "Pseudo-code the major methods and trace through one scenario.",
+      "howToAnswer": "The hardest method is the meaty one — write it carefully. Then trace a concrete sequence end-to-end.",
+      "rubric": {
+        "must": [
+          "REPLACE the headline method correctly",
+          "Bounds-checked / null-safe access",
+          "Trace through one concrete scenario"
+        ],
+        "should": ["Helper to factor out repetition"],
+        "avoid": ["Off-by-one errors", "Recomputing state on every call"]
+      },
+      "sampleAnswer": "```\nmethodName(args):\n  REPLACE\n```\n\nTrace: REPLACE step-by-step."
+    },
+    {
+      "slug": "extensibility",
+      "title": "Extensibility",
+      "questionPrompt": "How would the design extend for: REPLACE follow-up scenarios?",
+      "howToAnswer": "Stay high-level. Point at the seams in the design that make the change clean.",
+      "rubric": {
+        "must": ["REPLACE — first follow-up scenario answer"],
+        "should": ["REPLACE — second", "REPLACE — third"],
+        "avoid": ["Rewriting the design when a simple extension suffices"]
+      },
+      "sampleAnswer": "REPLACE first follow-up:\n\nREPLACE second:\n\nREPLACE third:"
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "id": "REPLACE-WITH-KEBAB-SLUG",
+  "title": "REPLACE With Question Title",
+  "difficulty": "easy",
+  "type": "system-design",
+  "prompt": "REPLACE with the full interview prompt as the candidate would hear it. ~2-4 sentences. Include realistic scale numbers (DAU, RPS, storage) where the design is sensitive to scale.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering the must-have behavior. Skip nice-to-haves and admin features unless explicitly asked.",
+      "exampleHints": {
+        "headline": "Example (ANALOG-PROBLEM):",
+        "bullets": [
+          "Users can REPLACE",
+          "Users can REPLACE",
+          "Users see REPLACE"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "REPLACE — concrete must-have user action",
+          "REPLACE"
+        ],
+        "should": [
+          "REPLACE — extra capability that strengthens the answer"
+        ],
+        "avoid": [
+          "REPLACE — common drift trap (e.g., dashboards, accounts when not asked)"
+        ]
+      },
+      "sampleAnswer": "1. Users should be able to REPLACE.\n2. Users should be able to REPLACE.\n3. Users should be able to REPLACE."
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover availability vs consistency, latency targets with concrete numbers, scale (DAU/QPS/storage), durability. Tie each requirement to a real product concern.",
+      "exampleHints": {
+        "headline": "Example (ANALOG-PROBLEM):",
+        "bullets": [
+          "Availability > consistency",
+          "Low latency REPLACE",
+          "System should be scalable",
+          "..."
+        ]
+      },
+      "rubric": {
+        "must": [
+          "REPLACE — the headline NFR (e.g., uniqueness, durability, no-double-booking)",
+          "Concrete latency target (e.g., <100ms p99)",
+          "Quantified scale numbers"
+        ],
+        "should": [
+          "REPLACE",
+          "Availability target (99.9%+)"
+        ],
+        "avoid": [
+          "Listing NFRs without numbers",
+          "Conflating functional and non-functional"
+        ]
+      },
+      "sampleAnswer": "- REPLACE first NFR with concrete number.\n- REPLACE second.\n- REPLACE third."
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (ANALOG-PROBLEM):",
+        "bullets": ["EntityA", "EntityB", "EntityC"]
+      },
+      "rubric": {
+        "must": ["REPLACE primary entity"],
+        "should": ["REPLACE secondary entity"],
+        "avoid": ["Inventing entities the requirements don't justify"]
+      },
+      "sampleAnswer": "- EntityA: REPLACE one-line description.\n- EntityB: REPLACE."
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement. REST is the default — show method, path, request body shape, and response.",
+      "exampleHints": {
+        "headline": "Example (ANALOG-PROBLEM):",
+        "bullets": [
+          "GET /resource → Resource[]",
+          "POST /resource body: { ... }",
+          "..."
+        ]
+      },
+      "rubric": {
+        "must": [
+          "REPLACE primary endpoint",
+          "REPLACE secondary endpoint"
+        ],
+        "should": ["REPLACE optional endpoint"],
+        "avoid": ["Putting body data in the URL path", "Forgetting status codes"]
+      },
+      "sampleAnswer": "POST /resource\n  body: { ... }\n  → 201 { id }\n\nGET /resource/:id → Resource"
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through each endpoint.",
+      "howToAnswer": "Boxes and arrows: client → load balancer → API service → database. Note schema fields next to the database. Walk through each endpoint end-to-end.",
+      "rubric": {
+        "must": [
+          "Client / Load balancer / API service / Database",
+          "REPLACE the design's headline trick (e.g., short-code generation, dispatch algorithm)"
+        ],
+        "should": [
+          "Cache layer where it matters",
+          "CDN consideration",
+          "Schema fields"
+        ],
+        "avoid": [
+          "Skipping the headline trick",
+          "Hand-waving 'just add more servers'"
+        ]
+      },
+      "sampleAnswer": "REPLACE: walk through write path then read path. Mention the headline trick. Show component boundaries."
+    },
+    {
+      "slug": "deep-dives",
+      "title": "Deep Dives",
+      "questionPrompt": "Harden the design against the non-functional requirements.",
+      "howToAnswer": "Pick 2-3 of the highest-risk areas given the NFRs and address each with a concrete mechanism.",
+      "rubric": {
+        "must": [
+          "REPLACE biggest risk (e.g., scaling reads, ID-generation bottleneck)",
+          "Second biggest"
+        ],
+        "should": [
+          "Failure-mode handling",
+          "Geo-distribution"
+        ],
+        "avoid": [
+          "Adding components without a justifying NFR",
+          "Hand-waving 'just add more servers'"
+        ]
+      },
+      "sampleAnswer": "Read scaling: REPLACE.\n\nID generation: REPLACE.\n\nFailure mode: REPLACE."
+    }
+  ]
+}
