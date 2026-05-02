@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { toast } from "sonner";
-import { GraduationCap, KeyRound, LogOut, Trash2 } from "lucide-react";
+import { GraduationCap, KeyRound, LogOut, RotateCcw, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -104,6 +104,7 @@ export function SessionRunner({
   const codeEditorRef = useRef<CodeEditorHandle | null>(null);
   const promptPanelRef = useRef<ImperativePanelHandle | null>(null);
   const [promptCollapsed, setPromptCollapsed] = useState(false);
+  const [resetCounter, setResetCounter] = useState(0);
 
   // Pending patches keyed by stage slug, flushed on a debounce.
   const pendingRef = useRef<Record<string, Partial<StageState>>>({});
@@ -333,6 +334,22 @@ export function SessionRunner({
     [type, question.id],
   );
 
+  const handleResetWorkspace = useCallback(() => {
+    if (isLLD) {
+      const fresh = buildSeedCode(question, codeLanguage);
+      codeRef.current = fresh;
+      setInitialCode(fresh);
+      void saveCode(type, question.id, fresh, codeLanguage);
+    } else {
+      const fresh = buildSeedScene(question, themeKey);
+      canvasRef.current = fresh;
+      setInitialCanvas(fresh);
+      void saveCanvas(type, question.id, fresh);
+    }
+    setResetCounter((n) => n + 1);
+    toast.success(isLLD ? "Editor reset" : "Whiteboard reset");
+  }, [isLLD, question, codeLanguage, type, themeKey]);
+
   const stageState = stageMap[stage.slug];
   const stageMeta = getStageMeta(framework, stage.slug);
   const dotStages = stages.map((s) => ({
@@ -426,6 +443,17 @@ export function SessionRunner({
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuSeparator />
+              <DropdownMenuLabel>Workspace</DropdownMenuLabel>
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  handleResetWorkspace();
+                }}
+              >
+                <RotateCcw className="size-3.5" />
+                Reset {isLLD ? "editor" : "whiteboard"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuLabel>Tutor</DropdownMenuLabel>
               <DropdownMenuItem disabled>
                 <GraduationCap className="size-3.5" />
@@ -511,7 +539,7 @@ export function SessionRunner({
                   <EditorHeader title={question.title} prompt={question.prompt} />
                   <div className="flex-1 min-h-0">
                     <CodeEditor
-                      key={codeLanguage}
+                      key={`${codeLanguage}-${resetCounter}`}
                       ref={codeEditorRef}
                       initial={initialCode}
                       language={codeLanguage}
@@ -521,6 +549,7 @@ export function SessionRunner({
                 </>
               ) : (
                 <Whiteboard
+                  key={`canvas-${resetCounter}`}
                   ref={whiteboardRef}
                   initial={initialCanvas}
                   onChange={handleCanvasChange}
