@@ -360,6 +360,12 @@ export function SessionRunner({
             </Badge>
           </div>
         </div>
+        {stageMeta ? (
+          <StageTimer
+            stageSlug={stage.slug}
+            targetMinutes={stageMeta.minutes}
+          />
+        ) : null}
         <div className="flex items-center gap-2">
           {isLLD ? (
             <CodeLanguagePicker
@@ -499,14 +505,6 @@ export function SessionRunner({
         ) : null}
         <ResizablePanel defaultSize={72} minSize={50}>
           <main className="relative h-full min-w-0 p-3">
-            {stageMeta ? (
-              <div className="pointer-events-none absolute right-3 top-6 z-10">
-                <StageTimer
-                  stageSlug={stage.slug}
-                  targetMinutes={stageMeta.minutes}
-                />
-              </div>
-            ) : null}
             {hydrated ? (
               isLLD ? (
                 <CodeEditor
