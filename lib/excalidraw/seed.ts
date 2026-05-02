@@ -35,36 +35,31 @@ type Palette = {
   arrow: string;
 };
 
-const PALETTE: Record<"light" | "dark", Palette> = {
-  light: {
-    border: "#1e293b", // slate-800
-    borderActive: "#10b981", // emerald-500
-    title: "#000000", // pure black
-    body: "#000000",
-    muted: "#1e293b", // slate-800
-    exampleLabel: "#334155", // slate-700
-    exampleBody: "#334155",
-    arrow: "#475569", // slate-600
-  },
-  dark: {
-    border: "#cbd5e1", // slate-300
-    borderActive: "#10b981", // emerald-500
-    title: "#ffffff", // pure white
-    body: "#ffffff",
-    muted: "#e2e8f0", // slate-200
-    exampleLabel: "#cbd5e1",
-    exampleBody: "#cbd5e1",
-    arrow: "#94a3b8",
-  },
+/*
+ * Excalidraw's dark theme applies an invert+hue-rotate filter to the canvas
+ * so that elements drawn in light mode auto-invert and stay visible. That
+ * means we should ALWAYS seed with light-mode-friendly dark colors —
+ * Excalidraw handles the dark-mode inversion for us. Seeding white in dark
+ * mode gets inverted to black-on-dark = invisible.
+ */
+const PALETTE: Palette = {
+  border: "#1e293b", // slate-800
+  borderActive: "#10b981", // emerald-500
+  title: "#000000", // pure black — inverts to near-white in dark theme
+  body: "#000000",
+  muted: "#1e293b", // slate-800
+  exampleLabel: "#334155", // slate-700
+  exampleBody: "#334155",
+  arrow: "#475569", // slate-600
 };
 
 /**
- * Bump this whenever the seed shape / colors change in a way that
- * existing saved canvases should pick up. The runner checks the saved
- * canvas's appState.seedVersion on hydrate; if it's behind, the canvas
- * is re-seeded silently so users don't have to click 'Reset whiteboard'.
+ * Bump this whenever the seed shape / colors change in a way that existing
+ * saved canvases should pick up. The runner checks the saved canvas's
+ * appState.seedVersion on hydrate; if it's behind, the canvas is re-seeded
+ * silently so users don't have to click 'Reset whiteboard'.
  */
-export const SEED_VERSION = 3;
+export const SEED_VERSION = 4;
 
 let seedCounter = 1;
 const nextSeed = () => ++seedCounter * 7919;
@@ -310,12 +305,15 @@ function emit(
 
 export function buildSeedScene(
   question: Question,
-  theme: "light" | "dark" = "light",
+  // Theme arg is ignored — we use a single light-mode palette and let
+  // Excalidraw's dark-theme filter invert it automatically.
+  _theme: "light" | "dark" = "light",
 ): WhiteboardScene {
   seedCounter = 1;
+  void _theme;
   const elements: Array<Record<string, unknown>> = [];
   const type: QuestionType = question.type;
-  const COLOR = PALETTE[theme];
+  const COLOR = PALETTE;
 
   // Header — pushed well below the toolbar so it isn't hidden at any zoom
   const HEADER_Y = 220;
