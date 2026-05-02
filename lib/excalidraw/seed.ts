@@ -18,30 +18,60 @@ import type { Question, QuestionType, StageContent } from "@/lib/content/schema"
  *
  * Sizes match HelloInterview's layout — taller blocks, headers below the
  * Excalidraw toolbar, Example hints to the LEFT of each block.
+ *
+ * Colors are theme-aware: the canvas background is white in light mode
+ * and dark in dark mode, so we pick contrasting greys per theme. Passed
+ * as a `theme` argument so the parent can re-seed when the theme flips.
  */
 
-const COLOR = {
-  border: "#475569",
-  borderActive: "#10b981",
-  title: "#cbd5e1",
-  body: "#f1f5f9",
-  muted: "#94a3b8",
-  exampleLabel: "#a3b8d4",
-  exampleBody: "#7c8fa8",
-  arrow: "#94a3b8",
+type Palette = {
+  border: string;
+  borderActive: string;
+  title: string;
+  body: string;
+  muted: string;
+  exampleLabel: string;
+  exampleBody: string;
+  arrow: string;
+};
+
+const PALETTE: Record<"light" | "dark", Palette> = {
+  light: {
+    border: "#94a3b8", // slate-400
+    borderActive: "#10b981", // emerald-500
+    title: "#1e293b", // slate-800
+    body: "#0f172a", // slate-900
+    muted: "#475569", // slate-600
+    exampleLabel: "#475569", // slate-600
+    exampleBody: "#64748b", // slate-500
+    arrow: "#94a3b8", // slate-400
+  },
+  dark: {
+    border: "#475569", // slate-600
+    borderActive: "#10b981", // emerald-500
+    title: "#cbd5e1", // slate-300
+    body: "#f1f5f9", // slate-100
+    muted: "#94a3b8", // slate-400
+    exampleLabel: "#a3b8d4",
+    exampleBody: "#7c8fa8",
+    arrow: "#94a3b8",
+  },
 };
 
 let seedCounter = 1;
 const nextSeed = () => ++seedCounter * 7919;
 
-function rect(opts: {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  active?: boolean;
-}): Record<string, unknown> {
+function rect(
+  COLOR: Palette,
+  opts: {
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    active?: boolean;
+  },
+): Record<string, unknown> {
   return {
     type: "rectangle",
     id: opts.id,
@@ -72,17 +102,20 @@ function rect(opts: {
   };
 }
 
-function text(opts: {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  text: string;
-  fontSize?: number;
-  color?: string;
-  locked?: boolean;
-}): Record<string, unknown> {
+function text(
+  COLOR: Palette,
+  opts: {
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    text: string;
+    fontSize?: number;
+    color?: string;
+    locked?: boolean;
+  },
+): Record<string, unknown> {
   const lineHeight = 1.25;
   return {
     type: "text",
@@ -123,13 +156,16 @@ function text(opts: {
   };
 }
 
-function arrow(opts: {
-  id: string;
-  startX: number;
-  startY: number;
-  endX: number;
-  endY: number;
-}): Record<string, unknown> {
+function arrow(
+  COLOR: Palette,
+  opts: {
+    id: string;
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+  },
+): Record<string, unknown> {
   const dx = opts.endX - opts.startX;
   const dy = opts.endY - opts.startY;
   return {
@@ -183,12 +219,15 @@ type Block = {
   showGutter?: boolean;
 };
 
-function emit(block: Block, isFirst = false): Array<Record<string, unknown>> {
+function emit(
+  COLOR: Palette,
+  block: Block,
+  isFirst = false,
+): Array<Record<string, unknown>> {
   const out: Array<Record<string, unknown>> = [];
 
-  // Anchor rectangle
   out.push(
-    rect({
+    rect(COLOR, {
       id: `anchor-${block.slug}`,
       x: block.x,
       y: block.y,
@@ -198,9 +237,8 @@ function emit(block: Block, isFirst = false): Array<Record<string, unknown>> {
     }),
   );
 
-  // Title text inside the block (top-left)
   out.push(
-    text({
+    text(COLOR, {
       id: `anchor-title-${block.slug}`,
       x: block.x + 18,
       y: block.y + 16,
@@ -213,16 +251,14 @@ function emit(block: Block, isFirst = false): Array<Record<string, unknown>> {
     }),
   );
 
-  // Optional Example gutter to the LEFT
   if (block.showGutter && block.exampleHints) {
     const gutterRight = block.x - 30;
     const gutterWidth = 240;
     const gutterX = gutterRight - gutterWidth;
     const gutterY = block.y + 24;
 
-    // "Example" label
     out.push(
-      text({
+      text(COLOR, {
         id: `example-label-${block.slug}`,
         x: gutterX,
         y: gutterY,
@@ -235,10 +271,9 @@ function emit(block: Block, isFirst = false): Array<Record<string, unknown>> {
       }),
     );
 
-    // Body
     const bodyText = `${block.exampleHints.headline}\n${block.exampleHints.bullets.map((b) => `- ${b}`).join("\n")}`;
     out.push(
-      text({
+      text(COLOR, {
         id: `example-body-${block.slug}`,
         x: gutterX,
         y: gutterY + 24,
@@ -251,9 +286,8 @@ function emit(block: Block, isFirst = false): Array<Record<string, unknown>> {
       }),
     );
 
-    // Curved arrow from gutter into the anchor's left edge
     out.push(
-      arrow({
+      arrow(COLOR, {
         id: `example-arrow-${block.slug}`,
         startX: gutterX + 30,
         startY: gutterY - 6,
@@ -266,15 +300,19 @@ function emit(block: Block, isFirst = false): Array<Record<string, unknown>> {
   return out;
 }
 
-export function buildSeedScene(question: Question): WhiteboardScene {
+export function buildSeedScene(
+  question: Question,
+  theme: "light" | "dark" = "light",
+): WhiteboardScene {
   seedCounter = 1;
   const elements: Array<Record<string, unknown>> = [];
   const type: QuestionType = question.type;
+  const COLOR = PALETTE[theme];
 
   // Header — pushed well below the toolbar so it isn't hidden at any zoom
   const HEADER_Y = 220;
   elements.push(
-    text({
+    text(COLOR, {
       id: `header-title-${question.id}`,
       x: 80,
       y: HEADER_Y,
@@ -287,7 +325,7 @@ export function buildSeedScene(question: Question): WhiteboardScene {
     }),
   );
   elements.push(
-    text({
+    text(COLOR, {
       id: `header-prompt-${question.id}`,
       x: 80,
       y: HEADER_Y + 40,
@@ -332,7 +370,7 @@ export function buildSeedScene(question: Question): WhiteboardScene {
     let isFirst = true;
     for (const s of leftStages) {
       elements.push(
-        ...emit(
+        ...emit(COLOR, 
           {
             slug: s.slug,
             title: s.title,
@@ -353,7 +391,7 @@ export function buildSeedScene(question: Question): WhiteboardScene {
     const totalLeftH = y - TOP_Y - GAP;
     if (rightStages.length === 1) {
       elements.push(
-        ...emit(
+        ...emit(COLOR, 
           {
             slug: rightStages[0].slug,
             title: rightStages[0].title,
@@ -369,7 +407,7 @@ export function buildSeedScene(question: Question): WhiteboardScene {
     } else if (rightStages.length > 1) {
       const hldH = Math.max(totalLeftH * 0.65, 480);
       elements.push(
-        ...emit(
+        ...emit(COLOR, 
           {
             slug: rightStages[0].slug,
             title: rightStages[0].title,
@@ -390,7 +428,7 @@ export function buildSeedScene(question: Question): WhiteboardScene {
       let ry = TOP_Y + hldH + GAP;
       for (const s of remaining) {
         elements.push(
-          ...emit(
+          ...emit(COLOR, 
             {
               slug: s.slug,
               title: s.title,
@@ -418,7 +456,7 @@ export function buildSeedScene(question: Question): WhiteboardScene {
       const h =
         s.slug === "class-design" || s.slug === "implementation" ? 360 : 240;
       elements.push(
-        ...emit(
+        ...emit(COLOR, 
           {
             slug: s.slug,
             title: s.title,

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { toast } from "sonner";
 import { GraduationCap, KeyRound, LogOut, Trash2 } from "lucide-react";
@@ -68,6 +69,9 @@ export function SessionRunner({
 }) {
   const router = useRouter();
   const params = useSearchParams();
+  const { resolvedTheme } = useTheme();
+  const themeKey: "light" | "dark" =
+    resolvedTheme === "dark" ? "dark" : "light";
   const stages = question.stages;
   const isLLD = type === "low-level-design";
   const stageTitles = useMemo(() => stages.map((s) => s.title), [stages]);
@@ -114,7 +118,7 @@ export function SessionRunner({
         setInitialCode(seed);
         codeRef.current = seed;
       } else {
-        const seed = s?.canvas ?? buildSeedScene(question);
+        const seed = s?.canvas ?? buildSeedScene(question, themeKey);
         setInitialCanvas(seed);
         canvasRef.current = seed;
       }
@@ -132,7 +136,7 @@ export function SessionRunner({
     return () => {
       alive = false;
     };
-  }, [type, question.id, question, isLLD]);
+  }, [type, question.id, question, isLLD, themeKey]);
 
   // Default URL to first stage
   useEffect(() => {
