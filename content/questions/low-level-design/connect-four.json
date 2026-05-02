@@ -10,6 +10,15 @@
       "title": "Requirements",
       "questionPrompt": "Clarify the requirements. What's in scope and what isn't?",
       "howToAnswer": "Capture the rules tightly. Decide whether to scope: AI opponent, multi-game match, network play. State assumptions out loud.",
+      "exampleHints": {
+        "headline": "Example (Tic Tac Toe):",
+        "bullets": [
+          "Two players alternate placing X and O on a 3x3 grid",
+          "A player wins by completing a row, column, or diagonal",
+          "Game ends in a draw if the grid fills with no winner",
+          "Out of Scope: UI, AI opponent, networking"
+        ]
+      },
       "rubric": {
         "must": [
           "Two players, alternating turns",
@@ -34,6 +43,14 @@
       "title": "Entities & Relationships",
       "questionPrompt": "What are the core entities and how do they relate?",
       "howToAnswer": "Pick the orchestrator. Decide what owns the board state. Avoid an anaemic God class.",
+      "exampleHints": {
+        "headline": "Example (Tic Tac Toe):",
+        "bullets": [
+          "Game (orchestrator)",
+          "Board (owns 3x3 cells)",
+          "Player (X / O)"
+        ]
+      },
       "rubric": {
         "must": [
           "Game (orchestrator)",
@@ -51,6 +68,14 @@
       "title": "Class Design",
       "questionPrompt": "Define the classes — fields and methods. Keep rules with the entity that owns the state.",
       "howToAnswer": "Sketch each class with explicit method signatures and what they return / throw. Decide return type for `dropDisc` (e.g., enum: WIN/DRAW/CONTINUE).",
+      "exampleHints": {
+        "headline": "Example (Tic Tac Toe):",
+        "bullets": [
+          "class Game: + makeMove(row, col) -> GameState",
+          "class Board: + place(row, col, player); + checkWin(...)",
+          "enum GameState { IN_PROGRESS, X_WINS, O_WINS, DRAW }"
+        ]
+      },
       "rubric": {
         "must": [
           "Board.dropDisc(column, color) returns the placed cell's row or throws on full column",
@@ -75,6 +100,14 @@
       "title": "Implementation",
       "questionPrompt": "Pseudo-code the win check and trace through one game.",
       "howToAnswer": "Win check is the meaty method — write it carefully. Then trace a sample sequence: alternate moves, eventual win.",
+      "exampleHints": {
+        "headline": "Example (Tic Tac Toe):",
+        "bullets": [
+          "checkWin(row, col): walk all 4 directions from the just-placed cell",
+          "Use a (dr, dc) helper to count consecutive same-player cells",
+          "Stop early once count >= winLength"
+        ]
+      },
       "rubric": {
         "must": [
           "Win check considers all 4 directions",
@@ -97,6 +130,14 @@
       "title": "Extensibility",
       "questionPrompt": "How would you extend this for: an AI opponent, an N-in-a-row variant (e.g., Connect 5), or networked play?",
       "howToAnswer": "Stay high-level. Point at the seams in the design that make the change clean.",
+      "exampleHints": {
+        "headline": "Example (Tic Tac Toe):",
+        "bullets": [
+          "AI opponent: Player becomes an interface; HumanPlayer / AIPlayer impls",
+          "N-in-a-row: Board already takes winLength — pass 5 instead of 3",
+          "Networked: introduce MoveSource (Local vs Websocket)"
+        ]
+      },
       "rubric": {
         "must": [
           "AI opponent: Player becomes an interface; HumanPlayer / AIPlayer implementations",
