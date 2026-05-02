@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, Sparkles } from "lucide-react";
+import { ChevronLeft, MessageSquareCheck, RefreshCw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -116,7 +116,11 @@ export function PromptPanel({
           disabled={isGrading}
           className="bg-emerald-500 px-6 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-600"
         >
-          <Sparkles className="size-3.5" />
+          {feedback ? (
+            <RefreshCw className={isGrading ? "size-3.5 animate-spin" : "size-3.5"} />
+          ) : (
+            <MessageSquareCheck className="size-3.5" />
+          )}
           {isGrading
             ? "Grading…"
             : feedback
