@@ -57,9 +57,18 @@
       "questionPrompt": "What are the core entities?",
       "howToAnswer": "URL, Page (the fetched content), Frontier (the queue), HostPolicy.",
       "rubric": {
-        "must": ["URL (to-fetch)", "Page (fetched content)", "Frontier (queue)"],
-        "should": ["HostPolicy (robots.txt + crawl-delay)", "ContentHash (for dedupe)"],
-        "avoid": ["Mixing the queue and the storage as one entity"]
+        "must": [
+          "URL (to-fetch)",
+          "Page (fetched content)",
+          "Frontier (queue)"
+        ],
+        "should": [
+          "HostPolicy (robots.txt + crawl-delay)",
+          "ContentHash (for dedupe)"
+        ],
+        "avoid": [
+          "Mixing the queue and the storage as one entity"
+        ]
       },
       "sampleAnswer": "- URL: { url, priority, discoveredAt, lastFetchedAt? }\n- Frontier: priority queue of URLs to fetch, partitioned by host.\n- HostPolicy: cached robots.txt + crawl-delay per host.\n- Page: { url, fetchedAt, status, contentHash, html }.\n- LinkGraph: outbound links extracted, used to rediscover."
     },
@@ -78,7 +87,9 @@
           "Per-host policy override endpoint",
           "Bulk seed submission"
         ],
-        "avoid": ["Inventing user-facing APIs the system doesn't need"]
+        "avoid": [
+          "Inventing user-facing APIs the system doesn't need"
+        ]
       },
       "sampleAnswer": "Admin API:\nPOST /seeds  body: { urls: [...], priority }  → enqueues into frontier\nGET /status → { pagesPerSec, queueDepth, errorRate }\nPOST /hosts/:host/policy  body: { crawlDelayMs, maxConcurrency }\n\nInternal: fetcher workers pull URLs from the frontier (Kafka topic partitioned by host), publish fetched-pages and discovered-links events to other topics."
     },
@@ -106,27 +117,6 @@
         ]
       },
       "sampleAnswer": "Frontier: Kafka topic, partitioned by host hash → each fetcher consumer is responsible for a stable subset of hosts. This is the key trick — it means politeness can be enforced in-process without distributed locks.\n\nFetcher pool (1000s of stateless workers): for each URL, check the in-memory robots.txt cache (refresh every 24h). Apply the host crawl-delay (sleep if needed). Fetch via HTTP client with timeouts. Publish 'page fetched' event with raw HTML to a Kafka topic.\n\nParser (separate worker pool): consumes 'page fetched' events. Extracts outbound links. Normalizes URLs (strip fragments, canonical case, sort query params). Publishes 'link discovered' events.\n\nURL filter: dedupe via a sharded Bloom filter — if probably-seen, drop. Otherwise compute hash, check authoritative seen-set in a sharded KV store, write-through, enqueue back into the frontier.\n\nContent dedupe: SHA-256 of normalized HTML. If we've already stored a page with this hash, just record the additional URL pointing at it.\n\nStorage: HTML compressed and written to S3 (one object per page, keyed by content hash). Metadata in Cassandra keyed by URL."
-    },
-    {
-      "slug": "deep-dives",
-      "title": "Deep Dives",
-      "questionPrompt": "Harden against the hardest problems: spider traps, freshness, JavaScript-rendered pages.",
-      "howToAnswer": "Pick 2-3 of: spider traps, freshness scheduling, JS rendering, sitemap usage, 404 handling, IP rotation.",
-      "rubric": {
-        "must": [
-          "A spider-trap defense (max depth or per-host page cap)",
-          "A freshness strategy that doesn't recrawl everything uniformly"
-        ],
-        "should": [
-          "JavaScript rendering for SPAs (separate worker pool with headless browsers)",
-          "Sitemap.xml as a hint",
-          "Adaptive recrawl based on observed change rate"
-        ],
-        "avoid": [
-          "Recrawling every page on a fixed cadence (wastes most of the budget)"
-        ]
-      },
-      "sampleAnswer": "Spider traps: cap pages-per-host (e.g., 100K) and per-page outbound links (1K). Detect URL patterns where the path keeps growing (`/cal/2024/01/15/event/foo/cal/2024/01/16/...`) and stop following them.\n\nFreshness: each URL has a recrawl-after-timestamp. We schedule based on observed change frequency — pages whose content hash changed last time get shorter intervals; static pages get pushed to 30+ days. News-domain hostnames are tagged 'high freshness' and get a 1-day floor.\n\nJS rendering: 90% of pages don't need it. We render only pages tagged as SPAs (detected by zero text outside <script> tags after initial fetch) on a separate, expensive headless-Chrome worker pool. Otherwise we'd burn 100x the compute for marginal gain.\n\nSitemaps: when fetching robots.txt, also fetch sitemap.xml. Treat its URLs as priority-elevated seeds."
     }
   ]
 }

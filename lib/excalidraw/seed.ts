@@ -9,15 +9,14 @@ import type { Question, QuestionType, StageContent } from "@/lib/content/schema"
  *   ┌──→ Functional Reqs ──┐  ┌──────────────────────────────────────────┐
  *   ┌──→ Non-Functional ───┤  │                                          │
  *   ┌──→ Core Entities ────┤  │           High-Level Design              │
- *   ┌──→ API Routes ───────┤  │                                          │
- *                            ├──────────────────────────────────────────┤
- *                            │           Deep Dives                     │
+ *   ┌──→ API Routes ───────┤  │           (with Simple Example hint)     │
  *                            └──────────────────────────────────────────┘
  *   ▲
  *   └─ Example gutter (locked text + arrow) for each left-column block
  *
- * Sizes match HelloInterview's layout — taller blocks, headers below the
- * Excalidraw toolbar, Example hints to the LEFT of each block.
+ * Sizes match HelloInterview's layout — wider blocks, headers below the
+ * Excalidraw toolbar, Example hints to the LEFT of each block, and HLD
+ * gets the full right column height so users have room to draw.
  *
  * Colors are theme-aware: the canvas background is white in light mode
  * and dark in dark mode, so we pick contrasting greys per theme. Passed
@@ -59,7 +58,53 @@ const PALETTE: Palette = {
  * appState.seedVersion on hydrate; if it's behind, the canvas is re-seeded
  * silently so users don't have to click 'Reset whiteboard'.
  */
-export const SEED_VERSION = 4;
+export const SEED_VERSION = 8;
+
+/**
+ * Generic Twitter-style example hints keyed by stage slug. Used when the
+ * question content doesn't define its own `exampleHints`. Twitter is the
+ * canonical "different but analogous" system in HelloInterview's prompts.
+ */
+const FALLBACK_HINTS: Record<string, { headline: string; bullets: string[] }> =
+  {
+    "functional-requirements": {
+      headline: "Example (Twitter):",
+      bullets: [
+        "Users can post a tweet",
+        "Users can follow other users",
+        "Users see a feed of tweets from people they follow",
+      ],
+    },
+    "non-functional-requirements": {
+      headline: "Example (Twitter):",
+      bullets: [
+        "Availability > consistency",
+        "Low latency feed gen",
+        "System should be scalable",
+        "...",
+      ],
+    },
+    "core-entities": {
+      headline: "Example (Twitter):",
+      bullets: ["User", "Tweet", "Follow"],
+    },
+    api: {
+      headline: "Example (Twitter):",
+      bullets: [
+        "POST /tweets — body: { text }",
+        "GET /feed → Tweet[]",
+        "POST /follow — body: { userId }",
+      ],
+    },
+    "data-flow": {
+      headline: "Example (Twitter):",
+      bullets: [
+        "1. User posts tweet",
+        "2. Fanout to followers' feed cache",
+        "3. Followers fetch feed → cached list",
+      ],
+    },
+  };
 
 let seedCounter = 1;
 const nextSeed = () => ++seedCounter * 7919;
@@ -86,7 +131,7 @@ function rect(
     strokeColor: opts.active ? COLOR.borderActive : COLOR.border,
     backgroundColor: "transparent",
     fillStyle: "solid",
-    strokeWidth: opts.active ? 3 : 1.5,
+    strokeWidth: opts.active ? 5 : 1.5,
     strokeStyle: "solid",
     roughness: 1,
     opacity: 100,
@@ -167,10 +212,35 @@ function arrow(
     startY: number;
     endX: number;
     endY: number;
+    /** Perpendicular bow as a fraction of the chord length. Default 0.25 */
+    curvature?: number;
+    /** Whether to render a curved (default) or straight arrow */
+    curved?: boolean;
   },
 ): Record<string, unknown> {
   const dx = opts.endX - opts.startX;
   const dy = opts.endY - opts.startY;
+  const curved = opts.curved ?? true;
+  const k = opts.curvature ?? 0.25;
+  // Bow perpendicular to the chord. Screen Y is flipped (down = +y), so to
+  // make a left-to-right arrow bow UP (like a smile arc into the block) we
+  // pick the perpendicular pointing to negative Y.
+  const len = Math.max(Math.hypot(dx, dy), 1);
+  const px = dy / len;
+  const py = -dx / len;
+  const bow = len * k;
+  // Three-point quadratic-style bezier reads cleanest in Excalidraw's round
+  // mode — the prior 5-point chain produced a visible S-kink.
+  const points = curved
+    ? [
+        [0, 0],
+        [dx * 0.5 + px * bow, dy * 0.5 + py * bow],
+        [dx, dy],
+      ]
+    : [
+        [0, 0],
+        [dx, dy],
+      ];
   return {
     type: "arrow",
     id: opts.id,
@@ -182,12 +252,13 @@ function arrow(
     strokeColor: COLOR.arrow,
     backgroundColor: "transparent",
     fillStyle: "solid",
-    strokeWidth: 1,
+    strokeWidth: 1.25,
     strokeStyle: "solid",
-    roughness: 1,
+    roughness: 0,
     opacity: 100,
     groupIds: [],
     frameId: null,
+    // type 2 = "round" — gives the smooth bezier curve instead of polyline.
     roundness: { type: 2 },
     seed: nextSeed(),
     version: 1,
@@ -197,11 +268,7 @@ function arrow(
     updated: 1,
     link: null,
     locked: true,
-    points: [
-      [0, 0],
-      [dx * 0.5, dy * 0.3],
-      [dx, dy],
-    ],
+    points,
     lastCommittedPoint: null,
     startBinding: null,
     endBinding: null,
@@ -209,6 +276,123 @@ function arrow(
     endArrowhead: "arrow",
     index: null,
   };
+}
+
+/**
+ * Locked "Simple Example" hint diagram — Client → Server → DB — placed in
+ * a gutter to the RIGHT of the HLD anchor with a curved arrow pointing
+ * back into HLD, mirroring how the LEFT-column blocks have their Example
+ * gutter on the left. Locked so users can't drag it while drawing.
+ */
+function buildHldHint(
+  COLOR: Palette,
+  hldRightX: number,
+  hldTopY: number,
+): Array<Record<string, unknown>> {
+  const out: Array<Record<string, unknown>> = [];
+  const w = 110;
+  const h = 64;
+  const dbW = 90;
+  const gap = 50;
+
+  // Gutter sits 60px to the right of the HLD block.
+  const gutterX = hldRightX + 60;
+  const gutterY = hldTopY + 24;
+
+  out.push(
+    text(COLOR, {
+      id: "hld-hint-label",
+      x: gutterX,
+      y: gutterY,
+      width: 200,
+      height: 20,
+      text: "Simple Example",
+      fontSize: 14,
+      color: COLOR.exampleLabel,
+      locked: true,
+    }),
+  );
+
+  const rowY = gutterY + 30;
+  const node = (
+    id: string,
+    label: string,
+    x: number,
+    y: number,
+    bw: number,
+  ) => {
+    out.push(
+      rect(COLOR, {
+        id: `hld-hint-${id}-box`,
+        x,
+        y,
+        width: bw,
+        height: h,
+      }),
+    );
+    out.push(
+      text(COLOR, {
+        id: `hld-hint-${id}-label`,
+        x: x + 12,
+        y: y + h / 2 - 9,
+        width: bw - 24,
+        height: 18,
+        text: label,
+        fontSize: 12,
+        color: COLOR.exampleLabel,
+        locked: true,
+      }),
+    );
+    const lastBox = out[out.length - 2] as Record<string, unknown>;
+    lastBox.locked = true;
+    lastBox.strokeColor = COLOR.exampleLabel;
+  };
+
+  node("client", "Client", gutterX, rowY, w);
+  node("server", "Server", gutterX + w + gap, rowY, w);
+  node("db", "DB", gutterX + (w + gap) * 2, rowY, dbW);
+
+  // Connectors — short, almost-straight links between Client/Server/DB.
+  out.push(
+    arrow(COLOR, {
+      id: "hld-hint-arrow-cs",
+      startX: gutterX + w + 4,
+      startY: rowY + h / 2,
+      endX: gutterX + w + gap - 4,
+      endY: rowY + h / 2,
+      curvature: 0.04,
+    }),
+  );
+  out.push(
+    arrow(COLOR, {
+      id: "hld-hint-arrow-sd",
+      startX: gutterX + w + gap + w + 4,
+      startY: rowY + h / 2,
+      endX: gutterX + (w + gap) * 2 - 4,
+      endY: rowY + h / 2,
+      curvature: 0.04,
+    }),
+  );
+
+  // Curved arrow from the gutter back into HLD's right edge — matches the
+  // gutter→block arrows on the left side. Negative curvature flips the
+  // bow direction so a right-to-left arrow still arcs UPWARD.
+  out.push(
+    arrow(COLOR, {
+      id: "hld-hint-arrow-into-block",
+      startX: gutterX + w / 2,
+      startY: gutterY - 6,
+      endX: hldRightX + 6,
+      endY: hldTopY + 30,
+      curvature: -0.25,
+    }),
+  );
+
+  // Tone the hint down so the user's drawing pops over it.
+  for (const el of out) {
+    el.opacity = 55;
+  }
+  return out;
 }
 
 type Block = {
@@ -345,38 +529,43 @@ export function buildSeedScene(
   );
 
   const visibleStages: StageContent[] = question.stages;
-  // Map slug → exampleHints if defined on the StageContent (optional field).
+  // Map slug → exampleHints. Prefer per-question hints from the StageContent
+  // when the author wrote them; otherwise fall back to a generic Twitter
+  // analogue keyed by stage slug, so every question shows the gutter hints.
   const hintsBySlug = new Map<
     string,
     { headline: string; bullets: string[] } | undefined
   >();
   for (const s of visibleStages) {
-    const hint = (s as StageContent & {
+    const explicit = (s as StageContent & {
       exampleHints?: { headline: string; bullets: string[] };
     }).exampleHints;
-    hintsBySlug.set(s.slug, hint);
+    hintsBySlug.set(s.slug, explicit ?? FALLBACK_HINTS[s.slug]);
   }
 
   if (type === "system-design") {
-    // 2-column layout. Left column gets the Example gutter; right column does
-    // not (HLD/Deep-Dives are large free-draw areas).
+    // 2-column layout. Left column = scaffolded sections with Example gutter.
+    // Right column = HLD (single big free-draw area). Wider on both sides
+    // than before so users have real room to write.
     const LEFT_X = 400;
-    const LEFT_W = 540;
-    const RIGHT_X = LEFT_X + LEFT_W + 80;
-    const RIGHT_W = 660;
-    const TOP_Y = HEADER_Y + 110;
+    const LEFT_W = 820;
+    const RIGHT_X = LEFT_X + LEFT_W + 90;
+    const RIGHT_W = 1240;
+    // Extra breathing room between the question prompt header and the
+    // first anchor block so they don't visually fuse together.
+    const TOP_Y = HEADER_Y + 170;
     const GAP = 40;
 
-    const rightSlugs = new Set(["high-level-design", "deep-dives", "data-flow"]);
+    const rightSlugs = new Set(["high-level-design", "data-flow"]);
     const leftStages = visibleStages.filter((s) => !rightSlugs.has(s.slug));
     const rightStages = visibleStages.filter((s) => rightSlugs.has(s.slug));
 
-    const leftBlockH = 280;
+    const leftBlockH = 300;
     let y = TOP_Y;
     let isFirst = true;
     for (const s of leftStages) {
       elements.push(
-        ...emit(COLOR, 
+        ...emit(COLOR,
           {
             slug: s.slug,
             title: s.title,
@@ -395,12 +584,14 @@ export function buildSeedScene(
     }
 
     const totalLeftH = y - TOP_Y - GAP;
-    if (rightStages.length === 1) {
+    if (rightStages.length >= 1) {
+      // HLD spans the full right column.
+      const hld = rightStages[0];
       elements.push(
-        ...emit(COLOR, 
+        ...emit(COLOR,
           {
-            slug: rightStages[0].slug,
-            title: rightStages[0].title,
+            slug: hld.slug,
+            title: hld.title,
             x: RIGHT_X,
             y: TOP_Y,
             width: RIGHT_W,
@@ -410,51 +601,40 @@ export function buildSeedScene(
           false,
         ),
       );
-    } else if (rightStages.length > 1) {
-      const hldH = Math.max(totalLeftH * 0.65, 480);
+      // Add a "Simple Example" hint in a gutter to the RIGHT of HLD, with
+      // a curved arrow pointing back into the block (mirrors the left
+      // gutters on the LEFT-column sections).
       elements.push(
-        ...emit(COLOR, 
-          {
-            slug: rightStages[0].slug,
-            title: rightStages[0].title,
-            x: RIGHT_X,
-            y: TOP_Y,
-            width: RIGHT_W,
-            height: hldH,
-            showGutter: false,
-          },
-          false,
-        ),
+        ...buildHldHint(COLOR, RIGHT_X + RIGHT_W, TOP_Y),
       );
+
+      // Any remaining right-column stages (e.g., data-flow if a question
+      // includes it) stack below HLD.
       const remaining = rightStages.slice(1);
-      const remH = Math.max(
-        (totalLeftH - hldH - GAP) / Math.max(remaining.length, 1),
-        260,
-      );
-      let ry = TOP_Y + hldH + GAP;
+      let ry = TOP_Y + totalLeftH + GAP;
       for (const s of remaining) {
         elements.push(
-          ...emit(COLOR, 
+          ...emit(COLOR,
             {
               slug: s.slug,
               title: s.title,
               x: RIGHT_X,
               y: ry,
               width: RIGHT_W,
-              height: remH,
+              height: 280,
               showGutter: false,
             },
             false,
           ),
         );
-        ry += remH + GAP;
+        ry += 280 + GAP;
       }
     }
   } else {
     // LLD: single column, taller blocks for class-design / implementation.
     const X = 400;
     const W = 1200;
-    const TOP = HEADER_Y + 110;
+    const TOP = HEADER_Y + 170;
     const GAP = 40;
     let y = TOP;
     let isFirst = true;

@@ -77,17 +77,6 @@
         "label": "Boxes and Arrows",
         "description": "Walk through each API endpoint end-to-end."
       }
-    },
-    {
-      "slug": "deep-dives",
-      "title": "Deep Dives",
-      "minutes": 10,
-      "prompt": "Harden the design against the non-functional requirements. Address scaling, bottlenecks, edge cases, failure modes.",
-      "tip": {
-        "icon": "Search",
-        "label": "Address NFRs concretely",
-        "description": "Pick the riskiest two and walk through mechanisms."
-      }
     }
   ]
 }

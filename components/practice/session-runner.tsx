@@ -88,6 +88,17 @@ export function SessionRunner({
 
   const [stageMap, setStageMap] = useState<Record<string, StageState>>({});
   const [clarifyHistory, setClarifyHistory] = useState<ClarifyMessage[]>([]);
+  // Pre-question intro: on first hydrate, show the whole canvas as an
+  // overview and gate stage focus behind a Start click. Once started, the
+  // session behaves normally. We also persist this in sessionStorage so
+  // refreshing during the session doesn't replay the intro.
+  const introKey = `designdojo:started:${type}:${question.id}`;
+  const [started, setStarted] = useState<boolean>(false);
+  // Excalidraw's API arrives async (dynamic import + mount). Hold the focus
+  // effect until both data hydration and API mount have happened, otherwise
+  // scrollToContent runs against a null api and the canvas stays at the
+  // seed's default scroll/zoom.
+  const [whiteboardReady, setWhiteboardReady] = useState(false);
   const [initialCanvas, setInitialCanvas] = useState<WhiteboardScene | undefined>(
     undefined,
   );
@@ -141,6 +152,15 @@ export function SessionRunner({
           void saveCanvas(type, question.id, seed);
         }
       }
+      // Skip the intro for LLD (no canvas overview to show), or when the
+      // user has any progress on this question, or after a same-tab restart.
+      const hasProgress = Object.values(s?.stages ?? {}).some(
+        (st) => st?.feedback || (st?.answer?.trim().length ?? 0) > 0,
+      );
+      const startedFlag =
+        typeof window !== "undefined" &&
+        window.sessionStorage.getItem(introKey) === "1";
+      setStarted(isLLD || hasProgress || startedFlag);
       setHydrated(true);
     });
     const cfg = loadConfig();
@@ -155,7 +175,7 @@ export function SessionRunner({
     return () => {
       alive = false;
     };
-  }, [type, question.id, question, isLLD, themeKey]);
+  }, [type, question.id, question, isLLD, themeKey, introKey]);
 
   // Default URL to first stage
   useEffect(() => {
@@ -220,20 +240,34 @@ export function SessionRunner({
     [persist],
   );
 
-  // On stage change: focus + highlight on whichever surface is active.
+  // On stage change: focus + highlight on whichever surface is active. For
+  // the canvas surface, hold off until the user clicks Start so the initial
+  // view shows the entire canvas as an overview.
   useEffect(() => {
     if (!hydrated) return;
     if (isLLD) {
       const ed = codeEditorRef.current;
       ed?.setActiveStage(stage.title);
       ed?.focusStage(stage.title);
-    } else {
+      return;
+    }
+    if (!whiteboardReady) return;
+    if (started) {
       const id = `anchor-${stage.slug}`;
       const wb = whiteboardRef.current;
       wb?.setActiveAnchor(id);
       wb?.focusAnchor(id);
+    } else {
+      whiteboardRef.current?.fitAll();
     }
-  }, [stage.slug, stage.title, hydrated, isLLD]);
+  }, [stage.slug, stage.title, hydrated, isLLD, started, whiteboardReady]);
+
+  const handleStart = useCallback(() => {
+    setStarted(true);
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(introKey, "1");
+    }
+  }, [introKey]);
 
   // Canvas save (HLD)
   const canvasSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -360,6 +394,7 @@ export function SessionRunner({
       void saveCanvas(type, question.id, fresh);
     }
     setResetCounter((n) => n + 1);
+    setWhiteboardReady(false);
     toast.success(isLLD ? "Editor reset" : "Whiteboard reset");
   }, [isLLD, question, codeLanguage, type, themeKey]);
 
@@ -517,6 +552,8 @@ export function SessionRunner({
                 clarifyHistory={clarifyHistory}
                 onAppendClarify={handleAppendClarify}
                 onCollapse={() => promptPanelRef.current?.collapse()}
+                started={started}
+                onStart={handleStart}
               />
             ) : (
               <div className="grid h-full place-items-center text-sm text-muted-foreground">
@@ -566,6 +603,7 @@ export function SessionRunner({
                   ref={whiteboardRef}
                   initial={initialCanvas}
                   onChange={handleCanvasChange}
+                  onReady={() => setWhiteboardReady(true)}
                 />
               )
             ) : null}

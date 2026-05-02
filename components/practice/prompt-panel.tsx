@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, MessageSquareCheck, RefreshCw } from "lucide-react";
+import { ChevronLeft, MessageSquareCheck, Play, RefreshCw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +32,8 @@ export function PromptPanel({
   clarifyHistory,
   onAppendClarify,
   onCollapse,
+  started = true,
+  onStart,
 }: {
   stage: StageContent;
   question: Pick<Question, "title" | "prompt" | "type">;
@@ -50,6 +52,9 @@ export function PromptPanel({
   clarifyHistory: ClarifyMessage[];
   onAppendClarify: (msgs: ClarifyMessage[]) => void;
   onCollapse?: () => void;
+  /** False until the user clicks Start on the first stage. Defaults true. */
+  started?: boolean;
+  onStart?: () => void;
 }) {
   const [showSample, setShowSample] = useState(false);
   const [tab, setTab] = useState<"how" | "clarify">("how");
@@ -68,6 +73,44 @@ export function PromptPanel({
   useEffect(() => {
     if (feedback) setViewingFeedback(true);
   }, [feedback]);
+
+  if (!started && index === 0) {
+    return (
+      <div className="relative flex h-full flex-col items-center justify-center gap-5 px-2 text-center">
+        {onCollapse ? (
+          <button
+            type="button"
+            onClick={onCollapse}
+            aria-label="Collapse panel"
+            className="absolute -right-1 top-0 grid size-6 place-items-center rounded text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+          >
+            <ChevronLeft className="size-3.5" />
+          </button>
+        ) : null}
+        <Badge variant="outline" className="px-2.5 py-0.5 text-xs">
+          {questionTitle ?? question.title}
+        </Badge>
+        <h2 className="text-balance text-2xl font-semibold tracking-tight">
+          Ready to design {questionTitle ?? question.title}?
+        </h2>
+        <p className="max-w-sm text-balance text-sm text-muted-foreground">
+          Take a quick look at the whiteboard. When you&apos;re ready,
+          click Start to focus on the first section.
+        </p>
+        <Button
+          size="lg"
+          onClick={onStart}
+          className="bg-emerald-500 px-6 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+        >
+          <Play className="size-3.5" />
+          Start
+        </Button>
+        <span className="text-[11px] text-muted-foreground">
+          {total} stages · {stageMeta?.minutes ?? "~"} min for the first
+        </span>
+      </div>
+    );
+  }
 
   if (feedback && viewingFeedback) {
     return (

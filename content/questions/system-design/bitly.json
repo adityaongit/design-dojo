@@ -73,12 +73,23 @@
       "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
       "exampleHints": {
         "headline": "Example (Twitter):",
-        "bullets": ["User", "Tweet", "Follow"]
+        "bullets": [
+          "User",
+          "Tweet",
+          "Follow"
+        ]
       },
       "rubric": {
-        "must": ["URL mapping (short code ↔ long URL)"],
-        "should": ["User (if accounts are in scope)", "Click event (if analytics are in scope)"],
-        "avoid": ["Inventing entities the requirements don't justify"]
+        "must": [
+          "URL mapping (short code ↔ long URL)"
+        ],
+        "should": [
+          "User (if accounts are in scope)",
+          "Click event (if analytics are in scope)"
+        ],
+        "avoid": [
+          "Inventing entities the requirements don't justify"
+        ]
       },
       "sampleAnswer": "- URLMapping: shortCode → longURL, with optional expiration.\n- (Optional) User: owns mappings if accounts are in scope."
     },
@@ -135,28 +146,6 @@
         ]
       },
       "sampleAnswer": "Client → ALB → URL Service (stateless) → Cache (Redis) → DB (key-value, e.g. DynamoDB)\n\nShort code generation: 7-char base62 derived from a centrally-issued counter (e.g., a Redis INCR or a sharded counter service). Avoids collisions by construction.\n\nWrite path: API validates URL, allocates next counter, encodes to base62, writes mapping to DB, returns short URL.\n\nRead path: short code → cache (hit: return). Cache miss → DB → populate cache → 302 redirect."
-    },
-    {
-      "slug": "deep-dives",
-      "title": "Deep Dives",
-      "questionPrompt": "Harden the design against the non-functional requirements.",
-      "howToAnswer": "Pick 2-3 of: scaling reads, hot keys, ID-generation bottlenecks, abuse/spam, expiration, geo-distribution. Address each with a concrete mechanism.",
-      "rubric": {
-        "must": [
-          "Scaling reads (cache, replicas, or CDN)",
-          "Avoiding ID-generation bottleneck (sharded counter or pre-allocation batches)"
-        ],
-        "should": [
-          "Handling expired URLs (TTL job or lazy deletion)",
-          "Abuse prevention (rate limit on POST, URL reputation check)",
-          "Geo-distribution for global latency"
-        ],
-        "avoid": [
-          "Adding components without a justifying NFR",
-          "Hand-waving 'just add more servers'"
-        ]
-      },
-      "sampleAnswer": "Reads (~100:1): Redis cache in front of DB; CloudFront in front of Redis for the most popular short codes.\n\nID generation: a counter service hands out ranges of 1000 IDs per API instance, instances encode locally with base62. Eliminates per-write coordination.\n\nExpiration: lazy — on read, check expiresAt; if expired, return 410 and async-delete. Daily compaction job removes long-expired rows.\n\nAbuse: per-IP rate limit on POST + Google Safe Browsing check on the long URL before storing."
     }
   ]
 }

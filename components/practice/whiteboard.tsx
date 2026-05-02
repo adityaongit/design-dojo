@@ -24,6 +24,8 @@ export type WhiteboardScene = {
 export type WhiteboardHandle = {
   /** Scroll & zoom so the element with this id is centered. */
   focusAnchor: (anchorId: string) => void;
+  /** Fit the whole canvas in view (overview / pre-start). */
+  fitAll: () => void;
   /** Update strokes so only `anchorId` looks active; reset others. */
   setActiveAnchor: (anchorId: string) => void;
   /** Latest scene snapshot. */
@@ -50,8 +52,10 @@ export const Whiteboard = forwardRef<
   {
     initial?: WhiteboardScene;
     onChange?: (scene: WhiteboardScene) => void;
+    /** Fired when Excalidraw's imperative API is mounted and ready. */
+    onReady?: () => void;
   }
->(function Whiteboard({ initial, onChange }, ref) {
+>(function Whiteboard({ initial, onChange, onReady }, ref) {
   const { resolvedTheme } = useTheme();
   const [seed] = useState(initial);
   const apiRef = useRef<ApiShape | null>(null);
@@ -79,12 +83,37 @@ export const Whiteboard = forwardRef<
       focusAnchor(anchorId) {
         const api = apiRef.current;
         if (!api) return;
-        const els = api.getSceneElements();
-        const target = (els as Array<Record<string, unknown>>).find(
-          (e) => e.id === anchorId,
-        );
-        if (target)
-          api.scrollToContent(target, { fitToContent: true, animate: true, duration: 300 });
+        const els = api.getSceneElements() as Array<Record<string, unknown>>;
+        // Include the anchor + its example label/body/arrow so the gutter
+        // annotations on the LEFT don't get cropped when fitting the view.
+        const slug = anchorId.replace(/^anchor-/, "");
+        const related = els.filter((e) => {
+          const id = typeof e.id === "string" ? e.id : "";
+          return (
+            id === anchorId ||
+            id === `anchor-title-${slug}` ||
+            id === `example-label-${slug}` ||
+            id === `example-body-${slug}` ||
+            id === `example-arrow-${slug}`
+          );
+        });
+        if (related.length === 0) return;
+        api.scrollToContent(related, {
+          fitToContent: true,
+          animate: true,
+          duration: 300,
+        });
+      },
+      fitAll() {
+        const api = apiRef.current;
+        if (!api) return;
+        const els = api.getSceneElements() as Array<Record<string, unknown>>;
+        if (els.length === 0) return;
+        api.scrollToContent(els, {
+          fitToContent: true,
+          animate: true,
+          duration: 300,
+        });
       },
       setActiveAnchor(anchorId) {
         const api = apiRef.current;
@@ -99,7 +128,7 @@ export const Whiteboard = forwardRef<
             return {
               ...el,
               strokeColor: isActive ? COLOR.borderActive : COLOR.border,
-              strokeWidth: isActive ? 3 : 1.5,
+              strokeWidth: isActive ? 5 : 1.5,
             };
           },
         );
@@ -120,6 +149,7 @@ export const Whiteboard = forwardRef<
       <Excalidraw
         excalidrawAPI={(api) => {
           apiRef.current = api as unknown as ApiShape;
+          onReady?.();
         }}
         theme={resolvedTheme === "dark" ? "dark" : "light"}
         initialData={

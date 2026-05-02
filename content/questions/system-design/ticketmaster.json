@@ -64,8 +64,13 @@
           "SeatHold (transient)",
           "Booking / Ticket"
         ],
-        "should": ["User", "Payment"],
-        "avoid": ["Conflating Seat and Ticket"]
+        "should": [
+          "User",
+          "Payment"
+        ],
+        "avoid": [
+          "Conflating Seat and Ticket"
+        ]
       },
       "sampleAnswer": "- Event: name, datetime, venue.\n- Venue: contains a SeatMap (rows × columns, sections).\n- Seat: belongs to a SeatMap. State per Event: AVAILABLE / HELD / SOLD.\n- SeatHold: (seatId, eventId, userId, expiresAt). Transient.\n- Booking: persistent record of a sold seat (seatId, eventId, userId, paymentId)."
     },
@@ -114,28 +119,6 @@
         ]
       },
       "sampleAnswer": "Reads (browsing, seat availability): served from Redis with the seat-state map per event. Background job rebuilds from authoritative DB on changes. CDN in front for /events.\n\nWrites (reserve): client POSTs to Reservation Service. Service runs a Redis Lua script that atomically checks each seat is AVAILABLE, marks them HELD with the holdId, and sets a 10-min TTL on the hold key. If the script fails on any seat, the entire reserve fails atomically. Successful holds are also written-through to the authoritative Postgres for durability.\n\nExpiration: Redis TTL fires → a sweeper picks up expired holds and flips the seat back to AVAILABLE in both Redis and Postgres.\n\nPurchase: POST /holds/:id/purchase enqueues a payment job (idempotent). Worker calls payment provider, on success flips seat from HELD to SOLD and writes a Booking row."
-    },
-    {
-      "slug": "deep-dives",
-      "title": "Deep Dives",
-      "questionPrompt": "Harden against flash sales: 1M users hitting reserve in the same second.",
-      "howToAnswer": "Pick: virtual waiting room, sharding, hot-event isolation, bot defense.",
-      "rubric": {
-        "must": [
-          "A waiting-room / queue mechanism to admit users at a controlled rate",
-          "How to scale Redis under contention (shard by event-section)"
-        ],
-        "should": [
-          "Bot defense (CAPTCHA, BotID, rate-limit per account)",
-          "Hot-event isolation (dedicated capacity)",
-          "Backpressure / graceful degradation"
-        ],
-        "avoid": [
-          "Auto-scaling Redis without acknowledging that all writes for one event hit the same shard",
-          "Treating every event as flash-sale (most aren't)"
-        ]
-      },
-      "sampleAnswer": "Waiting room: when load on an event exceeds a threshold, the API returns a queue token instead of letting the user reach reserve. The token gives a position; clients long-poll. The queue admits N users per second based on the reservation throughput we can sustain. Users who try to skip the queue are 401'd.\n\nSharding: Redis is keyed by `event_id:section_id` so contention is bounded — a single section's seats live on one shard, but a venue with 50 sections spreads across 50 shards. Cross-section reservations are rare but handled by a 2-phase reserve (reserve per section, rollback if any failed).\n\nBots: Cloudflare Turnstile / BotID at the edge, plus per-account rate limit (e.g., 4 reserves/min). Account age + payment-method age are signals for ML-based scoring.\n\nHot-event isolation: known high-demand events (Taylor Swift, World Cup) get dedicated Redis clusters and their own API pool so they can't starve normal traffic."
     }
   ]
 }
