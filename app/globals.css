@@ -129,3 +129,27 @@
     @apply font-sans;
   }
 }
+
+/*
+ * Excalidraw chrome trim — match HelloInterview's stripped-down look.
+ * UIOptions covers the canvas-actions menu items, but we still need CSS to
+ * hide the menu hamburger, library button, footer (zoom/help/undo-redo),
+ * and the "To move canvas..." help text.
+ */
+.excalidraw .App-menu__left,
+.excalidraw .App-menu_top__left,
+.excalidraw .Island.App-menu__left,
+.excalidraw .layer-ui__wrapper__top-left,
+.excalidraw .library-button,
+.excalidraw .dropdown-menu,
+.excalidraw [data-testid="main-menu-trigger"],
+.excalidraw .ToolIcon[aria-label*="Library"],
+.excalidraw .HintViewer,
+.excalidraw .help-icon,
+.excalidraw button[aria-label="Help"],
+.excalidraw .footer-center,
+.excalidraw .zoom-actions,
+.excalidraw .undo-redo-buttons,
+.excalidraw .reset-zoom-button {
+  display: none !important;
+}

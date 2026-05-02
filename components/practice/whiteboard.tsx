@@ -114,6 +114,22 @@ export const Whiteboard = forwardRef<
               }
             : undefined
         }
+        UIOptions={{
+          canvasActions: {
+            changeViewBackgroundColor: false,
+            clearCanvas: false,
+            export: false,
+            loadScene: false,
+            saveAsImage: false,
+            saveToActiveFile: false,
+            toggleTheme: false,
+          },
+          tools: { image: false },
+        }}
+        renderTopRightUI={() => null}
+        zenModeEnabled={false}
+        gridModeEnabled={false}
+        viewModeEnabled={false}
         onChange={(elements, appState) => {
           const scene: WhiteboardScene = {
             elements,
