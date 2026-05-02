@@ -16,6 +16,11 @@ import {
 import { clearConfig } from "@/lib/storage/keys";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import { StageNav } from "@/components/practice/stage-nav";
 import { PromptPanel } from "@/components/practice/prompt-panel";
 import { KeyDialog } from "@/components/practice/key-dialog";
@@ -417,64 +422,78 @@ export function SessionRunner({
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[420px_1fr]">
-        <aside className="flex min-h-0 flex-col overflow-hidden border-r border-border/40 bg-background p-5">
-          {hydrated ? (
-            <PromptPanel
-              stage={stage}
-              question={{
-                title: question.title,
-                prompt: question.prompt,
-                type,
-              }}
-              index={activeIndex}
-              total={stages.length}
-              onSubmit={handleSubmit}
-              onTryAgain={handleTryAgain}
-              onNext={() => goToStage(activeIndex + 1)}
-              feedback={stageState?.feedback}
-              isGrading={isGrading}
-              hasNext={activeIndex < stages.length - 1}
-              questionTitle={question.title}
-              stageMeta={stageMeta}
-              surface={isLLD ? "code" : "canvas"}
-              byok={byok}
-              clarifyHistory={clarifyHistory}
-              onAppendClarify={handleAppendClarify}
-            />
-          ) : (
-            <div className="grid h-full place-items-center text-sm text-muted-foreground">
-              Loading session…
-            </div>
-          )}
-        </aside>
-        <main className="relative min-w-0 p-3">
-          {stageMeta ? (
-            <div className="pointer-events-none absolute left-6 top-6 z-10">
-              <StageTimer
-                stageSlug={stage.slug}
-                targetMinutes={stageMeta.minutes}
-              />
-            </div>
-          ) : null}
-          {hydrated ? (
-            isLLD ? (
-              <CodeEditor
-                ref={codeEditorRef}
-                initial={initialCode}
-                language={codeLanguage}
-                onChange={handleCodeChange}
+      <ResizablePanelGroup
+        direction="horizontal"
+        autoSaveId="designdojo:practice-split"
+        className="min-h-0 flex-1"
+      >
+        <ResizablePanel
+          defaultSize={28}
+          minSize={20}
+          maxSize={50}
+          className="flex min-h-0 flex-col overflow-hidden bg-background"
+        >
+          <aside className="flex min-h-0 flex-1 flex-col overflow-hidden p-5">
+            {hydrated ? (
+              <PromptPanel
+                stage={stage}
+                question={{
+                  title: question.title,
+                  prompt: question.prompt,
+                  type,
+                }}
+                index={activeIndex}
+                total={stages.length}
+                onSubmit={handleSubmit}
+                onTryAgain={handleTryAgain}
+                onNext={() => goToStage(activeIndex + 1)}
+                feedback={stageState?.feedback}
+                isGrading={isGrading}
+                hasNext={activeIndex < stages.length - 1}
+                questionTitle={question.title}
+                stageMeta={stageMeta}
+                surface={isLLD ? "code" : "canvas"}
+                byok={byok}
+                clarifyHistory={clarifyHistory}
+                onAppendClarify={handleAppendClarify}
               />
             ) : (
-              <Whiteboard
-                ref={whiteboardRef}
-                initial={initialCanvas}
-                onChange={handleCanvasChange}
-              />
-            )
-          ) : null}
-        </main>
-      </div>
+              <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                Loading session…
+              </div>
+            )}
+          </aside>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={72} minSize={50}>
+          <main className="relative h-full min-w-0 p-3">
+            {stageMeta ? (
+              <div className="pointer-events-none absolute right-3 top-6 z-10">
+                <StageTimer
+                  stageSlug={stage.slug}
+                  targetMinutes={stageMeta.minutes}
+                />
+              </div>
+            ) : null}
+            {hydrated ? (
+              isLLD ? (
+                <CodeEditor
+                  ref={codeEditorRef}
+                  initial={initialCode}
+                  language={codeLanguage}
+                  onChange={handleCodeChange}
+                />
+              ) : (
+                <Whiteboard
+                  ref={whiteboardRef}
+                  initial={initialCanvas}
+                  onChange={handleCanvasChange}
+                />
+              )
+            ) : null}
+          </main>
+        </ResizablePanel>
+      </ResizablePanelGroup>
       <KeyDialog
         open={keyDialogOpen}
         onOpenChange={setKeyDialogOpen}
