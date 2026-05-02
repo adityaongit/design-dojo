@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { loadReadFlags } from "@/lib/storage/library";
+import { useCallback, useEffect, useState } from "react";
+import { loadReadFlags, onReadFlagsChange, type ReadFlags } from "@/lib/storage/library";
 import type {
   Difficulty,
   QuestionIndexEntry,
@@ -28,18 +28,19 @@ export function QuestionStats({
   type: QuestionType;
   questions: QuestionIndexEntry[];
 }) {
-  const [readCount, setReadCount] = useState<number | null>(null);
+  const [flags, setFlags] = useState<ReadFlags>({});
   const total = questions.length;
 
-  useEffect(() => {
-    void loadReadFlags(type).then((flags) => {
-      const ids = new Set(questions.map((q) => q.id));
-      const n = Object.keys(flags).filter((id) => ids.has(id) && flags[id]).length;
-      setReadCount(n);
-    });
-  }, [type, questions]);
+  const refresh = useCallback(() => {
+    void loadReadFlags(type).then(setFlags);
+  }, [type]);
 
-  const completed = readCount ?? 0;
+  useEffect(() => {
+    refresh();
+    return onReadFlagsChange(refresh);
+  }, [refresh]);
+
+  const completed = questions.filter((q) => flags[q.id]).length;
   const pct = total > 0 ? completed / total : 0;
   const r = 38;
   const C = 2 * Math.PI * r;
@@ -91,6 +92,7 @@ export function QuestionStats({
       <ul className="flex flex-col gap-1.5 text-xs">
         {DIFFS.map((d) => {
           const items = questions.filter((q) => q.difficulty === d);
+          const done = items.filter((q) => flags[q.id]).length;
           return (
             <li
               key={d}
@@ -105,7 +107,7 @@ export function QuestionStats({
                 {DIFF_LABEL[d]}
               </span>
               <span className="font-mono tabular-nums text-muted-foreground">
-                0/{items.length}
+                {done}/{items.length}
               </span>
             </li>
           );
