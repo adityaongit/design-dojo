@@ -43,11 +43,9 @@ export function buildSeedCode(
   question: Question,
   lang: CodeLanguage,
 ): string {
-  const c = COMMENT[lang];
+  // Title + prompt live in the editor header (rendered outside the code
+  // buffer), so the seed buffer starts straight at the first stage section.
   const out: string[] = [];
-  out.push(`${c} ${question.title}`);
-  out.push(`${c} ${question.prompt.replace(/\n/g, ` `)}`);
-  out.push("");
 
   for (const stage of question.stages) {
     out.push(header(lang, stage.title));

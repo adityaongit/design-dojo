@@ -38,6 +38,7 @@ import {
   type CodeEditorHandle,
 } from "@/components/practice/code-editor";
 import { CodeLanguagePicker } from "@/components/practice/code-language-picker";
+import { EditorHeader } from "@/components/practice/editor-header";
 import { extractAnswerForStage } from "@/lib/excalidraw/extract";
 import { extractAnswerForStageInCode } from "@/lib/code/extract";
 import { buildSeedCode, transformLineComments, type CodeLanguage } from "@/lib/code/seed";
@@ -503,16 +504,21 @@ export function SessionRunner({
           </button>
         ) : null}
         <ResizablePanel defaultSize={72} minSize={50}>
-          <main className="relative h-full min-w-0 p-3">
+          <main className="relative flex h-full min-w-0 flex-col gap-2 p-3">
             {hydrated ? (
               isLLD ? (
-                <CodeEditor
-                  key={codeLanguage}
-                  ref={codeEditorRef}
-                  initial={initialCode}
-                  language={codeLanguage}
-                  onChange={handleCodeChange}
-                />
+                <>
+                  <EditorHeader title={question.title} prompt={question.prompt} />
+                  <div className="flex-1 min-h-0">
+                    <CodeEditor
+                      key={codeLanguage}
+                      ref={codeEditorRef}
+                      initial={initialCode}
+                      language={codeLanguage}
+                      onChange={handleCodeChange}
+                    />
+                  </div>
+                </>
               ) : (
                 <Whiteboard
                   ref={whiteboardRef}
