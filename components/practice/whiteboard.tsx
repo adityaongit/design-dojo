@@ -58,21 +58,14 @@ export const Whiteboard = forwardRef<
   const sceneRef = useRef<WhiteboardScene | undefined>(initial);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Excalidraw v0.18 hides the "Keep selected tool active" lock toggle by
-  // default and our CSS `!important` doesn't beat its layer. Force-set
-  // inline display on the lock element once it mounts. Also pull the
-  // toolbar wrapper into a true center via flex.
+  // Excalidraw v0.18's lock toggle is hidden in compact toolbar layouts;
+  // its inline rule beats our stylesheet, so re-apply inline on mount.
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
     const apply = () => {
       const lock = root.querySelector<HTMLElement>(".ToolIcon__lock");
       if (lock) lock.style.cssText = "display: inline-flex !important;";
-      const top = root.querySelector<HTMLElement>(".FixedSideContainer_side_top");
-      if (top) {
-        top.style.display = "flex";
-        top.style.justifyContent = "center";
-      }
     };
     apply();
     const obs = new MutationObserver(apply);

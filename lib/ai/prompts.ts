@@ -1,5 +1,38 @@
 import type { Question, StageContent } from "@/lib/content/schema";
 
+export type AskArticleContext = {
+  title: string;
+  type: "system-design" | "low-level-design";
+  difficulty: string;
+  askedAt: string[];
+  raw: string;
+};
+
+export function buildAskSystemPrompt(article: AskArticleContext): string {
+  const askedAt = article.askedAt.length
+    ? `Reportedly asked at: ${article.askedAt.join(", ")}.`
+    : "";
+  // Cap article body to keep prompt size sane on long write-ups.
+  const body = article.raw.length > 12000
+    ? article.raw.slice(0, 12000) + "\n\n[…truncated for context window]"
+    : article.raw;
+  return [
+    "You are a senior staff engineer helping a candidate study a specific interview problem.",
+    "Stay grounded in the article below — your answers should reference its framing, tradeoffs, and numbers.",
+    "If the candidate asks something outside the article's scope, you can answer briefly but say it isn't covered in this write-up.",
+    "Be concise. Default to under 150 words unless the question genuinely needs more. Use markdown for code/lists when helpful.",
+    "Never roleplay as the interviewer giving them the problem — they're studying, not interviewing.",
+    "",
+    `# Problem: ${article.title} (${article.type}, ${article.difficulty})`,
+    askedAt,
+    "",
+    "# Article",
+    body,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export function buildClarifySystemPrompt(question: {
   title: string;
   prompt: string;

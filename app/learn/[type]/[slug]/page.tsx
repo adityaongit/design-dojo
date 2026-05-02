@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
 import { ArticleToc } from "@/components/article-toc";
+import { AskAiPanel } from "@/components/ai/ask-ai-panel";
 import { listArticleSlugs, loadArticle } from "@/lib/content/articles";
 import type { QuestionType } from "@/lib/content/schema";
 import { cn } from "@/lib/utils";
@@ -44,8 +45,11 @@ export default async function Page({ params }: { params: Promise<Params> }) {
   return (
     <Suspense fallback={null}>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-24 sm:px-6">
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-10">
+      <main
+        data-ask-ai-shrink
+        className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-24 sm:px-6"
+      >
+        <div data-ask-ai-flat className="lg:grid lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-10">
         <div className="min-w-0">
         <div className="mb-6">
           <Button asChild variant="ghost" size="sm" className="-ml-3">
@@ -138,13 +142,22 @@ export default async function Page({ params }: { params: Promise<Params> }) {
           </Button>
         </footer>
         </div>
-        <aside className="hidden lg:block">
+        <aside data-ask-ai-hide className="hidden lg:block">
           <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pt-1">
             <ArticleToc entries={article.toc} />
           </div>
         </aside>
         </div>
       </main>
+      <AskAiPanel
+        article={{
+          title: article.meta.title,
+          type,
+          difficulty: article.meta.difficulty,
+          askedAt: article.meta.askedAt,
+          raw: article.raw,
+        }}
+      />
     </Suspense>
   );
 }

@@ -132,15 +132,9 @@
 
 /*
  * Excalidraw chrome trim — match HelloInterview's stripped-down look.
- * UIOptions covers the canvas-actions menu items, but we still need CSS to
- * hide the menu hamburger, library button, footer (zoom/help/undo-redo),
- * and the "To move canvas..." help text.
+ * Hide the menu hamburger, library/sidebar triggers, hint text, and
+ * unwanted shape tools. Keep the bottom footer (zoom + undo/redo).
  */
-.excalidraw .App-menu__left,
-.excalidraw .App-menu_top__left,
-.excalidraw .Island.App-menu__left,
-.excalidraw .layer-ui__wrapper__top-left,
-.excalidraw .layer-ui__wrapper__top-right,
 .excalidraw .sidebar-trigger,
 .excalidraw .library-button,
 .excalidraw .dropdown-menu,
@@ -160,25 +154,51 @@
 }
 
 /*
- * Force-show the lock toggle (`Keep selected tool active after drawing`).
- * Excalidraw v0.18 hides this in compact toolbar layouts by default; we
- * want it visible like HelloInterview's reference toolbar.
+ * Force-show the lock toggle. Excalidraw v0.18 hides it in compact
+ * layouts; we want it like HelloInterview's reference toolbar.
  */
 .excalidraw .ToolIcon__lock {
   display: inline-flex !important;
 }
 
 /*
- * Center the shape toolbar in the available canvas width. Excalidraw's
- * default layout treats the top region as a flex row; with our left and
- * right slots hidden we need to explicitly center the remaining slot.
+ * Center the shape toolbar. In v0.18 the top wrapper is `.App-top-bar`
+ * (the same element as `.FixedSideContainer_side_top`). Force a centered
+ * flex column so the shapes nav sits in the middle of the canvas.
  */
-.excalidraw .FixedSideContainer_side_top {
+.excalidraw .App-top-bar {
   display: flex !important;
-  justify-content: center !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
 }
-.excalidraw .App-menu_top {
-  justify-content: center !important;
-  margin: 0 auto !important;
-  max-width: max-content !important;
+
+/*
+ * Make sure the bottom footer (zoom + undo/redo) is visible. Excalidraw
+ * renders it by default but our prior CSS hid sibling wrappers; this is
+ * an explicit safeguard.
+ */
+.excalidraw .layer-ui__wrapper__footer,
+.excalidraw .App-menu_bottom,
+.excalidraw .layer-ui__wrapper__footer-left {
+  display: flex !important;
+}
+
+/*
+ * Ask AI side panel: when open, compress the article content so the panel
+ * doesn't cover the page. Inline split-view, not a modal overlay.
+ */
+[data-ask-ai-shrink] {
+  transition: padding-right 200ms ease;
+}
+@media (min-width: 1024px) {
+  body[data-ask-ai-open="true"] [data-ask-ai-shrink] {
+    padding-right: 26rem;
+  }
+  body[data-ask-ai-open="true"] [data-ask-ai-hide] {
+    display: none;
+  }
+  body[data-ask-ai-open="true"] [data-ask-ai-flat] {
+    display: block;
+  }
 }
