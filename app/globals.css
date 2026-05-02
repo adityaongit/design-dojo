@@ -149,24 +149,36 @@
 .excalidraw .HintViewer,
 .excalidraw .help-icon,
 .excalidraw button[aria-label="Help"],
-.excalidraw .footer-center,
-.excalidraw .zoom-actions,
-.excalidraw .undo-redo-buttons,
-.excalidraw .reset-zoom-button,
-/* Trim shape toolbar to: lock / hand / select / rect / diamond /
+/* Trim the shape toolbar to: lock / hand / select / rect / diamond /
    ellipse / arrow / line / text. Drop pencil (Draw), eraser, and
-   the "More tools" picker — they create more confusion than value
-   for system-design diagramming. */
+   the "More tools" picker. */
 .excalidraw label[title*="Draw" i],
 .excalidraw label[title*="Eraser" i],
 .excalidraw .App-toolbar__extra-tools-trigger,
-.excalidraw button[aria-label*="More tools" i] {
+.excalidraw button[title*="More tools" i] {
   display: none !important;
 }
 
-/* Center the shape toolbar within the top region. With both top-left
-   and top-right wrappers hidden, the default flex container leaves
-   the toolbar aligned to its starting edge. Re-flex it to center. */
+/*
+ * Force-show the lock toggle (`Keep selected tool active after drawing`).
+ * Excalidraw v0.18 hides this in compact toolbar layouts by default; we
+ * want it visible like HelloInterview's reference toolbar.
+ */
+.excalidraw .ToolIcon__lock {
+  display: inline-flex !important;
+}
+
+/*
+ * Center the shape toolbar in the available canvas width. Excalidraw's
+ * default layout treats the top region as a flex row; with our left and
+ * right slots hidden we need to explicitly center the remaining slot.
+ */
+.excalidraw .FixedSideContainer_side_top {
+  display: flex !important;
+  justify-content: center !important;
+}
 .excalidraw .App-menu_top {
   justify-content: center !important;
+  margin: 0 auto !important;
+  max-width: max-content !important;
 }

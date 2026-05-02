@@ -39,11 +39,7 @@ export function ClarifyChat({
       toast.warning("Set up your AI provider first.");
       return;
     }
-    const userMsg: ClarifyMessage = {
-      role: "user",
-      text,
-      ts: Date.now(),
-    };
+    const userMsg: ClarifyMessage = { role: "user", text, ts: Date.now() };
     onAppend([userMsg]);
     setInput("");
     setBusy(true);
@@ -57,13 +53,7 @@ export function ClarifyChat({
         })),
         message: text,
       });
-      onAppend([
-        {
-          role: "assistant",
-          text: reply,
-          ts: Date.now(),
-        },
-      ]);
+      onAppend([{ role: "assistant", text: reply, ts: Date.now() }]);
     } catch (e) {
       toast.error("Couldn't reach the interviewer", {
         description: (e as Error).message,
@@ -76,10 +66,7 @@ export function ClarifyChat({
 
   return (
     <div className="flex h-full flex-col gap-3">
-      <div
-        ref={scrollRef}
-        className="flex-1 space-y-3 overflow-auto pr-1"
-      >
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-auto pr-1">
         {history.length === 0 ? (
           <EmptyState />
         ) : (

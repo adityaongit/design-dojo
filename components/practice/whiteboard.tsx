@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import {
   forwardRef,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
@@ -55,6 +56,29 @@ export const Whiteboard = forwardRef<
   const [seed] = useState(initial);
   const apiRef = useRef<ApiShape | null>(null);
   const sceneRef = useRef<WhiteboardScene | undefined>(initial);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Excalidraw v0.18 hides the "Keep selected tool active" lock toggle by
+  // default and our CSS `!important` doesn't beat its layer. Force-set
+  // inline display on the lock element once it mounts. Also pull the
+  // toolbar wrapper into a true center via flex.
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+    const apply = () => {
+      const lock = root.querySelector<HTMLElement>(".ToolIcon__lock");
+      if (lock) lock.style.cssText = "display: inline-flex !important;";
+      const top = root.querySelector<HTMLElement>(".FixedSideContainer_side_top");
+      if (top) {
+        top.style.display = "flex";
+        top.style.justifyContent = "center";
+      }
+    };
+    apply();
+    const obs = new MutationObserver(apply);
+    obs.observe(root, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, []);
 
   useImperativeHandle(
     ref,
@@ -96,7 +120,10 @@ export const Whiteboard = forwardRef<
   );
 
   return (
-    <div className="size-full overflow-hidden rounded-lg border border-border/60 bg-background">
+    <div
+      ref={containerRef}
+      className="size-full overflow-hidden rounded-lg border border-border/60 bg-background"
+    >
       <Excalidraw
         excalidrawAPI={(api) => {
           apiRef.current = api as unknown as ApiShape;
