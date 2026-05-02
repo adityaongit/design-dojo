@@ -75,3 +75,26 @@ export function isStageHeader(line: string, title: string): boolean {
     "i",
   ).test(line);
 }
+
+/**
+ * Translates line-leading comment markers from one language style to another
+ * (`//` ↔ `#`). Preserves indentation. Only matches comments at the start of
+ * a line, so inline `let x = 1 // foo` stays put. Used when the user
+ * switches language in the editor — we update our seeded headers without
+ * touching the answers they typed.
+ */
+export function transformLineComments(
+  code: string,
+  from: CodeLanguage,
+  to: CodeLanguage,
+): string {
+  const fromC = COMMENT[from];
+  const toC = COMMENT[to];
+  if (fromC === toC) return code;
+  const escaped = fromC.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`^(\\s*)${escaped}`, "");
+  return code
+    .split("\n")
+    .map((line) => (re.test(line) ? line.replace(re, `$1${toC}`) : line))
+    .join("\n");
+}

@@ -40,7 +40,7 @@ import {
 import { CodeLanguagePicker } from "@/components/practice/code-language-picker";
 import { extractAnswerForStage } from "@/lib/excalidraw/extract";
 import { extractAnswerForStageInCode } from "@/lib/code/extract";
-import { buildSeedCode, type CodeLanguage } from "@/lib/code/seed";
+import { buildSeedCode, transformLineComments, type CodeLanguage } from "@/lib/code/seed";
 import {
   loadSession,
   saveCanvas,
@@ -248,21 +248,20 @@ export function SessionRunner({
 
   const handleLanguageChange = useCallback(
     (lang: CodeLanguage) => {
-      // Only re-seed if user hasn't typed anything beyond the seed.
-      const current = codeRef.current;
-      const wasSeed = current === initialCode;
+      const prev = codeLanguage;
+      if (prev === lang) return;
+      // Pull current buffer from the editor (user's freshest edits), fall back
+      // to our ref if the editor isn't mounted yet.
+      const current = codeEditorRef.current?.getValue() ?? codeRef.current;
+      // Translate line-leading comment markers (// ↔ #) so the seeded headers
+      // match the new language. User code on non-comment lines is untouched.
+      const translated = transformLineComments(current, prev, lang);
+      codeRef.current = translated;
+      setInitialCode(translated);
       setCodeLanguage(lang);
-      if (wasSeed) {
-        const fresh = buildSeedCode(question, lang);
-        codeRef.current = fresh;
-        setInitialCode(fresh);
-        void saveCode(type, question.id, fresh, lang);
-      } else {
-        // Just persist language; keep existing code.
-        void saveCode(type, question.id, current, lang);
-      }
+      void saveCode(type, question.id, translated, lang);
     },
-    [initialCode, question, type],
+    [codeLanguage, type, question.id],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -508,6 +507,7 @@ export function SessionRunner({
             {hydrated ? (
               isLLD ? (
                 <CodeEditor
+                  key={codeLanguage}
                   ref={codeEditorRef}
                   initial={initialCode}
                   language={codeLanguage}
