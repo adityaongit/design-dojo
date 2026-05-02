@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Sparkles, Code2 } from "lucide-react";
+import { Code2, Moon, Sun, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
@@ -12,7 +12,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="group flex items-center gap-2">
           <span className="grid size-7 place-items-center rounded-md bg-gradient-to-br from-emerald-400 to-teal-600 text-background shadow-sm">
-            <Sparkles className="size-4" strokeWidth={2.5} />
+            <Workflow className="size-4" strokeWidth={2.5} />
           </span>
           <span className="text-sm font-semibold tracking-tight">
             DesignDojo
