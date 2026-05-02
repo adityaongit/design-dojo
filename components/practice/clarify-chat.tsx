@@ -93,7 +93,7 @@ export function ClarifyChat({
         ) : null}
       </div>
 
-      <div className="rounded-md border border-border/60 bg-card/30 p-2">
+      <div className="space-y-2 rounded-lg border border-border/60 bg-card/30 p-2">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -105,10 +105,10 @@ export function ClarifyChat({
           }}
           placeholder="Ask a clarifying question…"
           rows={2}
-          className="min-h-0 resize-none border-0 bg-transparent p-1 text-sm shadow-none focus-visible:ring-0"
+          className="min-h-[44px] resize-none border-0 bg-transparent px-2 py-1 text-sm shadow-none focus-visible:ring-0"
         />
-        <div className="flex items-center justify-between">
-          <span className="ml-1 inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2">
+          <span className="inline-flex items-center gap-1 px-1 text-[11px] text-muted-foreground">
             <CornerDownLeft className="size-3" />
             Enter to send
           </span>
@@ -117,7 +117,7 @@ export function ClarifyChat({
             size="sm"
             onClick={send}
             disabled={busy || input.trim().length === 0}
-            className="h-7"
+            className="h-7 bg-emerald-500 px-3 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-600"
           >
             <Send className="size-3" />
             Send
