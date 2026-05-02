@@ -121,9 +121,19 @@ export function PromptPanel({
         onValueChange={(v) => setTab(v as "how" | "clarify")}
         className="flex flex-1 flex-col overflow-hidden"
       >
-        <TabsList className="w-fit">
-          <TabsTrigger value="how">How To Answer</TabsTrigger>
-          <TabsTrigger value="clarify">Ask Clarifying Questions</TabsTrigger>
+        <TabsList className="w-full justify-start gap-1 rounded-none border-b border-border/40 bg-transparent p-0">
+          <TabsTrigger
+            value="how"
+            className="relative rounded-none border-b-2 border-transparent bg-transparent px-3 py-2 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-emerald-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground"
+          >
+            How To Answer
+          </TabsTrigger>
+          <TabsTrigger
+            value="clarify"
+            className="relative rounded-none border-b-2 border-transparent bg-transparent px-3 py-2 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-emerald-500 data-[state=active]:bg-transparent data-[state=active]:text-foreground"
+          >
+            Ask Clarifying Questions
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent
