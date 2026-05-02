@@ -444,7 +444,7 @@ export function SessionRunner({
         <ResizablePanel
           ref={promptPanelRef}
           defaultSize={30}
-          minSize={26}
+          minSize={30}
           maxSize={50}
           collapsible
           collapsedSize={0}

@@ -2,13 +2,17 @@ import { SiteHeader } from "@/components/site-header";
 import { QuestionTable } from "@/components/question-table";
 import { QuestionStats } from "@/components/question-stats";
 import { loadIndex } from "@/lib/content";
+import { listArticleSlugs } from "@/lib/content/articles";
 
 export const metadata = {
   title: "System Design Practice — DesignDojo",
 };
 
 export default async function Page() {
-  const index = await loadIndex();
+  const [index, articleSlugs] = await Promise.all([
+    loadIndex(),
+    listArticleSlugs("system-design"),
+  ]);
   const items = index["system-design"];
   return (
     <>
@@ -27,7 +31,11 @@ export default async function Page() {
           </div>
           <QuestionStats type="system-design" questions={items} />
         </div>
-        <QuestionTable type="system-design" questions={items} />
+        <QuestionTable
+          type="system-design"
+          questions={items}
+          articleSlugs={articleSlugs}
+        />
       </main>
     </>
   );

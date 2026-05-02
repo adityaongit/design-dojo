@@ -6,9 +6,9 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUp,
+  BookOpen,
   CheckCircle2,
   Circle,
-  FileText,
   Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,10 +36,13 @@ type SortDir = "asc" | "desc";
 export function QuestionTable({
   type,
   questions,
+  articleSlugs = [],
 }: {
   type: QuestionType;
   questions: QuestionIndexEntry[];
+  articleSlugs?: string[];
 }) {
+  const articleSet = useMemo(() => new Set(articleSlugs), [articleSlugs]);
   const [readFlags, setReadFlagsState] = useState<ReadFlags>({});
   const [sortKey, setSortKey] = useState<SortKey>("difficulty");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -107,7 +110,7 @@ export function QuestionTable({
         </TableHeader>
         <TableBody>
           {groupedByDifficulty
-            ? renderGrouped(rows, type, readFlags, toggleRead)
+            ? renderGrouped(rows, type, readFlags, toggleRead, articleSet)
             : rows.map((q) => (
                 <Row
                   key={q.id}
@@ -115,6 +118,7 @@ export function QuestionTable({
                   type={type}
                   read={!!readFlags[q.id]}
                   onToggleRead={toggleRead}
+                  hasArticle={articleSet.has(q.id)}
                 />
               ))}
         </TableBody>
@@ -128,6 +132,7 @@ function renderGrouped(
   type: QuestionType,
   readFlags: ReadFlags,
   toggleRead: (id: string) => void,
+  articleSet: Set<string>,
 ) {
   const buckets = new Map<Difficulty, QuestionIndexEntry[]>();
   for (const d of ORDER) buckets.set(d, []);
@@ -180,6 +185,7 @@ function renderGrouped(
           type={type}
           read={!!readFlags[q.id]}
           onToggleRead={toggleRead}
+          hasArticle={articleSet.has(q.id)}
         />,
       );
     }
@@ -239,13 +245,16 @@ function Row({
   type,
   read,
   onToggleRead,
+  hasArticle,
 }: {
   q: QuestionIndexEntry;
   type: QuestionType;
   read: boolean;
   onToggleRead: (id: string) => void;
+  hasArticle: boolean;
 }) {
   const href = `/practice/${type}/${q.id}`;
+  const articleHref = `/learn/${type}/${q.id}`;
   return (
     <TableRow className={cn(!q.ready && "opacity-60")}>
       <TableCell className="font-medium">
@@ -259,8 +268,14 @@ function Row({
         </span>
       </TableCell>
       <TableCell className="text-center">
-        {q.ready ? (
-          <FileText className="mx-auto size-4 text-muted-foreground" />
+        {hasArticle ? (
+          <Link
+            href={articleHref}
+            aria-label={`Read the ${q.title} write-up`}
+            className="inline-flex"
+          >
+            <BookOpen className="size-4 text-emerald-500 hover:text-emerald-600" />
+          </Link>
         ) : (
           <span className="text-muted-foreground/40">—</span>
         )}

@@ -2,13 +2,17 @@ import { SiteHeader } from "@/components/site-header";
 import { QuestionTable } from "@/components/question-table";
 import { QuestionStats } from "@/components/question-stats";
 import { loadIndex } from "@/lib/content";
+import { listArticleSlugs } from "@/lib/content/articles";
 
 export const metadata = {
   title: "Low-Level Design Practice — DesignDojo",
 };
 
 export default async function Page() {
-  const index = await loadIndex();
+  const [index, articleSlugs] = await Promise.all([
+    loadIndex(),
+    listArticleSlugs("low-level-design"),
+  ]);
   const items = index["low-level-design"];
   return (
     <>
@@ -26,7 +30,11 @@ export default async function Page() {
           </div>
           <QuestionStats type="low-level-design" questions={items} />
         </div>
-        <QuestionTable type="low-level-design" questions={items} />
+        <QuestionTable
+          type="low-level-design"
+          questions={items}
+          articleSlugs={articleSlugs}
+        />
       </main>
     </>
   );
