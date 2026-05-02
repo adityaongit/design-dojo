@@ -152,6 +152,21 @@
 .excalidraw .footer-center,
 .excalidraw .zoom-actions,
 .excalidraw .undo-redo-buttons,
-.excalidraw .reset-zoom-button {
+.excalidraw .reset-zoom-button,
+/* Trim shape toolbar to: lock / hand / select / rect / diamond /
+   ellipse / arrow / line / text. Drop pencil (Draw), eraser, and
+   the "More tools" picker — they create more confusion than value
+   for system-design diagramming. */
+.excalidraw label[title*="Draw" i],
+.excalidraw label[title*="Eraser" i],
+.excalidraw .App-toolbar__extra-tools-trigger,
+.excalidraw button[aria-label*="More tools" i] {
   display: none !important;
+}
+
+/* Center the shape toolbar within the top region. With both top-left
+   and top-right wrappers hidden, the default flex container leaves
+   the toolbar aligned to its starting edge. Re-flex it to center. */
+.excalidraw .App-menu_top {
+  justify-content: center !important;
 }
