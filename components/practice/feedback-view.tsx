@@ -183,7 +183,7 @@ function ReportBadFeedback({
       `**Verdict:** ${feedback.verdict} (${feedback.score}/100)`,
     ].join("\n");
     const params = new URLSearchParams({ title, body, labels: "bad-feedback" });
-    return `https://github.com/your-org/designdojo/issues/new?${params.toString()}`;
+    return `https://github.com/adityaongit/design-dojo/issues/new?${params.toString()}`;
   })();
   return (
     <a
