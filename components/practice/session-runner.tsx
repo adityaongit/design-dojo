@@ -362,7 +362,7 @@ export function SessionRunner({
           <Button
             asChild
             size="sm"
-            className="h-8 gap-1.5 bg-orange-500 px-3 text-white hover:bg-orange-600 dark:bg-orange-500 dark:hover:bg-orange-600"
+            className="h-8 gap-1.5 bg-[#f97557] px-3 text-white shadow-sm hover:bg-[#e26346] dark:bg-[#f97557] dark:hover:bg-[#e26346]"
           >
             <Link href={`/practice/${type}`}>
               <LogOut className="size-3.5" />
