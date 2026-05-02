@@ -2,17 +2,16 @@
 
 import { Info } from "lucide-react";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 /**
  * Compact title bar that sits above the Monaco editor on LLD routes.
- * Shows "Design {Title}" + an info icon whose tooltip contains the full
- * question prompt — so the candidate sees the brief without it eating
- * lines in the code buffer.
+ * Shows "Design {Title}" + an info icon. Clicking the icon opens a
+ * popover with the full question prompt — popover, not tooltip, so the
+ * user has to opt in (no hover-jitter).
  */
 export function EditorHeader({
   title,
@@ -26,28 +25,28 @@ export function EditorHeader({
       <h2 className="text-sm font-semibold tracking-tight">
         Design {title}
       </h2>
-      <TooltipProvider delayDuration={120}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label="Show question prompt"
-              className="grid size-5 place-items-center rounded-full text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
-            >
-              <Info className="size-3.5" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent
-            side="bottom"
-            align="start"
-            sideOffset={8}
-            className="max-w-md flex-col items-start gap-1 px-3.5 py-2.5 text-balance leading-relaxed"
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label="Show question prompt"
+            className="grid size-5 place-items-center rounded-full text-muted-foreground hover:bg-foreground/10 hover:text-foreground data-[state=open]:bg-foreground/10 data-[state=open]:text-foreground"
           >
-            <div className="text-sm font-semibold">{title}</div>
-            <p className="text-xs opacity-80">{prompt}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+            <Info className="size-3.5" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          side="bottom"
+          align="start"
+          sideOffset={10}
+          className="w-[min(28rem,calc(100vw-2rem))] space-y-2 border-border/60 p-4 shadow-lg"
+        >
+          <h3 className="text-base font-semibold tracking-tight">{title}</h3>
+          <p className="text-sm leading-relaxed text-foreground/80">
+            {prompt}
+          </p>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
