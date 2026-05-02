@@ -140,6 +140,8 @@
 .excalidraw .App-menu_top__left,
 .excalidraw .Island.App-menu__left,
 .excalidraw .layer-ui__wrapper__top-left,
+.excalidraw .layer-ui__wrapper__top-right,
+.excalidraw .sidebar-trigger,
 .excalidraw .library-button,
 .excalidraw .dropdown-menu,
 .excalidraw [data-testid="main-menu-trigger"],
