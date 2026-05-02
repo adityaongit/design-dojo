@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Calendar, Clock, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
+import { ArticleToc } from "@/components/article-toc";
 import { listArticleSlugs, loadArticle } from "@/lib/content/articles";
 import type { QuestionType } from "@/lib/content/schema";
 import { cn } from "@/lib/utils";
@@ -43,7 +44,9 @@ export default async function Page({ params }: { params: Promise<Params> }) {
   return (
     <Suspense fallback={null}>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-6 pt-8 pb-24">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-24 sm:px-6">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-10">
+        <div className="min-w-0">
         <div className="mb-6">
           <Button asChild variant="ghost" size="sm" className="-ml-3">
             <Link href={`/practice/${type}`}>
@@ -134,6 +137,13 @@ export default async function Page({ params }: { params: Promise<Params> }) {
             </Link>
           </Button>
         </footer>
+        </div>
+        <aside className="hidden lg:block">
+          <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pt-1">
+            <ArticleToc entries={article.toc} />
+          </div>
+        </aside>
+        </div>
       </main>
     </Suspense>
   );

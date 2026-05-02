@@ -20,11 +20,43 @@ export const ArticleFrontmatter = z.object({
 
 export type ArticleFrontmatter = z.infer<typeof ArticleFrontmatter>;
 
+export type TocEntry = { id: string; text: string; depth: 2 | 3 };
+
 export type Article = {
   meta: ArticleFrontmatter;
   html: string;
   raw: string;
+  toc: TocEntry[];
 };
+
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/<[^>]+>/g, "")
+    .replace(/[^\p{Letter}\p{Number}\s-]/gu, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+function addHeadingIds(html: string): { html: string; toc: TocEntry[] } {
+  const toc: TocEntry[] = [];
+  const seen = new Map<string, number>();
+  const out = html.replace(
+    /<h([23])>([\s\S]*?)<\/h\1>/g,
+    (_m, level: string, inner: string) => {
+      const text = inner.replace(/<[^>]+>/g, "").trim();
+      const base = slugify(text) || "section";
+      const n = (seen.get(base) ?? 0) + 1;
+      seen.set(base, n);
+      const id = n === 1 ? base : `${base}-${n}`;
+      const depth = Number(level) as 2 | 3;
+      toc.push({ id, text, depth });
+      return `<h${level} id="${id}">${inner}</h${level}>`;
+    },
+  );
+  return { html: out, toc };
+}
 
 const ROOT = path.join(process.cwd(), "content", "articles");
 
@@ -38,10 +70,12 @@ export async function loadArticle(
     const { data, content } = matter(raw);
     const meta = ArticleFrontmatter.parse(data);
     const processed = await remark().use(remarkHtml).process(content);
+    const { html, toc } = addHeadingIds(String(processed));
     return {
       meta,
-      html: String(processed),
+      html,
       raw: content,
+      toc,
     };
   } catch {
     return null;
