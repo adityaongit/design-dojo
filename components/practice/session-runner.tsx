@@ -17,11 +17,13 @@ import {
 import { clearConfig } from "@/lib/storage/keys";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ChevronRight } from "lucide-react";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import type { ImperativePanelHandle } from "react-resizable-panels";
 import { StageNav } from "@/components/practice/stage-nav";
 import { PromptPanel } from "@/components/practice/prompt-panel";
 import { KeyDialog } from "@/components/practice/key-dialog";
@@ -99,6 +101,8 @@ export function SessionRunner({
   const codeRef = useRef<string>("");
   const whiteboardRef = useRef<WhiteboardHandle | null>(null);
   const codeEditorRef = useRef<CodeEditorHandle | null>(null);
+  const promptPanelRef = useRef<ImperativePanelHandle | null>(null);
+  const [promptCollapsed, setPromptCollapsed] = useState(false);
 
   // Pending patches keyed by stage slug, flushed on a debounce.
   const pendingRef = useRef<Record<string, Partial<StageState>>>({});
@@ -429,12 +433,17 @@ export function SessionRunner({
       <ResizablePanelGroup
         direction="horizontal"
         autoSaveId="designdojo:practice-split"
-        className="min-h-0 flex-1"
+        className="relative min-h-0 flex-1"
       >
         <ResizablePanel
+          ref={promptPanelRef}
           defaultSize={28}
           minSize={20}
           maxSize={50}
+          collapsible
+          collapsedSize={0}
+          onCollapse={() => setPromptCollapsed(true)}
+          onExpand={() => setPromptCollapsed(false)}
           className="flex min-h-0 flex-col overflow-hidden bg-background"
         >
           <aside className="flex min-h-0 flex-1 flex-col overflow-hidden p-5">
@@ -460,6 +469,7 @@ export function SessionRunner({
                 byok={byok}
                 clarifyHistory={clarifyHistory}
                 onAppendClarify={handleAppendClarify}
+                onCollapse={() => promptPanelRef.current?.collapse()}
               />
             ) : (
               <div className="grid h-full place-items-center text-sm text-muted-foreground">
@@ -469,6 +479,24 @@ export function SessionRunner({
           </aside>
         </ResizablePanel>
         <ResizableHandle withHandle />
+        {promptCollapsed ? (
+          <button
+            type="button"
+            onClick={() => promptPanelRef.current?.expand()}
+            className="absolute left-0 top-1/2 z-20 -translate-y-1/2 rounded-r-md border border-l-0 border-border/60 bg-background py-3 px-1.5 text-xs font-medium text-muted-foreground shadow-sm hover:text-foreground"
+            aria-label="Show questions panel"
+          >
+            <span className="flex flex-col items-center gap-1.5">
+              <ChevronRight className="size-3.5" />
+              <span
+                className="tracking-wide"
+                style={{ writingMode: "vertical-rl" }}
+              >
+                Questions
+              </span>
+            </span>
+          </button>
+        ) : null}
         <ResizablePanel defaultSize={72} minSize={50}>
           <main className="relative h-full min-w-0 p-3">
             {stageMeta ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { ChevronLeft, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,6 +31,7 @@ export function PromptPanel({
   byok,
   clarifyHistory,
   onAppendClarify,
+  onCollapse,
 }: {
   stage: StageContent;
   question: Pick<Question, "title" | "prompt" | "type">;
@@ -48,6 +49,7 @@ export function PromptPanel({
   byok: ByokConfig | null;
   clarifyHistory: ClarifyMessage[];
   onAppendClarify: (msgs: ClarifyMessage[]) => void;
+  onCollapse?: () => void;
 }) {
   const [showSample, setShowSample] = useState(false);
   const [tab, setTab] = useState<"how" | "clarify">("how");
@@ -85,7 +87,17 @@ export function PromptPanel({
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-hidden">
+    <div className="relative flex h-full flex-col gap-4 overflow-hidden">
+      {onCollapse ? (
+        <button
+          type="button"
+          onClick={onCollapse}
+          aria-label="Collapse panel"
+          className="absolute -right-1 top-0 grid size-6 place-items-center rounded text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+        >
+          <ChevronLeft className="size-3.5" />
+        </button>
+      ) : null}
       <header className="flex flex-col items-center gap-3 text-center">
         <Badge variant="outline" className="px-2.5 py-0.5 text-xs">
           {stage.title}
