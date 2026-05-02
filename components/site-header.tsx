@@ -33,9 +33,6 @@ export function SiteHeader() {
           <span className="text-sm font-semibold tracking-tight">
             DesignDojo
           </span>
-          <span className="hidden rounded-md border border-border/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-block">
-            beta
-          </span>
         </Link>
 
         <nav className="flex items-center gap-1 text-sm">

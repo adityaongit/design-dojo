@@ -29,13 +29,6 @@ import type {
 } from "@/lib/content/schema";
 
 const ORDER: Difficulty[] = ["easy", "medium", "hard"];
-const RANK: Record<Difficulty, number> = { easy: 0, medium: 1, hard: 2 };
-
-const DIFF_TEXT: Record<Difficulty, string> = {
-  easy: "text-emerald-500",
-  medium: "text-amber-500",
-  hard: "text-rose-500",
-};
 
 type SortKey = "difficulty" | "title" | "read";
 type SortDir = "asc" | "desc";
@@ -97,15 +90,7 @@ export function QuestionTable({
               sortKey={sortKey}
               dir={sortDir}
               onClick={headerClick}
-              className="w-[44%]"
-            />
-            <SortHead
-              label="Difficulty"
-              k="difficulty"
-              sortKey={sortKey}
-              dir={sortDir}
-              onClick={headerClick}
-              className="w-[100px]"
+              className="w-[52%]"
             />
             <TableHead className="w-[90px] text-center">Write-Up</TableHead>
             <SortHead
@@ -163,7 +148,7 @@ function renderGrouped(
         key={`hd-${d}`}
         className="border-t-2 border-border/40 bg-muted/40 hover:bg-muted/40"
       >
-        <TableCell colSpan={5} className="py-3">
+        <TableCell colSpan={4} className="py-3">
           <div className="flex items-center justify-between text-xs">
             <span className="inline-flex items-center gap-2.5">
               <span className={cn("h-3 w-1 rounded-sm", stripe)} />
@@ -261,8 +246,6 @@ function Row({
   onToggleRead: (id: string) => void;
 }) {
   const href = `/practice/${type}/${q.id}`;
-  // RANK is used by the difficulty sort comparator above (kept for type safety)
-  void RANK;
   return (
     <TableRow className={cn(!q.ready && "opacity-60")}>
       <TableCell className="font-medium">
@@ -273,11 +256,6 @@ function Row({
               soon
             </span>
           ) : null}
-        </span>
-      </TableCell>
-      <TableCell>
-        <span className={cn("font-medium capitalize", DIFF_TEXT[q.difficulty])}>
-          {q.difficulty}
         </span>
       </TableCell>
       <TableCell className="text-center">
