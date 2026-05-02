@@ -41,68 +41,76 @@ export function QuestionStats({
 
   const completed = readCount ?? 0;
   const pct = total > 0 ? completed / total : 0;
-  const r = 36;
+  const r = 38;
   const C = 2 * Math.PI * r;
   const dash = `${C * pct} ${C}`;
 
   return (
-    <div className="flex items-center gap-6">
-      <div className="relative grid size-24 place-items-center">
+    <div className="flex items-center gap-7">
+      {/* Ring */}
+      <div className="relative grid size-24 shrink-0 place-items-center">
         <svg
-          width={88}
-          height={88}
           viewBox="0 0 88 88"
-          className="-rotate-90"
+          className="absolute inset-0 size-full -rotate-90"
+          aria-hidden
         >
           <circle
             cx={44}
             cy={44}
             r={r}
             fill="none"
-            stroke="currentColor"
-            strokeOpacity={0.1}
+            className="stroke-foreground/10"
             strokeWidth={6}
           />
-          <circle
-            cx={44}
-            cy={44}
-            r={r}
-            fill="none"
-            stroke="rgb(16,185,129)"
-            strokeWidth={6}
-            strokeLinecap="round"
-            strokeDasharray={dash}
-            className="transition-all duration-300"
-          />
+          {pct > 0 ? (
+            <circle
+              cx={44}
+              cy={44}
+              r={r}
+              fill="none"
+              className="stroke-emerald-500"
+              strokeWidth={6}
+              strokeLinecap="butt"
+              strokeDasharray={dash}
+              style={{ transition: "stroke-dasharray 300ms" }}
+            />
+          ) : null}
         </svg>
-        <div className="absolute inset-0 grid place-items-center text-center leading-tight">
-          <div>
-            <div className="font-mono text-base font-semibold tabular-nums">
-              {completed}/{total}
-            </div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              Completed
-            </div>
+        <div className="relative flex flex-col items-center leading-tight">
+          <div className="font-mono text-lg font-semibold tabular-nums tracking-tight">
+            {completed}
+            <span className="text-muted-foreground">/{total}</span>
+          </div>
+          <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Completed
           </div>
         </div>
       </div>
-      <div className="flex flex-col gap-2 text-xs">
+
+      {/* Per-difficulty */}
+      <ul className="flex flex-col gap-1.5 text-xs">
         {DIFFS.map((d) => {
           const items = questions.filter((q) => q.difficulty === d);
           return (
-            <div key={d} className="flex items-baseline gap-2">
+            <li
+              key={d}
+              className="flex items-baseline justify-between gap-3 min-w-[110px]"
+            >
               <span
-                className={cn("font-semibold uppercase tracking-wider", DIFF_COLOR[d])}
+                className={cn(
+                  "font-semibold uppercase tracking-wider",
+                  DIFF_COLOR[d],
+                )}
               >
                 {DIFF_LABEL[d]}
               </span>
               <span className="font-mono tabular-nums text-muted-foreground">
                 0/{items.length}
               </span>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 }
