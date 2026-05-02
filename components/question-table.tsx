@@ -152,12 +152,33 @@ function renderGrouped(
     const items = buckets.get(d) ?? [];
     if (!items.length) continue;
     const ready = items.filter((q) => q.ready).length;
+    const stripe =
+      d === "easy"
+        ? "bg-emerald-500"
+        : d === "medium"
+          ? "bg-amber-500"
+          : "bg-rose-500";
     out.push(
-      <TableRow key={`hd-${d}`} className="bg-muted/30 hover:bg-muted/30">
-        <TableCell colSpan={5} className="py-2">
-          <div className="flex items-baseline justify-between text-xs">
-            <span className="font-semibold uppercase tracking-wider text-muted-foreground">
-              {d}
+      <TableRow
+        key={`hd-${d}`}
+        className="border-t-2 border-border/40 bg-muted/40 hover:bg-muted/40"
+      >
+        <TableCell colSpan={5} className="py-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="inline-flex items-center gap-2.5">
+              <span className={cn("h-3 w-1 rounded-sm", stripe)} />
+              <span
+                className={cn(
+                  "font-semibold uppercase tracking-wider",
+                  d === "easy"
+                    ? "text-emerald-500"
+                    : d === "medium"
+                      ? "text-amber-500"
+                      : "text-rose-500",
+                )}
+              >
+                {d}
+              </span>
             </span>
             <span className="text-muted-foreground">
               {ready} of {items.length} ready
