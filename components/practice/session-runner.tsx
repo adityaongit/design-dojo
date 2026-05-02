@@ -423,8 +423,8 @@ export function SessionRunner({
       </header>
 
       <ResizablePanelGroup
-        orientation="horizontal"
-        autoSave="designdojo:practice-split"
+        direction="horizontal"
+        autoSaveId="designdojo:practice-split"
         className="min-h-0 flex-1"
       >
         <ResizablePanel
