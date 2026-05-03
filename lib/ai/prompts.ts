@@ -53,6 +53,72 @@ export function buildClarifySystemPrompt(question: {
   ].join("\n");
 }
 
+export type TutorContext = {
+  question: {
+    title: string;
+    prompt: string;
+    type: "system-design" | "low-level-design";
+    difficulty: string;
+  };
+  stage?: {
+    slug: string;
+    title: string;
+    questionPrompt: string;
+    rubric?: { must?: string[]; should?: string[]; avoid?: string[] };
+  };
+  userAnswer?: string;
+  canvasText?: string;
+};
+
+export function buildTutorSystemPrompt(ctx: TutorContext): string {
+  const { question, stage, userAnswer, canvasText } = ctx;
+  const cap = (s: string, n: number) =>
+    s.length > n ? s.slice(0, n) + "\n…[truncated]" : s;
+
+  const stageBlock = stage
+    ? [
+        "",
+        `# Active stage: ${stage.title}`,
+        `Stage prompt: ${stage.questionPrompt}`,
+        stage.rubric?.must?.length
+          ? `Must cover: ${stage.rubric.must.join("; ")}`
+          : "",
+        stage.rubric?.should?.length
+          ? `Should cover: ${stage.rubric.should.join("; ")}`
+          : "",
+        stage.rubric?.avoid?.length
+          ? `Avoid: ${stage.rubric.avoid.join("; ")}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : "";
+
+  const answerBlock = userAnswer?.trim()
+    ? `\n# Candidate's current draft (this stage)\n${cap(userAnswer.trim(), 4000)}`
+    : "";
+
+  const canvasBlock = canvasText?.trim()
+    ? `\n# Whiteboard (compact text extract)\n${cap(canvasText.trim(), 4000)}`
+    : "";
+
+  return [
+    "You are a patient, sharp tutor coaching a candidate through a specific design interview problem.",
+    "Stay grounded in the question and the candidate's current work below — reference their actual draft and canvas when reviewing.",
+    "Be concise. Default to under 180 words unless the question genuinely needs more. Use markdown lists/code where it helps.",
+    "If the candidate hasn't decided something yet, ask a sharpening question instead of just answering for them.",
+    "Don't grade with a verdict — that's a separate flow. Coach.",
+    "",
+    `# Problem: ${question.title} (${question.type}, ${question.difficulty})`,
+    `Prompt: ${cap(question.prompt, 4000)}`,
+    stageBlock,
+    answerBlock,
+    canvasBlock,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export type GradePromptInput = {
   question: Pick<Question, "title" | "prompt" | "type">;
   stage: StageContent;

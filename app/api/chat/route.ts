@@ -3,7 +3,11 @@ import { z } from "zod";
 import { chat, toServerSentEventsResponse } from "@tanstack/ai";
 import { adapterFor } from "@/lib/ai/tanstack-adapter";
 import { isLocalhost } from "@/lib/ai/types";
-import { buildClarifySystemPrompt, buildAskSystemPrompt } from "@/lib/ai/prompts";
+import {
+  buildAskSystemPrompt,
+  buildClarifySystemPrompt,
+  buildTutorSystemPrompt,
+} from "@/lib/ai/prompts";
 
 export const runtime = "nodejs";
 
@@ -33,6 +37,32 @@ const ClarifyContext = z.object({
   }),
 });
 
+const TutorContext = z.object({
+  kind: z.literal("tutor"),
+  question: z.object({
+    title: z.string(),
+    prompt: z.string(),
+    type: z.enum(["system-design", "low-level-design"]),
+    difficulty: z.string(),
+  }),
+  stage: z
+    .object({
+      slug: z.string(),
+      title: z.string(),
+      questionPrompt: z.string(),
+      rubric: z
+        .object({
+          must: z.array(z.string()).optional(),
+          should: z.array(z.string()).optional(),
+          avoid: z.array(z.string()).optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+  userAnswer: z.string().optional(),
+  canvasText: z.string().optional(),
+});
+
 // useChat (TanStack AI) ships UIMessage shape: { role, parts: [TextPart, …] }.
 // Earlier ModelMessage shape ({ role, content }) is also tolerated for non-
 // useChat callers.
@@ -46,12 +76,13 @@ const InboundMessage = z.object({
 
 const Body = z.object({
   byok: Byok,
-  context: z.discriminatedUnion("kind", [AskContext, ClarifyContext]),
+  context: z.discriminatedUnion("kind", [AskContext, ClarifyContext, TutorContext]),
   messages: z.array(InboundMessage),
 });
 
 function systemPromptFor(context: z.infer<typeof Body>["context"]): string {
   if (context.kind === "ask") return buildAskSystemPrompt(context.article);
+  if (context.kind === "tutor") return buildTutorSystemPrompt(context);
   return buildClarifySystemPrompt(context.question);
 }
 
