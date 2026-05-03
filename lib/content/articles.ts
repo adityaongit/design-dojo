@@ -97,3 +97,21 @@ export async function listArticleSlugs(
     return [];
   }
 }
+
+export async function listArticleSummaries(
+  type: QuestionType,
+): Promise<ArticleFrontmatter[]> {
+  const slugs = await listArticleSlugs(type);
+  const out: ArticleFrontmatter[] = [];
+  for (const slug of slugs) {
+    try {
+      const file = path.join(ROOT, type, `${slug}.md`);
+      const raw = await fs.readFile(file, "utf8");
+      const { data } = matter(raw);
+      out.push(ArticleFrontmatter.parse(data));
+    } catch {
+      // skip malformed
+    }
+  }
+  return out;
+}
