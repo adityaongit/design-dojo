@@ -7,6 +7,7 @@ import {
   Lightbulb,
   RotateCcw,
   Sparkles,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ export function FeedbackView({
   onBack,
   onTryAgain,
   onNext,
+  onFinish,
 }: {
   feedback: Feedback;
   questionTitle?: string;
@@ -55,6 +57,8 @@ export function FeedbackView({
   onBack: () => void;
   onTryAgain: () => void;
   onNext: () => void;
+  /** Shown on the final item — opens the session report. */
+  onFinish?: () => void;
 }) {
   const v = VERDICT[feedback.verdict];
 
@@ -132,6 +136,15 @@ export function FeedbackView({
           <Button size="sm" variant="ghost" onClick={onNext}>
             Next stage
             <ArrowRight className="size-3.5" />
+          </Button>
+        ) : onFinish ? (
+          <Button
+            size="sm"
+            onClick={onFinish}
+            className="bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+          >
+            <Trophy className="size-3.5" />
+            View report
           </Button>
         ) : null}
       </div>

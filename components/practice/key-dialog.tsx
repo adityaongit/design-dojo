@@ -1,7 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, ExternalLink, KeyRound, Server, Sparkles, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ExternalLink,
+  KeyRound,
+  Server,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -124,79 +138,99 @@ export function KeyDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="size-4" />
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <KeyRound className="size-4 text-emerald-500" />
             Bring your own AI key
           </DialogTitle>
-          <DialogDescription>
-            Your key stays in your browser. We forward it once per grade
-            request to the provider you pick — never store, log, or proxy it
-            elsewhere.
+          <DialogDescription className="text-xs leading-relaxed">
+            Your key stays in your browser — we forward each request straight
+            to your provider, never store, log, or proxy it.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as "preset" | "custom")}>
-          <TabsList>
-            <TabsTrigger value="preset">
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setTab(v as "preset" | "custom")}
+          className="gap-3"
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="preset" className="gap-1.5">
               <Sparkles className="size-3.5" />
               Quick start
             </TabsTrigger>
-            <TabsTrigger value="custom">
+            <TabsTrigger value="custom" className="gap-1.5">
               <Server className="size-3.5" />
-              Custom OpenAI-compatible
+              Custom
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="preset" className="space-y-4">
-            <ul className="grid grid-cols-2 gap-2">
-              {PRESETS.map((p) => {
-                const active = selected?.id === p.id;
-                return (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onClick={() => choose(p)}
-                      className={cn(
-                        "w-full rounded-md border p-3 text-left text-xs transition-all",
-                        active
-                          ? "border-emerald-500/60 bg-emerald-500/5 ring-1 ring-emerald-500/30"
-                          : "border-border/60 hover:border-border bg-card/30",
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold">{p.label}</span>
-                        {active ? (
-                          <CheckCircle2 className="size-3.5 text-emerald-500" />
-                        ) : null}
-                      </div>
-                      {p.costNote ? (
-                        <div className="mt-0.5 text-[11px] text-muted-foreground">
-                          {p.costNote}
+          <TabsContent value="preset" className="space-y-3 mt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Provider</Label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex w-full min-w-0 items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-left text-sm transition-colors hover:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {selected?.label ?? "Pick a provider"}
+                    </span>
+                    <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  sideOffset={4}
+                  className="w-[--radix-dropdown-menu-trigger-width] min-w-[260px]"
+                >
+                  {PRESETS.map((p) => {
+                    const active = selected?.id === p.id;
+                    return (
+                      <DropdownMenuItem
+                        key={p.id}
+                        onSelect={() => choose(p)}
+                        className="flex items-start justify-between gap-3 py-2"
+                      >
+                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <span className="text-sm font-medium">
+                            {p.label}
+                          </span>
+                          {p.costNote ? (
+                            <span className="text-[11px] leading-snug text-muted-foreground">
+                              {p.costNote}
+                            </span>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                        {active ? (
+                          <Check className="mt-1 size-3.5 shrink-0 text-emerald-500" />
+                        ) : null}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             {selected ? (
-              <div className="space-y-3 rounded-md border border-border/60 bg-card/30 p-3">
+              <div className="space-y-3 pt-1">
                 {!selected.keyless ? (
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="api-key">API key</Label>
+                      <Label htmlFor="api-key" className="text-xs">
+                        API key
+                      </Label>
                       {selected.keyUrl ? (
                         <a
                           href={selected.keyUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] text-emerald-500 hover:underline"
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 hover:underline dark:text-emerald-400"
                         >
                           Get a key
-                          <ExternalLink className="size-3" />
+                          <ExternalLink className="size-2.5" />
                         </a>
                       ) : null}
                     </div>
@@ -208,76 +242,97 @@ export function KeyDialog({
                       onChange={(e) => setApiKey(e.target.value)}
                       autoComplete="off"
                       spellCheck={false}
+                      className="font-mono"
                     />
                   </div>
                 ) : (
-                  <div className="rounded-md bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
+                  <div className="rounded-md border border-emerald-500/25 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
                     No API key needed — make sure {selected.label} is running
-                    locally first.
+                    locally before grading.
                   </div>
                 )}
                 <div className="space-y-1.5">
-                  <Label htmlFor="model">Model</Label>
+                  <Label htmlFor="model" className="text-xs">
+                    Model
+                  </Label>
                   <Input
                     id="model"
                     value={modelId}
                     onChange={(e) => setModelId(e.target.value)}
                     placeholder={selected.defaultModel}
                     spellCheck={false}
+                    className="font-mono"
                   />
                 </div>
               </div>
             ) : null}
           </TabsContent>
 
-          <TabsContent value="custom" className="space-y-3">
+          <TabsContent value="custom" className="space-y-3 mt-2">
             <div className="space-y-1.5">
-              <Label htmlFor="base">Base URL (OpenAI-compatible)</Label>
+              <Label htmlFor="base" className="text-xs">
+                Base URL
+              </Label>
               <Input
                 id="base"
                 placeholder="https://api.example.com/v1"
                 value={customBaseURL}
                 onChange={(e) => setCustomBaseURL(e.target.value)}
                 spellCheck={false}
+                className="font-mono"
               />
               <p className="text-[11px] text-muted-foreground">
                 Anything that speaks the OpenAI Chat Completions spec — vLLM,
-                LiteLLM proxy, your own gateway, etc.
+                LiteLLM, your own gateway.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="custom-key">API key (skip for localhost)</Label>
-                <Input
-                  id="custom-key"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  autoComplete="off"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="custom-model">Model id</Label>
-                <Input
-                  id="custom-model"
-                  value={modelId}
-                  onChange={(e) => setModelId(e.target.value)}
-                  placeholder="gpt-4o-mini"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="custom-key" className="text-xs">
+                API key{" "}
+                <span className="font-normal text-muted-foreground">
+                  (skip for localhost)
+                </span>
+              </Label>
+              <Input
+                id="custom-key"
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                autoComplete="off"
+                placeholder="sk-..."
+                className="font-mono"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="custom-model" className="text-xs">
+                Model
+              </Label>
+              <Input
+                id="custom-model"
+                value={modelId}
+                onChange={(e) => setModelId(e.target.value)}
+                placeholder="gpt-4o-mini"
+                className="font-mono"
+              />
             </div>
           </TabsContent>
         </Tabs>
 
-        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs">
           <input
+            id="remember"
             type="checkbox"
             checked={remember}
             onChange={(e) => setRemember(e.target.checked)}
-            className="size-3.5 accent-emerald-500"
+            className="size-3.5 rounded border-input accent-emerald-500"
           />
-          Remember on this device (otherwise key clears when the tab closes)
-        </label>
+          <Label
+            htmlFor="remember"
+            className="cursor-pointer text-xs font-normal text-muted-foreground"
+          >
+            Remember on this device (otherwise clears when this tab closes)
+          </Label>
+        </div>
 
         {error ? (
           <div className="rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-600 dark:text-rose-300">
@@ -285,16 +340,26 @@ export function KeyDialog({
           </div>
         ) : null}
 
-        <DialogFooter className="flex flex-row items-center justify-between sm:justify-between">
+        <DialogFooter className="flex flex-row items-center justify-between gap-2 sm:justify-between">
           {existing ? (
-            <Button variant="ghost" size="sm" onClick={onForget}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onForget}
+              className="text-muted-foreground hover:text-foreground"
+            >
               <Trash2 className="size-3.5" />
               Forget key
             </Button>
           ) : (
             <span />
           )}
-          <Button onClick={onSave}>Save & continue</Button>
+          <Button
+            onClick={onSave}
+            className="bg-emerald-500 px-5 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+          >
+            Save & continue
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

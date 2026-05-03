@@ -31,6 +31,7 @@ type EditorInstance = {
       options: {
         isWholeLine?: boolean;
         linesDecorationsClassName?: string;
+        className?: string;
       };
     }>,
   ) => string[];
@@ -130,7 +131,8 @@ export const CodeEditor = forwardRef<
               },
               options: {
                 isWholeLine: true,
-                linesDecorationsClassName: "designdojo-active-stage",
+                className: "designdojo-active-stage-line",
+                linesDecorationsClassName: "designdojo-active-stage-bar",
               },
             },
           ],
@@ -167,13 +169,28 @@ export const CodeEditor = forwardRef<
         onChange={(v) => onChange(v ?? "")}
       />
       <style jsx global>{`
-        .designdojo-active-stage {
-          background: linear-gradient(
-            to right,
-            rgba(16, 185, 129, 0.4),
-            transparent 4px
-          );
-          width: 4px !important;
+        /* Active-stage gutter accent. Monaco's lineDecorations lane is a
+           narrow vertical strip to the right of the line numbers. We render
+           a slim, rounded emerald bar with breathing room on both sides
+           rather than a solid edge-to-edge block. */
+        .designdojo-active-stage-bar {
+          width: 3px !important;
+          margin-left: 6px;
+          background: rgba(16, 185, 129, 0.7);
+          border-radius: 999px;
+          box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.18);
+        }
+        /* Subtle line tint so the eye finds the active block without the
+           bar shouting. ~4% opacity reads as a whisper in dark mode and is
+           barely-there in light. */
+        .designdojo-active-stage-line {
+          background: rgba(16, 185, 129, 0.05) !important;
+        }
+        /* Round the top/bottom of the bar across the whole active block by
+           hiding the bar caps for non-edge lines. This is approximate but
+           visually clean — the eye reads the column as a continuous pill. */
+        .monaco-editor .margin-view-overlays .designdojo-active-stage-bar {
+          height: 100%;
         }
       `}</style>
     </div>

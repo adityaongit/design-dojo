@@ -20,7 +20,7 @@ export function StageNav({
   onSelect: (index: number) => void;
 }) {
   const canPrev = activeIndex > 0;
-  const canNext = activeIndex < stages.length - 1;
+  const canNext = activeIndex >= 0 && activeIndex < stages.length - 1;
   return (
     <div className="flex items-center gap-2">
       <Button

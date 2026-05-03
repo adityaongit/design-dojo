@@ -105,15 +105,23 @@ export const Whiteboard = forwardRef<
         });
       },
       fitAll() {
-        const api = apiRef.current;
-        if (!api) return;
-        const els = api.getSceneElements() as Array<Record<string, unknown>>;
-        if (els.length === 0) return;
-        api.scrollToContent(els, {
-          fitToContent: true,
-          animate: true,
-          duration: 300,
-        });
+        // Defer to after layout settles. Excalidraw's `excalidrawAPI`
+        // callback fires during mount, before the canvas has its final
+        // size — calling scrollToContent immediately fits to a stale
+        // viewport and content ends up clipped. Two rAFs is enough to
+        // let the side panel and canvas finish their first paint.
+        const run = () => {
+          const api = apiRef.current;
+          if (!api) return;
+          const els = api.getSceneElements() as Array<Record<string, unknown>>;
+          if (els.length === 0) return;
+          api.scrollToContent(els, {
+            fitToContent: true,
+            animate: true,
+            duration: 300,
+          });
+        };
+        requestAnimationFrame(() => requestAnimationFrame(run));
       },
       setActiveAnchor(anchorId) {
         const api = apiRef.current;

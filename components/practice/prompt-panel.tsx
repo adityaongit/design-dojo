@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, MessageSquareCheck, Play, RefreshCw } from "lucide-react";
+import { ChevronLeft, MessageSquareCheck, Play, RefreshCw, RotateCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { StageMetaCards } from "@/components/practice/stage-meta-cards";
 import { FeedbackView } from "@/components/practice/feedback-view";
 import { ClarifyChat } from "@/components/practice/clarify-chat";
+import { HintsPanel } from "@/components/practice/hints-panel";
 import type { ByokConfig } from "@/lib/ai/types";
 import type { Question, StageContent, Feedback } from "@/lib/content/schema";
 import type { StageMeta } from "@/lib/content/meta";
@@ -34,6 +35,9 @@ export function PromptPanel({
   onCollapse,
   started = true,
   onStart,
+  onStartOver,
+  hasProgress = false,
+  onFinish,
 }: {
   stage: StageContent;
   question: Pick<Question, "title" | "prompt" | "type">;
@@ -55,8 +59,15 @@ export function PromptPanel({
   /** False until the user clicks Start on the first stage. Defaults true. */
   started?: boolean;
   onStart?: () => void;
+  /** When the user has prior progress, expose a "Start over" path that
+   *  wipes the session before starting. */
+  onStartOver?: () => void;
+  /** Drives the intro UX: with progress → Resume / Start Over; without →
+   *  Start. */
+  hasProgress?: boolean;
+  /** When set, the feedback footer offers a "View report" button. */
+  onFinish?: () => void;
 }) {
-  const [showSample, setShowSample] = useState(false);
   const [tab, setTab] = useState<"how" | "clarify">("how");
   // When feedback arrives, hide the prompt body. User can flip back via the
   // "Back to prompt" link inside FeedbackView.
@@ -64,7 +75,6 @@ export function PromptPanel({
 
   useEffect(() => {
     setViewingFeedback(true);
-    setShowSample(false);
     setTab("how");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage.slug]);
@@ -74,7 +84,7 @@ export function PromptPanel({
     if (feedback) setViewingFeedback(true);
   }, [feedback]);
 
-  if (!started && index === 0) {
+  if (!started) {
     return (
       <div className="relative flex h-full flex-col items-center justify-center gap-5 px-2 text-center">
         {onCollapse ? (
@@ -90,24 +100,63 @@ export function PromptPanel({
         <Badge variant="outline" className="px-2.5 py-0.5 text-xs">
           {questionTitle ?? question.title}
         </Badge>
-        <h2 className="text-balance text-2xl font-semibold tracking-tight">
-          Ready to design {questionTitle ?? question.title}?
-        </h2>
-        <p className="max-w-sm text-balance text-sm text-muted-foreground">
-          Take a quick look at the whiteboard. When you&apos;re ready,
-          click Start to focus on the first section.
-        </p>
-        <Button
-          size="lg"
-          onClick={onStart}
-          className="bg-emerald-500 px-6 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-600"
-        >
-          <Play className="size-3.5" />
-          Start
-        </Button>
-        <span className="text-[11px] text-muted-foreground">
-          {total} stages · {stageMeta?.minutes ?? "~"} min for the first
-        </span>
+        {hasProgress ? (
+          <>
+            <h2 className="text-balance text-2xl font-semibold tracking-tight">
+              Welcome back to {questionTitle ?? question.title}
+            </h2>
+            <p className="max-w-sm text-balance text-sm text-muted-foreground">
+              You have a session in progress. Pick up where you left off,
+              or wipe everything and start fresh.
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                size="lg"
+                onClick={onStart}
+                className="bg-emerald-500 px-6 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+              >
+                <Play className="size-3.5" />
+                Resume
+              </Button>
+              {onStartOver ? (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={onStartOver}
+                  className="px-5"
+                >
+                  <RotateCcw className="size-3.5" />
+                  Start over
+                </Button>
+              ) : null}
+            </div>
+            <span className="max-w-sm text-balance text-[11px] text-muted-foreground">
+              Start over clears the whiteboard, your answers, and any
+              feedback. This can&apos;t be undone.
+            </span>
+          </>
+        ) : (
+          <>
+            <h2 className="text-balance text-2xl font-semibold tracking-tight">
+              Ready to design {questionTitle ?? question.title}?
+            </h2>
+            <p className="max-w-sm text-balance text-sm text-muted-foreground">
+              Take a quick look at the whiteboard. When you&apos;re ready,
+              click Start to focus on the first section.
+            </p>
+            <Button
+              size="lg"
+              onClick={onStart}
+              className="bg-emerald-500 px-6 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+            >
+              <Play className="size-3.5" />
+              Start
+            </Button>
+            <span className="text-[11px] text-muted-foreground">
+              {total} stages · {stageMeta?.minutes ?? "~"} min for the first
+            </span>
+          </>
+        )}
       </div>
     );
   }
@@ -125,6 +174,7 @@ export function PromptPanel({
           setViewingFeedback(false);
         }}
         onNext={onNext}
+        onFinish={onFinish}
       />
     );
   }
@@ -200,25 +250,12 @@ export function PromptPanel({
           className="prose prose-sm dark:prose-invert mt-4 max-w-none overflow-auto pr-2 text-sm text-muted-foreground"
         >
           <ReactMarkdown>{stage.howToAnswer}</ReactMarkdown>
-          {showSample ? (
-            <div className="mt-4 rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3">
-              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-500">
-                Sample answer
-              </div>
-              <ReactMarkdown>{stage.sampleAnswer}</ReactMarkdown>
-            </div>
-          ) : (
-            <p className="mt-3 text-xs">
-              Still not sure where to start?{" "}
-              <button
-                type="button"
-                onClick={() => setShowSample(true)}
-                className="font-medium text-emerald-500 underline-offset-2 hover:underline"
-              >
-                View sample answer →
-              </button>
-            </p>
-          )}
+          <HintsPanel
+            hints={stage.hints}
+            sampleAnswer={stage.sampleAnswer}
+            resetKey={stage.slug}
+            className="mt-4"
+          />
           {stageMeta ? (
             <div className="mt-5 not-prose">
               <StageMetaCards meta={stageMeta} />
