@@ -185,6 +185,85 @@
 }
 
 /*
+ * Shiki dual-theme code blocks. Light/dark via CSS vars set by shiki when
+ * `defaultColor: false` is used. Tokens carry both --shiki-light and
+ * --shiki-dark; we pick based on the active class.
+ */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
+.prose pre.shiki,
+.prose .shiki pre {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem 1.1rem;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  font-variant-ligatures: none;
+}
+.prose pre.shiki code {
+  background: transparent !important;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  display: block;
+  width: max-content;
+  min-width: 100%;
+}
+/* Inline `code` outside <pre>: high-contrast tag style. */
+.prose :not(pre) > code {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  padding: 0.08rem 0.35rem;
+  font-size: 0.88em;
+  color: var(--foreground);
+}
+
+/*
+ * Article reading rhythm — slightly tighter on mobile, comfortable on desktop.
+ */
+.prose h2 {
+  letter-spacing: -0.01em;
+}
+.prose h3 {
+  letter-spacing: -0.005em;
+}
+@media (max-width: 640px) {
+  .prose h1 {
+    font-size: 1.875rem;
+    line-height: 1.15;
+  }
+  .prose h2 {
+    font-size: 1.4rem;
+    line-height: 1.25;
+    margin-top: 2rem !important;
+  }
+  .prose h3 {
+    font-size: 1.15rem;
+  }
+  .prose pre.shiki {
+    font-size: 0.78rem;
+    padding: 0.85rem 0.9rem;
+  }
+  .prose blockquote,
+  .prose ul,
+  .prose ol,
+  .prose p {
+    font-size: 0.97rem;
+  }
+}
+
+/*
  * Ask AI side panel: when open, compress the article content so the panel
  * doesn't cover the page. Inline split-view, not a modal overlay.
  */

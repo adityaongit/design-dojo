@@ -83,7 +83,7 @@ export function QuestionTable({
   const groupedByDifficulty = sortKey === "difficulty";
 
   return (
-    <div className="rounded-md border border-border/40">
+    <div className="rounded-md border border-border/40 overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
@@ -95,17 +95,19 @@ export function QuestionTable({
               onClick={headerClick}
               className="w-[52%]"
             />
-            <TableHead className="w-[90px] text-center">Write-Up</TableHead>
+            <TableHead className="hidden w-[90px] text-center sm:table-cell">
+              Write-Up
+            </TableHead>
             <SortHead
-              label="Mark as Read"
+              label="Read"
               k="read"
               sortKey={sortKey}
               dir={sortDir}
               onClick={headerClick}
-              className="w-[120px]"
+              className="hidden w-[100px] sm:table-cell"
               align="center"
             />
-            <TableHead className="text-right">Guided Practice</TableHead>
+            <TableHead className="text-right">Practice</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -153,7 +155,7 @@ function renderGrouped(
         key={`hd-${d}`}
         className="border-t-2 border-border/40 bg-muted/40 hover:bg-muted/40"
       >
-        <TableCell colSpan={4} className="py-3">
+        <TableCell colSpan={4} className="py-2.5 sm:py-3">
           <div className="flex items-center justify-between text-xs">
             <span className="inline-flex items-center gap-2.5">
               <span className={cn("h-3 w-1 rounded-sm", stripe)} />
@@ -259,15 +261,25 @@ function Row({
     <TableRow className={cn(!q.ready && "opacity-60")}>
       <TableCell className="font-medium">
         <span className="flex items-center gap-2">
-          {q.title}
+          <span className="truncate">{q.title}</span>
           {!q.ready ? (
             <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
               soon
             </span>
           ) : null}
+          {/* Mobile: inline write-up link next to title */}
+          {hasArticle ? (
+            <Link
+              href={articleHref}
+              aria-label={`Read the ${q.title} write-up`}
+              className="ml-auto inline-flex shrink-0 sm:hidden"
+            >
+              <BookOpen className="size-4 text-emerald-500" />
+            </Link>
+          ) : null}
         </span>
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell className="hidden text-center sm:table-cell">
         {hasArticle ? (
           <Link
             href={articleHref}
@@ -280,7 +292,7 @@ function Row({
           <span className="text-muted-foreground/40">—</span>
         )}
       </TableCell>
-      <TableCell className="text-center">
+      <TableCell className="hidden text-center sm:table-cell">
         <button
           type="button"
           onClick={() => onToggleRead(q.id)}

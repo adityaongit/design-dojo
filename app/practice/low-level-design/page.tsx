@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { QuestionTable } from "@/components/question-table";
 import { QuestionStats } from "@/components/question-stats";
 import { loadIndex } from "@/lib/content";
@@ -39,7 +40,7 @@ export default async function Page() {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 pt-10 pb-20">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-16 sm:px-6 sm:pt-10 sm:pb-20">
         <div className="mb-10 flex flex-wrap items-start justify-between gap-6">
           <div className="max-w-2xl">
             <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -58,6 +59,7 @@ export default async function Page() {
           articleSlugs={articleSlugs}
         />
       </main>
+      <SiteFooter />
     </>
   );
 }

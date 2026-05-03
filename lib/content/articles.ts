@@ -5,6 +5,7 @@ import { remark } from "remark";
 import remarkHtml from "remark-html";
 import { z } from "zod";
 import type { QuestionType } from "./schema";
+import { highlightCodeBlocks } from "./highlight";
 
 export const ArticleFrontmatter = z.object({
   slug: z.string(),
@@ -70,7 +71,8 @@ export async function loadArticle(
     const { data, content } = matter(raw);
     const meta = ArticleFrontmatter.parse(data);
     const processed = await remark().use(remarkHtml).process(content);
-    const { html, toc } = addHeadingIds(String(processed));
+    const highlighted = await highlightCodeBlocks(String(processed));
+    const { html, toc } = addHeadingIds(highlighted);
     return {
       meta,
       html,

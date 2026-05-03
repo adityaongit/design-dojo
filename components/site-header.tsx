@@ -1,11 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useTheme } from "next-themes";
-import { Moon, Sun, Workflow } from "lucide-react";
+import { Menu, Moon, Sun, Workflow, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const GITHUB_URL = "https://github.com/adityaongit/design-dojo";
+
+const NAV_LINKS: Array<{ href: string; label: string }> = [
+  { href: "/practice/system-design", label: "System Design" },
+  { href: "/practice/low-level-design", label: "Low-Level Design" },
+  { href: "/faq", label: "FAQ" },
+];
 
 function GitHubMark({ className }: { className?: string }) {
   return (
@@ -23,6 +30,7 @@ function GitHubMark({ className }: { className?: string }) {
 
 export function SiteHeader() {
   const { theme, setTheme } = useTheme();
+  const [open, setOpen] = useState(false);
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/70 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -35,13 +43,13 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-1 text-sm">
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/practice/system-design">System Design</Link>
-          </Button>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/practice/low-level-design">Low-Level Design</Link>
-          </Button>
+        {/* Desktop nav */}
+        <nav className="hidden items-center gap-1 text-sm md:flex">
+          {NAV_LINKS.map((l) => (
+            <Button asChild key={l.href} variant="ghost" size="sm">
+              <Link href={l.href}>{l.label}</Link>
+            </Button>
+          ))}
           <Button asChild variant="ghost" size="icon" className="ml-1">
             <a
               href={GITHUB_URL}
@@ -62,7 +70,57 @@ export function SiteHeader() {
             <Moon className="hidden size-4 dark:block" />
           </Button>
         </nav>
+
+        {/* Mobile controls */}
+        <div className="flex items-center gap-1 md:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle theme"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            <Sun className="size-4 dark:hidden" />
+            <Moon className="hidden size-4 dark:block" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+          </Button>
+        </div>
       </div>
+
+      {/* Mobile drawer */}
+      {open ? (
+        <div className="border-t border-border/40 bg-background/95 backdrop-blur-md md:hidden">
+          <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3 text-sm">
+            {NAV_LINKS.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="rounded-md px-3 py-2.5 font-medium hover:bg-foreground/5"
+                onClick={() => setOpen(false)}
+              >
+                {l.label}
+              </Link>
+            ))}
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 rounded-md px-3 py-2.5 font-medium hover:bg-foreground/5"
+              onClick={() => setOpen(false)}
+            >
+              <GitHubMark className="size-4" />
+              GitHub
+            </a>
+          </nav>
+        </div>
+      ) : null}
     </header>
   );
 }

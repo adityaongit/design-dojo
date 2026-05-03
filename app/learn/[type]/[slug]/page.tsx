@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Calendar, Clock, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { ArticleToc } from "@/components/article-toc";
 import { AskAiPanel } from "@/components/ai/ask-ai-panel";
 import { listArticleSlugs, loadArticle } from "@/lib/content/articles";
@@ -212,7 +213,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
       <SiteHeader />
       <main
         data-ask-ai-shrink
-        className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-24 sm:px-6"
+        className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-20 sm:px-6 sm:pt-8 sm:pb-24"
       >
         <div data-ask-ai-flat className="lg:grid lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-10">
         <div className="min-w-0">
@@ -263,7 +264,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
               </a>
             </span>
           </div>
-          <h1 className="text-balance text-4xl font-semibold tracking-tight">
+          <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
             {article.meta.title}
           </h1>
           {article.meta.askedAt.length ? (
@@ -320,6 +321,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
         </aside>
         </div>
       </main>
+      <SiteFooter />
       <AskAiPanel
         article={{
           title: article.meta.title,

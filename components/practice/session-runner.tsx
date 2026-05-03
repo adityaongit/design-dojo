@@ -252,11 +252,13 @@ function SessionRunnerInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, question.id, question, isLLD, themeKey, introKey]);
 
-  // First-time visitor onboarding for the key dialog.
+  // First-time visitor onboarding for the key dialog. Skip on mobile —
+  // MobileBlocker covers the screen there, no point teasing config setup.
   useEffect(() => {
     if (!configHydrated) return;
     if (byok) return;
     if (typeof window === "undefined") return;
+    if (window.matchMedia("(max-width: 1023px)").matches) return;
     const seen = window.localStorage.getItem("designdojo:seen-keydialog");
     if (seen) return;
     setKeyDialogOpen(true);
