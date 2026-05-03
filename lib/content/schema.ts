@@ -18,7 +18,12 @@ export const StageContent = z.object({
   title: z.string(),
   questionPrompt: z.string(),
   howToAnswer: z.string(),
-  sampleAnswer: z.string(),
+  // Progressive hints, revealed one at a time (LeetCode style). Each hint
+  // narrows the answer space without giving the full solution. Keep ≤3.
+  hints: z.array(z.string()).min(1).max(4),
+  // Internal — never surfaced to the candidate. Kept for tooling that may
+  // want a canonical reference; not used by the grader or UI.
+  sampleAnswer: z.string().optional(),
   rubric: Rubric,
   // Optional Example gutter shown to the left of the anchor block on the
   // canvas. Use a *different* analogous problem so it nudges shape without
@@ -32,6 +37,19 @@ export const StageContent = z.object({
 });
 export type StageContent = z.infer<typeof StageContent>;
 
+export const DeepDive = z.object({
+  slug: z.string(),
+  title: z.string(),
+  questionPrompt: z.string(),
+  // Progressive hints, revealed one at a time. ≤3 entries. The final hint
+  // must NOT give away the full answer — it should leave the synthesis to
+  // the candidate.
+  hints: z.array(z.string()).min(1).max(4),
+  sampleAnswer: z.string().optional(),
+  rubric: Rubric,
+});
+export type DeepDive = z.infer<typeof DeepDive>;
+
 export const Question = z.object({
   id: z.string(),
   title: z.string(),
@@ -39,6 +57,7 @@ export const Question = z.object({
   type: QuestionType,
   prompt: z.string(),
   stages: z.array(StageContent),
+  deepDives: z.array(DeepDive).default([]),
 });
 export type Question = z.infer<typeof Question>;
 

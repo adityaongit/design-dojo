@@ -26,7 +26,12 @@
           "Designing PageRank / ranking"
         ]
       },
-      "sampleAnswer": "1. Given a URL, fetch the HTML and store it.\n2. Extract outbound links from each fetched page and enqueue them.\n3. Respect robots.txt and per-domain crawl-delay rules.\n4. Avoid fetching the same URL twice within a refresh window.\n5. Detect near-duplicate content and skip storing it twice."
+      "sampleAnswer": "1. Given a URL, fetch the HTML and store it.\n2. Extract outbound links from each fetched page and enqueue them.\n3. Respect robots.txt and per-domain crawl-delay rules.\n4. Avoid fetching the same URL twice within a refresh window.\n5. Detect near-duplicate content and skip storing it twice.",
+      "hints": [
+        "What does the crawler do with each URL? Three core actions, plus a control-plane action.",
+        "Politeness is a user-visible (well, host-visible) requirement, not just an NFR. What does it look like in practice?",
+        "Don't drift into ranking, indexing, or search — that's a different system."
+      ]
     },
     {
       "slug": "non-functional-requirements",
@@ -49,7 +54,12 @@
           "Promising consistency on a globally-distributed crawl frontier"
         ]
       },
-      "sampleAnswer": "- Throughput: ~400 pages/sec sustained (1B / 30d ≈ 386).\n- Politeness: max 1 concurrent request per host, default 1 req/sec unless robots.txt specifies otherwise.\n- Fault tolerance: any single fetcher / parser failure does not lose URLs in flight.\n- Storage: avg 100KB/page → ~100TB/month, ~1.2PB/year.\n- Freshness: news domains recrawled daily; long-tail every 30 days.\n- Eventual consistency on the URL frontier is fine."
+      "sampleAnswer": "- Throughput: ~400 pages/sec sustained (1B / 30d ≈ 386).\n- Politeness: max 1 concurrent request per host, default 1 req/sec unless robots.txt specifies otherwise.\n- Fault tolerance: any single fetcher / parser failure does not lose URLs in flight.\n- Storage: avg 100KB/page → ~100TB/month, ~1.2PB/year.\n- Freshness: news domains recrawled daily; long-tail every 30 days.\n- Eventual consistency on the URL frontier is fine.",
+      "hints": [
+        "Quantify pages/sec, total pages, and total bytes. The numbers determine whether your design is feasible.",
+        "Politeness, freshness, and dedupe are correctness NFRs — each gets a concrete target.",
+        "Cost matters at this scale. What's the egress / storage envelope you'd target?"
+      ]
     },
     {
       "slug": "core-entities",
@@ -70,7 +80,11 @@
           "Mixing the queue and the storage as one entity"
         ]
       },
-      "sampleAnswer": "- URL: { url, priority, discoveredAt, lastFetchedAt? }\n- Frontier: priority queue of URLs to fetch, partitioned by host.\n- HostPolicy: cached robots.txt + crawl-delay per host.\n- Page: { url, fetchedAt, status, contentHash, html }.\n- LinkGraph: outbound links extracted, used to rediscover."
+      "sampleAnswer": "- URL: { url, priority, discoveredAt, lastFetchedAt? }\n- Frontier: priority queue of URLs to fetch, partitioned by host.\n- HostPolicy: cached robots.txt + crawl-delay per host.\n- Page: { url, fetchedAt, status, contentHash, html }.\n- LinkGraph: outbound links extracted, used to rediscover.",
+      "hints": [
+        "Three big nouns: the work queue, the artifact, and the host-level state. Name them.",
+        "Bloom-filter-friendly entities are key — what's the seen-set entity?"
+      ]
     },
     {
       "slug": "api",
@@ -91,7 +105,11 @@
           "Inventing user-facing APIs the system doesn't need"
         ]
       },
-      "sampleAnswer": "Admin API:\nPOST /seeds  body: { urls: [...], priority }  → enqueues into frontier\nGET /status → { pagesPerSec, queueDepth, errorRate }\nPOST /hosts/:host/policy  body: { crawlDelayMs, maxConcurrency }\n\nInternal: fetcher workers pull URLs from the frontier (Kafka topic partitioned by host), publish fetched-pages and discovered-links events to other topics."
+      "sampleAnswer": "Admin API:\nPOST /seeds  body: { urls: [...], priority }  → enqueues into frontier\nGET /status → { pagesPerSec, queueDepth, errorRate }\nPOST /hosts/:host/policy  body: { crawlDelayMs, maxConcurrency }\n\nInternal: fetcher workers pull URLs from the frontier (Kafka topic partitioned by host), publish fetched-pages and discovered-links events to other topics.",
+      "hints": [
+        "There's barely a public API. The interesting interfaces are the internal queues / topics — what flows through each?",
+        "Operators need control: seeding URLs, adjusting per-host policy, and observing health."
+      ]
     },
     {
       "slug": "high-level-design",
@@ -116,7 +134,90 @@
           "Re-fetching robots.txt for every URL"
         ]
       },
-      "sampleAnswer": "Frontier: Kafka topic, partitioned by host hash → each fetcher consumer is responsible for a stable subset of hosts. This is the key trick — it means politeness can be enforced in-process without distributed locks.\n\nFetcher pool (1000s of stateless workers): for each URL, check the in-memory robots.txt cache (refresh every 24h). Apply the host crawl-delay (sleep if needed). Fetch via HTTP client with timeouts. Publish 'page fetched' event with raw HTML to a Kafka topic.\n\nParser (separate worker pool): consumes 'page fetched' events. Extracts outbound links. Normalizes URLs (strip fragments, canonical case, sort query params). Publishes 'link discovered' events.\n\nURL filter: dedupe via a sharded Bloom filter — if probably-seen, drop. Otherwise compute hash, check authoritative seen-set in a sharded KV store, write-through, enqueue back into the frontier.\n\nContent dedupe: SHA-256 of normalized HTML. If we've already stored a page with this hash, just record the additional URL pointing at it.\n\nStorage: HTML compressed and written to S3 (one object per page, keyed by content hash). Metadata in Cassandra keyed by URL."
+      "sampleAnswer": "Frontier: Kafka topic, partitioned by host hash → each fetcher consumer is responsible for a stable subset of hosts. This is the key trick — it means politeness can be enforced in-process without distributed locks.\n\nFetcher pool (1000s of stateless workers): for each URL, check the in-memory robots.txt cache (refresh every 24h). Apply the host crawl-delay (sleep if needed). Fetch via HTTP client with timeouts. Publish 'page fetched' event with raw HTML to a Kafka topic.\n\nParser (separate worker pool): consumes 'page fetched' events. Extracts outbound links. Normalizes URLs (strip fragments, canonical case, sort query params). Publishes 'link discovered' events.\n\nURL filter: dedupe via a sharded Bloom filter — if probably-seen, drop. Otherwise compute hash, check authoritative seen-set in a sharded KV store, write-through, enqueue back into the frontier.\n\nContent dedupe: SHA-256 of normalized HTML. If we've already stored a page with this hash, just record the additional URL pointing at it.\n\nStorage: HTML compressed and written to S3 (one object per page, keyed by content hash). Metadata in Cassandra keyed by URL.",
+      "hints": [
+        "The headline trick is how you enforce per-host politeness across thousands of workers without distributed locks. What's the partitioning?",
+        "After fetch, separate the fetch step from the parse step. Why?",
+        "Dedupe twice: at the URL level (cheap pre-filter + authoritative seen-set) and at the content level (hash). Why both?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-politeness",
+      "title": "Per-host politeness at scale",
+      "questionPrompt": "How do you guarantee no host receives more than its crawl-delay-rate of requests, even with thousands of fetcher workers?",
+      "sampleAnswer": "Partition the frontier by hash(host) into N Kafka partitions; each fetcher worker consumes a stable subset. Within a worker, host politeness is just an in-memory delay queue — no locks, no Redis. Big hosts (say, en.wikipedia.org) get their own dedicated partition via a hot-host override map so a single worker doesn't bottleneck. Rebalancing on worker scale-out uses sticky partition assignment so the in-memory robots.txt and last-fetched-at caches stay warm.",
+      "rubric": {
+        "must": [
+          "Host-affinity partitioning",
+          "Why this avoids distributed locks"
+        ],
+        "should": [
+          "Hot-host handling",
+          "Rebalancing / cache warmth"
+        ],
+        "avoid": [
+          "Global rate limiter at scale (becomes the bottleneck)",
+          "Workers picking arbitrary URLs without host affinity"
+        ]
+      },
+      "hints": [
+        "If two workers fetch the same host in parallel, you've broken politeness. How do you guarantee they don't?",
+        "What does a global rate limiter cost you at scale? Why does host-affinity sidestep that?",
+        "Hot hosts (Wikipedia, GitHub) are problematic — what's the override?"
+      ]
+    },
+    {
+      "slug": "dd-dedupe",
+      "title": "URL and content dedupe",
+      "questionPrompt": "How do you avoid re-fetching the same URL — or storing the same page twice when it's reachable from multiple URLs?",
+      "sampleAnswer": "Canonicalize URLs first: lowercase host, strip default port and fragment, sort query params, drop tracking params. Then a sharded Bloom filter (per-host shard) gives a cheap probably-seen check; on probably-seen, hit the authoritative seen-set in a sharded KV (Cassandra) to confirm. False positives in Bloom are tolerable — you just skip a URL that may be new (acceptable for a recrawl). For content, hash the parsed/normalized HTML; if the hash is already stored, append a URL→hash mapping instead of writing a duplicate object.",
+      "rubric": {
+        "must": [
+          "URL canonicalization",
+          "Seen-set with concrete data structure",
+          "Content-hash dedupe at storage"
+        ],
+        "should": [
+          "Bloom filter as pre-filter",
+          "Behavior on Bloom false positive"
+        ],
+        "avoid": [
+          "String-equality URL dedupe with no canonicalization",
+          "Storing each URL's HTML even when the content is identical"
+        ]
+      },
+      "hints": [
+        "Canonicalize first. What URL transformations turn 'visually different' into 'logically identical'?",
+        "Why use a Bloom filter as a pre-filter? What's tolerable about its false-positive rate here?",
+        "Content dedupe operates on the parsed bytes. What's the right hash, and what do you store on a hit?"
+      ]
+    },
+    {
+      "slug": "dd-failure-modes",
+      "title": "Fetch failures and traps",
+      "questionPrompt": "What happens when a host is slow, down, or returns a never-ending crawl trap (calendars, infinite pagination)?",
+      "sampleAnswer": "Per-URL: bounded retries with exponential backoff on 5xx and timeouts; permanent skip on 4xx. Per-host: a circuit breaker — if the rolling error rate crosses a threshold, demote the host to a slower partition for an hour. Per-crawl: a host quota (max pages/host/day) prevents one calendar app from saturating capacity. Depth limit on the frontier (e.g., max 10 hops from a seed) curtails infinite pagination traps. Trap detection heuristic: if a host's discovered URLs grow superlinearly with fetched pages, throttle it.",
+      "rubric": {
+        "must": [
+          "Distinguish transient vs persistent",
+          "Backoff or circuit-breaker per host",
+          "A bound on per-host capacity (quota or depth)"
+        ],
+        "should": [
+          "Trap-detection heuristic"
+        ],
+        "avoid": [
+          "Infinite retry loop on 5xx",
+          "Letting one bad host starve the rest of the crawl"
+        ]
+      },
+      "hints": [
+        "Distinguish transient (5xx, timeout) from permanent (4xx) failures. Each gets a different policy.",
+        "Per-host failure budgets — why? What does the system do when it trips?",
+        "Crawl traps look like normal pages but never end. What's a heuristic that detects them without a deep ML model?"
+      ]
     }
   ]
 }

@@ -26,7 +26,12 @@
           "Mixing search and recommendations into the core"
         ]
       },
-      "sampleAnswer": "1. Users can browse events.\n2. Users can see which seats are available for a given event.\n3. Users can reserve (hold) a specific seat.\n4. Users can complete payment within the hold window to purchase it."
+      "sampleAnswer": "1. Users can browse events.\n2. Users can see which seats are available for a given event.\n3. Users can reserve (hold) a specific seat.\n4. Users can complete payment within the hold window to purchase it.",
+      "hints": [
+        "Walk through what a buyer actually does, in order. Browse → see seats → pick one → pay.",
+        "Reserve and purchase are different actions — why? What changes between them?",
+        "Skip the artist-onboarding side and recommendation features — they're separate products."
+      ]
     },
     {
       "slug": "non-functional-requirements",
@@ -49,7 +54,12 @@
           "Forgetting the flash-sale spike scenario"
         ]
       },
-      "sampleAnswer": "- Strong consistency: a seat can only be held by one user at a time. No double-bookings, ever.\n- Scale: 1M concurrent buyers on a popular sale. Browsing reads must remain <200ms.\n- Hold semantics: 10-min TTL. Auto-released on expiry.\n- Fairness: a virtual waiting queue during high-demand sales.\n- Availability: 99.95% during sales."
+      "sampleAnswer": "- Strong consistency: a seat can only be held by one user at a time. No double-bookings, ever.\n- Scale: 1M concurrent buyers on a popular sale. Browsing reads must remain <200ms.\n- Hold semantics: 10-min TTL. Auto-released on expiry.\n- Fairness: a virtual waiting queue during high-demand sales.\n- Availability: 99.95% during sales.",
+      "hints": [
+        "What's the one thing that can never happen on this system? That's the headline NFR.",
+        "Latency, scale, availability — every NFR needs a number. The flash-sale spike is where most candidates undersize.",
+        "How long should a hold last? What happens when the user walks away during checkout?"
+      ]
     },
     {
       "slug": "core-entities",
@@ -72,7 +82,11 @@
           "Conflating Seat and Ticket"
         ]
       },
-      "sampleAnswer": "- Event: name, datetime, venue.\n- Venue: contains a SeatMap (rows × columns, sections).\n- Seat: belongs to a SeatMap. State per Event: AVAILABLE / HELD / SOLD.\n- SeatHold: (seatId, eventId, userId, expiresAt). Transient.\n- Booking: persistent record of a sold seat (seatId, eventId, userId, paymentId)."
+      "sampleAnswer": "- Event: name, datetime, venue.\n- Venue: contains a SeatMap (rows × columns, sections).\n- Seat: belongs to a SeatMap. State per Event: AVAILABLE / HELD / SOLD.\n- SeatHold: (seatId, eventId, userId, expiresAt). Transient.\n- Booking: persistent record of a sold seat (seatId, eventId, userId, paymentId).",
+      "hints": [
+        "Be precise: what's a Seat vs a Ticket vs a Hold? They have different lifecycles.",
+        "A SeatHold is transient; a Booking is permanent. Why is that distinction worth making at this level?"
+      ]
     },
     {
       "slug": "api",
@@ -95,7 +109,12 @@
           "Reserve endpoint that doesn't return a hold token"
         ]
       },
-      "sampleAnswer": "GET /events?city&date → [Event]\nGET /events/:id/seats → { sections: [{ id, seats: [{ id, status }] }] }\nPOST /events/:id/holds  body: { seatIds: [..] }, header: Idempotency-Key\n  → 201 { holdId, expiresAt }  OR  409 if any seat unavailable\nPOST /holds/:holdId/purchase  body: { paymentToken }\n  → 200 { bookingId }\nDELETE /holds/:holdId → 204"
+      "sampleAnswer": "GET /events?city&date → [Event]\nGET /events/:id/seats → { sections: [{ id, seats: [{ id, status }] }] }\nPOST /events/:id/holds  body: { seatIds: [..] }, header: Idempotency-Key\n  → 201 { holdId, expiresAt }  OR  409 if any seat unavailable\nPOST /holds/:holdId/purchase  body: { paymentToken }\n  → 200 { bookingId }\nDELETE /holds/:holdId → 204",
+      "hints": [
+        "Listing is easy. The reserve endpoint is the one to think hardest about — what does it need to return?",
+        "What happens if two of three requested seats are available and one isn't? All-or-nothing or partial?",
+        "Use idempotency keys on the writes — why? What does the client do on a network blip?"
+      ]
     },
     {
       "slug": "high-level-design",
@@ -118,7 +137,90 @@
           "Optimistic concurrency on the seat row alone (livelock under contention)"
         ]
       },
-      "sampleAnswer": "Reads (browsing, seat availability): served from Redis with the seat-state map per event. Background job rebuilds from authoritative DB on changes. CDN in front for /events.\n\nWrites (reserve): client POSTs to Reservation Service. Service runs a Redis Lua script that atomically checks each seat is AVAILABLE, marks them HELD with the holdId, and sets a 10-min TTL on the hold key. If the script fails on any seat, the entire reserve fails atomically. Successful holds are also written-through to the authoritative Postgres for durability.\n\nExpiration: Redis TTL fires → a sweeper picks up expired holds and flips the seat back to AVAILABLE in both Redis and Postgres.\n\nPurchase: POST /holds/:id/purchase enqueues a payment job (idempotent). Worker calls payment provider, on success flips seat from HELD to SOLD and writes a Booking row."
+      "sampleAnswer": "Reads (browsing, seat availability): served from Redis with the seat-state map per event. Background job rebuilds from authoritative DB on changes. CDN in front for /events.\n\nWrites (reserve): client POSTs to Reservation Service. Service runs a Redis Lua script that atomically checks each seat is AVAILABLE, marks them HELD with the holdId, and sets a 10-min TTL on the hold key. If the script fails on any seat, the entire reserve fails atomically. Successful holds are also written-through to the authoritative Postgres for durability.\n\nExpiration: Redis TTL fires → a sweeper picks up expired holds and flips the seat back to AVAILABLE in both Redis and Postgres.\n\nPurchase: POST /holds/:id/purchase enqueues a payment job (idempotent). Worker calls payment provider, on success flips seat from HELD to SOLD and writes a Booking row.",
+      "hints": [
+        "The read path (browsing, availability) and the write path (reserve) have very different consistency needs. Don't lump them together.",
+        "For the write path, name the atomic primitive. DB transactions, Redis Lua scripts, or unique constraints — pick one and explain why.",
+        "Holds expire. Where does the timer live, and what flips the seat back to available?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-no-double-booking",
+      "title": "Preventing double-booking",
+      "questionPrompt": "How do you guarantee that two users hitting reserve at the exact same instant can't both win the same seat?",
+      "sampleAnswer": "Use a Redis Lua script: KEYS = the seat keys, ARGV = holdId + TTL. The script reads each seat's status; if any is not AVAILABLE, it returns -1 and writes nothing — the whole reservation aborts. If all are AVAILABLE, it SETs them all to HELD:holdId with the TTL, in the same atomic step. Lua scripts on a single Redis primary are serialized, so two concurrent reserves can't both win. The hold is written through to Postgres asynchronously for durability — the source-of-truth for availability stays Redis during the sale.",
+      "rubric": {
+        "must": [
+          "Atomic check-and-set across all requested seats",
+          "Concrete mechanism (Lua, transaction, unique constraint)",
+          "Explain why concurrent reserves can't race"
+        ],
+        "should": [
+          "Failure path: what the loser sees",
+          "Durability of the held state"
+        ],
+        "avoid": [
+          "Per-seat optimistic CAS (livelock when 5 seats contended individually)",
+          "Trusting application-level mutex"
+        ]
+      },
+      "hints": [
+        "If two requests arrive at the same instant, what data structure resolves the contention? Where does it live?",
+        "An atomic primitive across N seats is harder than across 1. What goes wrong with per-seat optimistic locking when 5 seats are contended individually?",
+        "Whatever mechanism you pick, the loser must learn it lost. What does the failure response look like to the client?"
+      ]
+    },
+    {
+      "slug": "dd-flash-sale",
+      "title": "Flash-sale spike (1M concurrent)",
+      "questionPrompt": "How does the system handle a Taylor Swift on-sale with 1M users hitting reserve simultaneously?",
+      "sampleAnswer": "Front the reservation API with a virtual waiting room. On sale start, all clients get a queue token; an admission service releases ~10× the seat count per minute into the live booking flow. Behind the wall, the reservation service is what we'd ordinarily build — it just sees a controlled trickle, not 1M RPS. Token gives a position estimate so the user has a stable progress signal. After admission, the user has a 10-min hold window, then their slot recycles. FIFO with jitter keeps fairness; tokens are signed JWTs so we don't keep server-side state per waiting user.",
+      "rubric": {
+        "must": [
+          "Admission control before the reserve hot path",
+          "Concrete queue mechanism (token, position estimate)"
+        ],
+        "should": [
+          "Fairness policy",
+          "What happens on abandonment / refresh"
+        ],
+        "avoid": [
+          "Counting on 'just autoscale' for 1M concurrent reserves",
+          "A queue that requires server-side state per waiter"
+        ]
+      },
+      "hints": [
+        "1M concurrent on the reserve hot path is unrealistic for any DB or cache. What's the real strategy?",
+        "Throttle at the front door, not the back. Where does the throttle live, and what does the user see?",
+        "How do you make it feel fair without storing per-waiter state on the server?"
+      ]
+    },
+    {
+      "slug": "dd-hold-expiry",
+      "title": "Reliable hold expiration",
+      "questionPrompt": "A hold is supposed to release after 10 minutes if not purchased. How do you guarantee that doesn't get missed under load?",
+      "sampleAnswer": "Primary mechanism: Redis TTL on the hold key. A subscriber on keyspace expiration events flips the seat from HELD back to AVAILABLE atomically (Lua to avoid a race with a late purchase). Secondary safety net: a sweeper job runs every minute scanning expired holds in Postgres for any that the Redis path missed (e.g., during a Redis failover). Idempotency: the AVAILABLE flip is a no-op if the seat is already SOLD.",
+      "rubric": {
+        "must": [
+          "Concrete expiry mechanism",
+          "Atomic flip back to AVAILABLE"
+        ],
+        "should": [
+          "Backup / reconciliation path",
+          "Race with a late purchase"
+        ],
+        "avoid": [
+          "Cron-only with a long interval (visible double-bookable window)",
+          "Trusting a single in-memory timer on one host"
+        ]
+      },
+      "hints": [
+        "What's the minimum visible double-bookable window if your only timer is a cron every minute?",
+        "Combine a primary mechanism with a backup sweeper — why? What does each cover?",
+        "Watch the race between expiry and a late purchase landing at the same moment. How do you keep that idempotent?"
+      ]
     }
   ]
 }

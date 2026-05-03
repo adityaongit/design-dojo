@@ -40,8 +40,15 @@ content library. Your output is JSON files that pass `pnpm validate`.
    - `must` items are concrete and testable, not generic.
    - `avoid` items catch *this question's* common pitfalls, not
      generic interview advice.
-   - `sampleAnswer` is opinionated — pick a path, name a real
+   - `sampleAnswer` is internal-only (kept for tooling, not surfaced
+     to the candidate). Still write it — opinionated, real
      algorithm or data store.
+   - `hints` is what the candidate actually sees. 2-3 items,
+     **progressive**: the first reframes the problem, the second
+     points at the headline mechanism, the last narrows the choice
+     space without giving the answer. The final hint MUST stop
+     short of the actual answer (no exact numbers, no exact data
+     store name, no exact algorithm). Think LeetCode hints.
    - All prose original. No copy-paste.
 6. **Update the index row**: set `ready: true`, write a one-line
    `summary` (≤140 chars), confirm `difficulty` and `title` match the
@@ -53,11 +60,34 @@ content library. Your output is JSON files that pass `pnpm validate`.
 ## Stage slugs (exact, in order)
 
 `functional-requirements`, `non-functional-requirements`,
-`core-entities`, `api`, `high-level-design`, `deep-dives`.
+`core-entities`, `api`, `high-level-design`.
 
 `data-flow` is optional — include only when the system has a real
 data pipeline (e.g., Ad Click Aggregator, Metrics Monitoring,
 Distributed Cache).
+
+## Deep dives
+
+After the design stages, every question MUST include a `deepDives`
+array of 3 entries (one short scaling/perf dive, one
+correctness/consistency dive, one failure-mode dive). Each deep dive
+is a focused follow-up the interviewer would ask after the high-level
+design — text-only Q&A, not a canvas exercise.
+
+Each deep dive has:
+- `slug` — kebab, prefixed `dd-` (e.g., `dd-scale-reads`).
+- `title` — 2-4 word label.
+- `questionPrompt` — what the interviewer asks. Should be answerable
+  on top of the high-level design just produced.
+- `hints` — 2-3 progressive nudges (same rules as stages: final hint
+  never gives the answer).
+- `sampleAnswer` — internal-only opinionated reference; not shown.
+- `rubric` — `must` / `should` / `avoid` calibrated to the deep dive
+  (not the original stage). Pin a `must` item to the headline mechanism.
+
+Deep dives must be grounded in the question's NFRs and the headline
+mechanism in the high-level design. Avoid generic dives ("scale
+reads") that aren't motivated by the specific problem.
 
 ## When to stop and ask the user
 

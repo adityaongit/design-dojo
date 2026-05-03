@@ -24,13 +24,20 @@
           "REPLACE — termination / completion condition",
           "REPLACE — error handling"
         ],
-        "should": ["REPLACE — secondary capability"],
+        "should": [
+          "REPLACE — secondary capability"
+        ],
         "avoid": [
           "Building features not requested (AI opponent, networking)",
           "Designing the UI"
         ]
       },
-      "sampleAnswer": "Scope:\n- REPLACE\n- REPLACE\n\nOut of scope:\n- REPLACE"
+      "sampleAnswer": "Scope:\n- REPLACE\n- REPLACE\n\nOut of scope:\n- REPLACE",
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
     },
     {
       "slug": "entities-relationships",
@@ -39,14 +46,30 @@
       "howToAnswer": "Pick the orchestrator. Decide what owns each piece of state. Avoid an anaemic God class.",
       "exampleHints": {
         "headline": "Example (ANALOG-PROBLEM):",
-        "bullets": ["EntityA (orchestrator)", "EntityB", "EntityC"]
+        "bullets": [
+          "EntityA (orchestrator)",
+          "EntityB",
+          "EntityC"
+        ]
       },
       "rubric": {
-        "must": ["REPLACE orchestrator", "REPLACE primary entity"],
-        "should": ["REPLACE secondary entity"],
-        "avoid": ["Putting all logic on a single God class"]
+        "must": [
+          "REPLACE orchestrator",
+          "REPLACE primary entity"
+        ],
+        "should": [
+          "REPLACE secondary entity"
+        ],
+        "avoid": [
+          "Putting all logic on a single God class"
+        ]
       },
-      "sampleAnswer": "- REPLACE: orchestrates the workflow.\n- REPLACE: owns the state.\n- REPLACE: action / move primitive."
+      "sampleAnswer": "- REPLACE: orchestrates the workflow.\n- REPLACE: owns the state.\n- REPLACE: action / move primitive.",
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
     },
     {
       "slug": "class-design",
@@ -76,7 +99,12 @@
           "Hard-coded constants in multiple places"
         ]
       },
-      "sampleAnswer": "```\nenum State { IN_PROGRESS, ... }\n\nclass A:\n  field1: Type\n  field2: Type\n  method(args) -> ReturnType:\n    REPLACE\n```"
+      "sampleAnswer": "```\nenum State { IN_PROGRESS, ... }\n\nclass A:\n  field1: Type\n  field2: Type\n  method(args) -> ReturnType:\n    REPLACE\n```",
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
     },
     {
       "slug": "implementation",
@@ -89,10 +117,20 @@
           "Bounds-checked / null-safe access",
           "Trace through one concrete scenario"
         ],
-        "should": ["Helper to factor out repetition"],
-        "avoid": ["Off-by-one errors", "Recomputing state on every call"]
+        "should": [
+          "Helper to factor out repetition"
+        ],
+        "avoid": [
+          "Off-by-one errors",
+          "Recomputing state on every call"
+        ]
       },
-      "sampleAnswer": "```\nmethodName(args):\n  REPLACE\n```\n\nTrace: REPLACE step-by-step."
+      "sampleAnswer": "```\nmethodName(args):\n  REPLACE\n```\n\nTrace: REPLACE step-by-step.",
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
     },
     {
       "slug": "extensibility",
@@ -100,11 +138,94 @@
       "questionPrompt": "How would the design extend for: REPLACE follow-up scenarios?",
       "howToAnswer": "Stay high-level. Point at the seams in the design that make the change clean.",
       "rubric": {
-        "must": ["REPLACE — first follow-up scenario answer"],
-        "should": ["REPLACE — second", "REPLACE — third"],
-        "avoid": ["Rewriting the design when a simple extension suffices"]
+        "must": [
+          "REPLACE — first follow-up scenario answer"
+        ],
+        "should": [
+          "REPLACE — second",
+          "REPLACE — third"
+        ],
+        "avoid": [
+          "Rewriting the design when a simple extension suffices"
+        ]
       },
-      "sampleAnswer": "REPLACE first follow-up:\n\nREPLACE second:\n\nREPLACE third:"
+      "sampleAnswer": "REPLACE first follow-up:\n\nREPLACE second:\n\nREPLACE third:",
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-concurrency",
+      "title": "Concurrent access",
+      "questionPrompt": "How does the design behave under concurrent access? Where are the race conditions?",
+      "sampleAnswer": "REPLACE: e.g., the Board's mutable cell grid is the shared state. Wrap dropDisc in a synchronized block on the Board instance. Single-lock per Board avoids deadlock. Reads of the cell grid for win-checking use the same lock to avoid torn reads.",
+      "rubric": {
+        "must": [
+          "Identify the shared state",
+          "Concrete synchronization mechanism"
+        ],
+        "should": [
+          "Discuss deadlock or contention"
+        ],
+        "avoid": [
+          "Sprinkling synchronized everywhere without justification"
+        ]
+      },
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
+    },
+    {
+      "slug": "dd-extensibility",
+      "title": "Extensibility deep dive",
+      "questionPrompt": "REPLACE: how would the design support REPLACE-NEW-VARIANT without major rewrites?",
+      "sampleAnswer": "REPLACE: e.g., introduce a Player interface with HumanPlayer and BotPlayer. Game.takeTurn(player) calls player.chooseMove(board). The Board, win-detection, and turn loop remain unchanged.",
+      "rubric": {
+        "must": [
+          "Name the seam (interface, strategy, factory)",
+          "Describe the minimum change needed"
+        ],
+        "should": [
+          "Highlight what stays untouched"
+        ],
+        "avoid": [
+          "Rewriting the whole design"
+        ]
+      },
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
+    },
+    {
+      "slug": "dd-error-handling",
+      "title": "Error handling and edge cases",
+      "questionPrompt": "What can go wrong at runtime, and how does each class handle it?",
+      "sampleAnswer": "REPLACE: e.g., dropDisc on a full column → throw ColumnFullException, caller decides whether to retry. Game already-finished → returns the existing result instead of throwing. Out-of-range column → IllegalArgumentException at the API boundary.",
+      "rubric": {
+        "must": [
+          "Cover at least 2 distinct error types",
+          "Decide throw vs typed return per case"
+        ],
+        "should": [
+          "Differentiate user errors from invariant violations"
+        ],
+        "avoid": [
+          "Silent failure / returning bare booleans"
+        ]
+      },
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
     }
   ]
 }

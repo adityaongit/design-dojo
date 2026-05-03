@@ -25,7 +25,12 @@
           "Designing the desktop client UI"
         ]
       },
-      "sampleAnswer": "1. Users can upload a file from any device.\n2. The file appears on every other device the user is signed in on (sync).\n3. Users can download any of their files.\n4. Users can share a file with other users via a link or by adding their email."
+      "sampleAnswer": "1. Users can upload a file from any device.\n2. The file appears on every other device the user is signed in on (sync).\n3. Users can download any of their files.\n4. Users can share a file with other users via a link or by adding their email.",
+      "hints": [
+        "What is the user actually doing on each device? Upload, sync, download — and any social action like sharing.",
+        "Sync is the headline. Frame it as a user expectation, not an implementation: 'a file shows up where?'",
+        "Skip the desktop client UI and Dropbox Paper / Spaces — they're separate products."
+      ]
     },
     {
       "slug": "non-functional-requirements",
@@ -48,7 +53,12 @@
           "Conflating sync latency with upload latency"
         ]
       },
-      "sampleAnswer": "- Durability: 11 nines (no data loss).\n- Sync latency: <5s p99 from upload completion to availability on a peer device.\n- Scale: 500M users, 2GB avg → ~1 EB total. Read:write ~5:1.\n- Bandwidth: never re-upload unchanged content (block-level dedupe).\n- Availability: 99.9%."
+      "sampleAnswer": "- Durability: 11 nines (no data loss).\n- Sync latency: <5s p99 from upload completion to availability on a peer device.\n- Scale: 500M users, 2GB avg → ~1 EB total. Read:write ~5:1.\n- Bandwidth: never re-upload unchanged content (block-level dedupe).\n- Availability: 99.9%.",
+      "hints": [
+        "What's the worst thing that can happen to a user file? That tells you the headline NFR.",
+        "Sync latency is user-visible. Pin a number — seconds, not minutes — and quantify total storage at scale.",
+        "Bandwidth efficiency matters when files are large and changes are small. What does that imply for your upload protocol later?"
+      ]
     },
     {
       "slug": "core-entities",
@@ -69,7 +79,11 @@
           "Adding entities the requirements don't justify"
         ]
       },
-      "sampleAnswer": "- User: who owns the files.\n- File: a logical file (path, name, current version).\n- FileBlock: a chunk of a file's content, content-addressed.\n- Device: an installation that syncs."
+      "sampleAnswer": "- User: who owns the files.\n- File: a logical file (path, name, current version).\n- FileBlock: a chunk of a file's content, content-addressed.\n- Device: an installation that syncs.",
+      "hints": [
+        "Distinguish a logical File from the bytes it's made of — they have different lifecycles and different access patterns.",
+        "Add a Device only if your sync model needs to address one specifically. List share-related entities only if sharing is in scope."
+      ]
     },
     {
       "slug": "api",
@@ -92,7 +106,12 @@
           "Pull-only sync with no push channel"
         ]
       },
-      "sampleAnswer": "POST /files/upload\n  body: { path, blocks: [{ hash, size }] }\n  → 200 { missingBlockHashes: [...] }\n\nPUT /blocks/:hash  (binary body) → 201\n\nGET /files/:id → file metadata + block list\nGET /blocks/:hash → binary block\n\nGET /sync?cursor=... → { changes: [...], nextCursor }\nWS /sync/subscribe → push 'cursor advanced' notifications.\n\nPOST /share { fileId, scope } → { shareUrl }"
+      "sampleAnswer": "POST /files/upload\n  body: { path, blocks: [{ hash, size }] }\n  → 200 { missingBlockHashes: [...] }\n\nPUT /blocks/:hash  (binary body) → 201\n\nGET /files/:id → file metadata + block list\nGET /blocks/:hash → binary block\n\nGET /sync?cursor=... → { changes: [...], nextCursor }\nWS /sync/subscribe → push 'cursor advanced' notifications.\n\nPOST /share { fileId, scope } → { shareUrl }",
+      "hints": [
+        "Three categories: upload, download, and 'has anything changed since I last looked?'.",
+        "Sending an entire 5GB file as one POST is a non-starter — what's the right granularity? How does the client know what to send?",
+        "Sync needs both a poll mode and a push mode. Why both? Think about reconnection and missed events."
+      ]
     },
     {
       "slug": "high-level-design",
@@ -115,7 +134,90 @@
           "Polling-only sync"
         ]
       },
-      "sampleAnswer": "Client computes SHA-256 of each 4MB block before uploading. Calls POST /files/upload with the block hashes. Server checks which hashes are missing in the blob store; client uploads only those via PUT /blocks/:hash to S3-compatible storage.\n\nMetadata (file paths, current block list per file, version, owner) lives in a sharded relational store keyed by user_id.\n\nOn write, server appends an entry to a per-user change log and publishes a notification on a Pub/Sub topic the user's devices subscribe to via websocket. Devices then call GET /sync?cursor=... to pull the deltas.\n\nDownloads go via CDN edge → blob store."
+      "sampleAnswer": "Client computes SHA-256 of each 4MB block before uploading. Calls POST /files/upload with the block hashes. Server checks which hashes are missing in the blob store; client uploads only those via PUT /blocks/:hash to S3-compatible storage.\n\nMetadata (file paths, current block list per file, version, owner) lives in a sharded relational store keyed by user_id.\n\nOn write, server appends an entry to a per-user change log and publishes a notification on a Pub/Sub topic the user's devices subscribe to via websocket. Devices then call GET /sync?cursor=... to pull the deltas.\n\nDownloads go via CDN edge → blob store.",
+      "hints": [
+        "Two stores: one for metadata (paths, ownership, version), one for bytes. What goes where, and why never mix them?",
+        "Block-level dedupe is the whole game. What's the unit, and how does the server know which blocks the client already has?",
+        "Sync needs a notification path. What does the server publish on a write, and how does the client turn that into 'pull these deltas'?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-large-files",
+      "title": "Large file uploads",
+      "questionPrompt": "How would you handle uploads of very large files (e.g., 10GB) over a flaky connection?",
+      "sampleAnswer": "Split into 4MB blocks, hash each (SHA-256). POST the manifest; server returns the subset of hashes missing in blob store. Client uploads missing blocks in parallel (e.g., 4 concurrent PUTs) with per-block retry on transient failures. On reconnect, re-issue the same manifest call — server returns only what's still missing, so we resume without re-uploading completed blocks. Block dedupe also kicks in across users (the 'shipped iso' phenomenon).",
+      "rubric": {
+        "must": [
+          "Chunk + content-address (hash per block)",
+          "Resumability via missing-block negotiation",
+          "Per-block retry, not whole-file retry"
+        ],
+        "should": [
+          "Parallel uploads with bounded concurrency",
+          "Cross-user dedupe note"
+        ],
+        "avoid": [
+          "Single multipart POST that has to restart on failure",
+          "Server-side reassembly that blocks the response"
+        ]
+      },
+      "hints": [
+        "Whole-file retry is unacceptable on a flaky link. What's the smallest unit that can fail and retry independently?",
+        "If the upload disconnects at 90%, how does the client know what's already on the server? What does it ask?",
+        "Parallelism helps throughput but costs memory and connections. What's a reasonable bound, and what dedupe wins do you get for free?"
+      ]
+    },
+    {
+      "slug": "dd-sync-conflicts",
+      "title": "Conflict resolution",
+      "questionPrompt": "Two devices edit the same file offline and both come online. How does the system resolve the conflict?",
+      "sampleAnswer": "Each file has a version vector or monotonic version. Upload requests include parentVersion. If the file has advanced past parentVersion, server rejects with 409 + the current version. Client then writes the new content as 'filename (Conflict copy from device X).ext' alongside the server's version, and the user sees both. This avoids silent data loss; merging is left to the user / app. For binary files this is the only safe default.",
+      "rubric": {
+        "must": [
+          "Version-aware writes (CAS or version vector)",
+          "Concrete conflict policy (LWW, conflicted copy, merge)"
+        ],
+        "should": [
+          "Avoid silent data loss",
+          "Surface the conflict to the user"
+        ],
+        "avoid": [
+          "Last-writer-wins without warning the loser",
+          "Trying to auto-merge binary content"
+        ]
+      },
+      "hints": [
+        "Without a version on each write, you can't even tell two clients are conflicting. What's the smallest version primitive?",
+        "Pick a policy: silent last-writer-wins, surfaced conflict copy, or merge. Which is safe for arbitrary binary content?",
+        "Whatever you choose, the user must know something happened. What do they see in their file list?"
+      ]
+    },
+    {
+      "slug": "dd-sync-latency",
+      "title": "Low sync latency",
+      "questionPrompt": "How do you keep peer devices in sync within seconds of an upload?",
+      "sampleAnswer": "Devices maintain a websocket to a Pub/Sub-backed notification gateway, subscribed to topic user:{id}. On write, the metadata service publishes the new cursor. Devices pull deltas via GET /sync?cursor=... — push tells them when, pull gives reliable delivery. On reconnect after disconnect, device just re-issues the pull with its last cursor; nothing is lost. p99 sync latency: ~1s within the same region.",
+      "rubric": {
+        "must": [
+          "Push channel (websocket or long poll)",
+          "Cursor-based delta pull, not full-state push"
+        ],
+        "should": [
+          "Reconnection / missed-event handling",
+          "Concrete latency target"
+        ],
+        "avoid": [
+          "Polling every device every N seconds",
+          "Pushing whole file contents over the notification channel"
+        ]
+      },
+      "hints": [
+        "Polling can't be fast and cheap at the same time at 500M users. What's the alternative?",
+        "Push tells the client when. Pull gives reliable delivery. Why do you usually want both, not one?",
+        "What happens when a device is offline for an hour and reconnects? Don't push everything — what state do you keep on the client?"
+      ]
     }
   ]
 }

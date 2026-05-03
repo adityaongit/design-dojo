@@ -42,6 +42,14 @@ Lot, Elevator, etc. Your output is JSON files that pass `pnpm validate`.
      getter/setter. Trace one concrete scenario.
    - **`extensibility`**: ask "what's the seam in the design that
      makes change X clean?" — point at it, don't rewrite.
+   - **`hints`**: 2-3 progressive nudges per stage. The first
+     reframes the problem, the second points at the headline
+     mechanism, the last narrows the choice space without
+     revealing the answer. The final hint MUST NOT give a method
+     signature, exact return type, or the algorithm name. Think
+     LeetCode hints — coaching, not solutions.
+   - `sampleAnswer` is internal-only (kept for tooling, not shown
+     to the candidate).
 6. **Pick the analog** for `exampleHints`. Connect Four → Tic Tac
    Toe; Parking Lot → Movie Theater; Elevator → ATM; Rate Limiter →
    Web Cache.
@@ -52,6 +60,32 @@ Lot, Elevator, etc. Your output is JSON files that pass `pnpm validate`.
 
 `requirements`, `entities-relationships`, `class-design`,
 `implementation`, `extensibility`.
+
+## Deep dives
+
+After the design stages, every question MUST include a `deepDives`
+array of 3 entries. They're the focused follow-ups an interviewer
+would ask after the candidate finishes the high-level design — text
+Q&A, not editor exercises. Aim for one per category:
+
+- **Algorithm / correctness** dive (e.g., efficient win detection,
+  collision detection, scheduling fairness).
+- **Error handling / edge cases** dive (what throws, what returns,
+  what's silently no-op'd).
+- **Extensibility** dive (the seam that makes a specific follow-up
+  variant clean).
+
+Each deep dive has:
+- `slug` — kebab, prefixed `dd-` (e.g., `dd-win-detection`).
+- `title` — 2-4 word label.
+- `questionPrompt` — the interviewer's actual question.
+- `hints` — 2-3 progressive nudges (same rules as stages).
+- `sampleAnswer` — internal-only opinionated reference; not shown.
+- `rubric` — `must` / `should` / `avoid` calibrated to the dive.
+
+Deep dives must be specific to the problem's mechanics — not generic
+OOP advice. Win-detection for Connect Four, not "use SOLID
+principles."
 
 ## When to stop and ask the user
 

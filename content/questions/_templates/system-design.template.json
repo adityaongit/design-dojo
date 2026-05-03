@@ -30,7 +30,12 @@
           "REPLACE — common drift trap (e.g., dashboards, accounts when not asked)"
         ]
       },
-      "sampleAnswer": "1. Users should be able to REPLACE.\n2. Users should be able to REPLACE.\n3. Users should be able to REPLACE."
+      "sampleAnswer": "1. Users should be able to REPLACE.\n2. Users should be able to REPLACE.\n3. Users should be able to REPLACE.",
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
     },
     {
       "slug": "non-functional-requirements",
@@ -61,7 +66,12 @@
           "Conflating functional and non-functional"
         ]
       },
-      "sampleAnswer": "- REPLACE first NFR with concrete number.\n- REPLACE second.\n- REPLACE third."
+      "sampleAnswer": "- REPLACE first NFR with concrete number.\n- REPLACE second.\n- REPLACE third.",
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
     },
     {
       "slug": "core-entities",
@@ -70,14 +80,29 @@
       "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
       "exampleHints": {
         "headline": "Example (ANALOG-PROBLEM):",
-        "bullets": ["EntityA", "EntityB", "EntityC"]
+        "bullets": [
+          "EntityA",
+          "EntityB",
+          "EntityC"
+        ]
       },
       "rubric": {
-        "must": ["REPLACE primary entity"],
-        "should": ["REPLACE secondary entity"],
-        "avoid": ["Inventing entities the requirements don't justify"]
+        "must": [
+          "REPLACE primary entity"
+        ],
+        "should": [
+          "REPLACE secondary entity"
+        ],
+        "avoid": [
+          "Inventing entities the requirements don't justify"
+        ]
       },
-      "sampleAnswer": "- EntityA: REPLACE one-line description.\n- EntityB: REPLACE."
+      "sampleAnswer": "- EntityA: REPLACE one-line description.\n- EntityB: REPLACE.",
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
     },
     {
       "slug": "api",
@@ -97,10 +122,20 @@
           "REPLACE primary endpoint",
           "REPLACE secondary endpoint"
         ],
-        "should": ["REPLACE optional endpoint"],
-        "avoid": ["Putting body data in the URL path", "Forgetting status codes"]
+        "should": [
+          "REPLACE optional endpoint"
+        ],
+        "avoid": [
+          "Putting body data in the URL path",
+          "Forgetting status codes"
+        ]
       },
-      "sampleAnswer": "POST /resource\n  body: { ... }\n  → 201 { id }\n\nGET /resource/:id → Resource"
+      "sampleAnswer": "POST /resource\n  body: { ... }\n  → 201 { id }\n\nGET /resource/:id → Resource",
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
     },
     {
       "slug": "high-level-design",
@@ -122,28 +157,85 @@
           "Hand-waving 'just add more servers'"
         ]
       },
-      "sampleAnswer": "REPLACE: walk through write path then read path. Mention the headline trick. Show component boundaries."
-    },
+      "sampleAnswer": "REPLACE: walk through write path then read path. Mention the headline trick. Show component boundaries.",
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
+    }
+  ],
+  "deepDives": [
     {
-      "slug": "deep-dives",
-      "title": "Deep Dives",
-      "questionPrompt": "Harden the design against the non-functional requirements.",
-      "howToAnswer": "Pick 2-3 of the highest-risk areas given the NFRs and address each with a concrete mechanism.",
+      "slug": "dd-scale-reads",
+      "title": "Scale reads",
+      "questionPrompt": "How can your system scale to support REPLACE-X reads/sec?",
+      "sampleAnswer": "REPLACE: e.g., add a read-through Redis cache in front of the DB. Hot-key reads now serve at <10ms with ~95% hit rate. For long-tail reads, add 3 read replicas. CDN-cache idempotent GETs at edge for further offload.",
       "rubric": {
         "must": [
-          "REPLACE biggest risk (e.g., scaling reads, ID-generation bottleneck)",
-          "Second biggest"
+          "Identify the read bottleneck (DB, CPU, fanout)",
+          "Concrete mechanism (cache / replicas / CDN) with a placement"
         ],
         "should": [
-          "Failure-mode handling",
-          "Geo-distribution"
+          "Cache invalidation or TTL strategy",
+          "Numbers: hit rate, replica count, latency target"
         ],
         "avoid": [
-          "Adding components without a justifying NFR",
-          "Hand-waving 'just add more servers'"
+          "'Just add more servers' without a layer",
+          "Ignoring cache consistency"
         ]
       },
-      "sampleAnswer": "Read scaling: REPLACE.\n\nID generation: REPLACE.\n\nFailure mode: REPLACE."
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
+    },
+    {
+      "slug": "dd-uniqueness",
+      "title": "REPLACE uniqueness / correctness invariant",
+      "questionPrompt": "REPLACE: how do you guarantee REPLACE the system's hardest correctness property?",
+      "sampleAnswer": "REPLACE: e.g., uniqueness enforced via a centrally-issued counter (Redis INCR) or a unique constraint on the DB column. On collision, retry with the next id. Avoids races even under concurrent writes from N API hosts.",
+      "rubric": {
+        "must": [
+          "Name the invariant explicitly",
+          "Concrete enforcement mechanism"
+        ],
+        "should": [
+          "Discuss failure modes / retry semantics"
+        ],
+        "avoid": [
+          "Hand-waving 'the DB handles it'"
+        ]
+      },
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
+    },
+    {
+      "slug": "dd-availability",
+      "title": "Availability under failure",
+      "questionPrompt": "What happens when REPLACE-CRITICAL-COMPONENT goes down? How does the system stay available?",
+      "sampleAnswer": "REPLACE: e.g., DB is multi-AZ with synchronous replication; failover is automatic in <30s. API tier is stateless behind an ALB across 3 AZs. Cache loss falls through to the DB — degraded latency, not outage.",
+      "rubric": {
+        "must": [
+          "Identify the critical component",
+          "Concrete replication or failover plan"
+        ],
+        "should": [
+          "Degradation rather than outage"
+        ],
+        "avoid": [
+          "Stateful single points of failure left unaddressed"
+        ]
+      },
+      "hints": [
+        "REPLACE — broad nudge that frames the question without giving the answer",
+        "REPLACE — narrower nudge that points at the headline mechanism",
+        "REPLACE — final nudge: leaves the synthesis to the candidate"
+      ]
     }
   ]
 }

@@ -32,7 +32,12 @@
           "Vague phrasing without explicit user actions"
         ]
       },
-      "sampleAnswer": "1. Users should be able to submit a long URL and receive a shortened URL.\n2. Users should be able to specify an optional custom alias and/or expiration.\n3. Users should be able to access the original URL by visiting the shortened URL."
+      "sampleAnswer": "1. Users should be able to submit a long URL and receive a shortened URL.\n2. Users should be able to specify an optional custom alias and/or expiration.\n3. Users should be able to access the original URL by visiting the shortened URL.",
+      "hints": [
+        "Two distinct actions on every URL shortener — one with the long URL, one with the short URL. Frame each as a 'Users should be able to…' statement.",
+        "Beyond the two basics, what optional behaviors might a candidate offer? Think about who picks the short code and how long it lasts.",
+        "Stay focused on the URL itself. Dashboards, accounts, and analytics are nice-to-haves — only list them if the prompt asks."
+      ]
     },
     {
       "slug": "non-functional-requirements",
@@ -64,7 +69,12 @@
           "Conflating functional and non-functional"
         ]
       },
-      "sampleAnswer": "- Short URLs must be unique.\n- Redirect latency: <100ms p99.\n- Availability > consistency: a brief read-after-write delay is acceptable.\n- Scale: ~1B URLs lifetime, ~100M DAU, read:write ~100:1.\n- Durability: a URL mapping must not be lost once written."
+      "sampleAnswer": "- Short URLs must be unique.\n- Redirect latency: <100ms p99.\n- Availability > consistency: a brief read-after-write delay is acceptable.\n- Scale: ~1B URLs lifetime, ~100M DAU, read:write ~100:1.\n- Durability: a URL mapping must not be lost once written.",
+      "hints": [
+        "Pick a posture in the CAP triangle. Is a brief stale read OK on this system, or must every redirect see the latest write?",
+        "Latency lives on the redirect hot path. Pin a concrete number tied to a human / SEO concern, then quantify the scale (DAU, total URLs).",
+        "Don't forget durability — what's the cost of losing a mapping? And note the read:write skew so your caching decisions later make sense."
+      ]
     },
     {
       "slug": "core-entities",
@@ -91,7 +101,11 @@
           "Inventing entities the requirements don't justify"
         ]
       },
-      "sampleAnswer": "- URLMapping: shortCode → longURL, with optional expiration.\n- (Optional) User: owns mappings if accounts are in scope."
+      "sampleAnswer": "- URLMapping: shortCode → longURL, with optional expiration.\n- (Optional) User: owns mappings if accounts are in scope.",
+      "hints": [
+        "What's the smallest set of nouns that satisfies your functional requirements? You may only need one.",
+        "Resist adding entities for features not in scope — no Click events without analytics, no User without accounts."
+      ]
     },
     {
       "slug": "api",
@@ -122,7 +136,12 @@
           "Forgetting the redirect status code"
         ]
       },
-      "sampleAnswer": "POST /urls\n  body: { longUrl, customAlias?, expiresAt? }\n  → 201 { shortUrl }\n\nGET /:shortCode\n  → 302 redirect to longUrl"
+      "sampleAnswer": "POST /urls\n  body: { longUrl, customAlias?, expiresAt? }\n  → 201 { shortUrl }\n\nGET /:shortCode\n  → 302 redirect to longUrl",
+      "hints": [
+        "One endpoint per functional requirement. The redirect path is the interesting one — what HTTP status is right, and why?",
+        "POST takes the long URL in the body, not the path. What optional fields might a candidate include?",
+        "Return only what the client needs on success, and pick a status code that's correct for an idempotent re-create."
+      ]
     },
     {
       "slug": "high-level-design",
@@ -145,7 +164,90 @@
           "Not addressing collisions"
         ]
       },
-      "sampleAnswer": "Client → ALB → URL Service (stateless) → Cache (Redis) → DB (key-value, e.g. DynamoDB)\n\nShort code generation: 7-char base62 derived from a centrally-issued counter (e.g., a Redis INCR or a sharded counter service). Avoids collisions by construction.\n\nWrite path: API validates URL, allocates next counter, encodes to base62, writes mapping to DB, returns short URL.\n\nRead path: short code → cache (hit: return). Cache miss → DB → populate cache → 302 redirect."
+      "sampleAnswer": "Client → ALB → URL Service (stateless) → Cache (Redis) → DB (key-value, e.g. DynamoDB)\n\nShort code generation: 7-char base62 derived from a centrally-issued counter (e.g., a Redis INCR or a sharded counter service). Avoids collisions by construction.\n\nWrite path: API validates URL, allocates next counter, encodes to base62, writes mapping to DB, returns short URL.\n\nRead path: short code → cache (hit: return). Cache miss → DB → populate cache → 302 redirect.",
+      "hints": [
+        "Start with the obvious skeleton: client → LB → API → database. The interesting questions are how short codes get made, and how reads stay fast.",
+        "Three families of code generation: hash-based, counter-based, random + collision check. Pick one and argue why concurrent writes can't collide.",
+        "On the read path, where does the cache live, and what's the DB cost on a miss? Your generation choice influences the schema."
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-short-and-unique",
+      "title": "Short & unique codes",
+      "questionPrompt": "How can we ensure that each shortened URL is short and unique?",
+      "sampleAnswer": "Use a centrally-issued counter (e.g., Redis INCR, or a sharded ID generator like a Snowflake-style service) and base62-encode it. 7 base62 chars → ~3.5T addressable codes, plenty of headroom over 1B. Counter approach gives uniqueness by construction — no collision retry. Hash-based has collision risk at scale and leaks ordering only marginally less than the counter; the counter wins on simplicity and write-path latency.",
+      "rubric": {
+        "must": [
+          "Pick a generation scheme (counter, hash, or random)",
+          "Show the math: code length × alphabet ≥ URL count",
+          "Explain how collisions are prevented or detected"
+        ],
+        "should": [
+          "Address the bottleneck of a centralized counter (sharding, batching)",
+          "Note tradeoffs vs alternatives"
+        ],
+        "avoid": [
+          "Choosing random without addressing collision retries",
+          "Skipping the capacity calculation"
+        ]
+      },
+      "hints": [
+        "Estimate first — how many codes do you need over the service's lifetime? That gives a lower bound on alphabet^length.",
+        "Compare hashing, counters, and random on three axes: collision probability, write-path latency, predictability.",
+        "Whatever you pick, name the failure mode. What happens when two requests race? Is the protection a constraint, a lock, or 'impossible by construction'?"
+      ]
+    },
+    {
+      "slug": "dd-fast-redirects",
+      "title": "Fast redirects",
+      "questionPrompt": "How can we ensure that redirects are fast (sub-100ms p99)?",
+      "sampleAnswer": "Read-through Redis cache in front of the DB; DB schema keyed by shortCode for O(1) point lookups. ~95% hit rate keeps p99 under 10ms cache-side. Use a CDN that respects Cache-Control: public, max-age=86400 on 301 responses so popular links never reach origin. For the cold tail, DynamoDB-style KV with single-digit ms reads keeps p99 within budget.",
+      "rubric": {
+        "must": [
+          "Identify the bottleneck (DB lookup latency)",
+          "Concrete caching layer with placement (origin or edge)"
+        ],
+        "should": [
+          "Quantified hit rate or latency target",
+          "Discuss 301 vs 302 and Cache-Control"
+        ],
+        "avoid": [
+          "Adding cache without an invalidation story",
+          "Conflating cache and CDN without specifying which"
+        ]
+      },
+      "hints": [
+        "Walk the read path top-to-bottom. The first lookup with no cache is your worst case — does it fit your SLO?",
+        "Caches can live in 4 places: browser, CDN, in front of the DB, in the API tier. Which buys you the most? What's the key?",
+        "What HTTP semantics let the client skip your servers entirely on subsequent visits? Think Cache-Control + 301 vs 302."
+      ]
+    },
+    {
+      "slug": "dd-scale-reads",
+      "title": "Scale to 10k redirects/sec",
+      "questionPrompt": "How can your system scale to support 10k redirects (reads) per second?",
+      "sampleAnswer": "ALB and stateless API tier scale horizontally — autoscale to ~20 instances at 500 RPS each. Redis cluster (3 shards × 1 replica) handles ~100k ops/sec, well over 10k. DB sees only cache misses (~5% = 500 RPS), trivially served by a single primary + 2 replicas. CDN further offloads popular short links. Total budget gives 10× headroom for spikes.",
+      "rubric": {
+        "must": [
+          "Layer-by-layer capacity argument",
+          "Identify which layer the cache protects"
+        ],
+        "should": [
+          "Headroom for spikes",
+          "Mention horizontal scaling of stateless tier"
+        ],
+        "avoid": [
+          "'Just add more servers' with no numbers",
+          "Stateful API hosts that block horizontal scaling"
+        ]
+      },
+      "hints": [
+        "Go layer by layer — ALB, stateless API, cache, DB. Which one is the bottleneck when the rest scale freely?",
+        "How big does the cache need to be to keep the long tail off the DB? A back-of-envelope is enough.",
+        "Design for headroom — interesting traffic comes in spikes, not steady-state."
+      ]
     }
   ]
 }
