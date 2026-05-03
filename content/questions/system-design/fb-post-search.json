@@ -1,0 +1,252 @@
+{
+  "id": "fb-post-search",
+  "title": "FB Post Search",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design a search system for Facebook posts. Users should be able to search posts by keyword and sort results by recency or engagement. Target ~500M DAU, ~1B new posts/day, median query latency <500ms, and new posts searchable within <1 minute.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "Focus on search: what can users search for, how are results sorted, what metadata is visible. Skip personalization, fuzzy match, or privacy filtering unless asked.",
+      "exampleHints": {
+        "headline": "Example (Twitter Search):",
+        "bullets": [
+          "Users can search tweets by keyword",
+          "Users see results sorted by recency or engagement",
+          "Users see the post content and engagement metrics in results"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can search posts by keyword",
+          "Users can sort results by recency and engagement (likes/comments)"
+        ],
+        "should": [
+          "Users see post metadata (author, timestamp, engagement counts) in results",
+          "Pagination of search results"
+        ],
+        "avoid": [
+          "Designing fuzzy matching, spell-correction, or advanced NLP",
+          "Adding personalization or privacy filtering to the core search"
+        ]
+      },
+      "sampleAnswer": "1. Users can search posts by entering a keyword query.\n2. Users can sort results by recency (newest first) or by engagement (like/comment count).\n3. Results display post ID, author, text, timestamp, and like count.\n4. Results are paginated (e.g., 10 posts per page).",
+      "hints": [
+        "A search system has two halves: indexing (turning posts into searchable tokens) and querying (turning a keyword into ranked post IDs). Name both halves.",
+        "Sorting is a first-class concern in search. What two sort orders must the design support?",
+        "Don't drift into machine-learning ranking or personalization — stick to exact keyword match and simple sort orders."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Latency, throughput, indexing lag, availability, and scale. Quantify everything.",
+      "exampleHints": {
+        "headline": "Example (Twitter Search):",
+        "bullets": [
+          "Query latency: <500ms p99",
+          "Scale: 1B tweets/day, 500M DAU",
+          "Indexing freshness: <1 minute for new posts",
+          "High availability: 99.9% uptime"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Query latency target (e.g., <500ms p99 or median)",
+          "Indexing freshness (e.g., <1 minute for new posts)",
+          "Quantified scale: posts/day, DAU, QPS"
+        ],
+        "should": [
+          "Availability target (e.g., 99.9%)",
+          "Storage footprint (index size estimate)"
+        ],
+        "avoid": [
+          "Conflating 'searchable' (in index) with 'consistent read' (visible to all users)",
+          "Vague latency targets without percentile"
+        ]
+      },
+      "sampleAnswer": "- Query latency: <500ms median, <1s p99.\n- Indexing freshness: <1 minute (new posts discoverable).\n- Scale: ~1B posts/day, ~500M DAU, ~20K queries/sec (assuming 40 queries/user/day).\n- Availability: 99.9%+.\n- Index size: ~1B posts × ~1KB index overhead = ~1TB (not including replication).",
+      "hints": [
+        "Freshness and latency are different requirements. A post must be searchable (in the index) within 1 min; queries on existing posts must reply within 500ms.",
+        "Quantify QPS from DAU. Not every user searches every second — estimate query volume as a derivative of DAU and session length.",
+        "Storage for the index grows with the corpus. What's the trade-off between index density and query latency?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "Post and SearchIndex are the big ones. Don't over-design — indexing happens on write, searching happens on read.",
+      "exampleHints": {
+        "headline": "Example (Twitter Search):",
+        "bullets": [
+          "Tweet",
+          "Inverted Index (keyword → tweet IDs)",
+          "SortIndex (likes/recency → tweet IDs)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Post (the document to search)"
+        ],
+        "should": [
+          "InvertedIndex or equivalent (keyword → post IDs)",
+          "Ranking/sort data structure (engagement or recency ordering)"
+        ],
+        "avoid": [
+          "Inventing a separate User or Engagement entity when the question is narrowly about search"
+        ]
+      },
+      "sampleAnswer": "- Post: { id, authorId, text, timestamp, likeCount, commentCount }.\n- InvertedIndex: { keyword → [postId1, postId2, ...] }.\n- RankedIndex: { (keyword, sortOrder) → sorted list of postIds }.",
+      "hints": [
+        "An inverted index is the spine of any full-text search. What does it map from, and to?",
+        "Sorting adds complexity. Do you pre-compute ranked lists for every (keyword, sort-order) pair, or compute it on query?",
+        "Keep it simple: one or two core structures. Don't invent a separate ranking model."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API surface.",
+      "howToAnswer": "At minimum: POST /posts (create) and GET /search (query). Add /like if it's in functional requirements. Keep it REST.",
+      "exampleHints": {
+        "headline": "Example (Twitter API):",
+        "bullets": [
+          "POST /posts body: { text, ... } → 201 { id, timestamp, ... }",
+          "GET /search?q=keyword&sort_by=[recency|likes]&page=1 → { posts: [...], total: N }",
+          "POST /posts/:id/like body: {} → 200 { likeCount }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST /posts (or equivalent) to create a post",
+          "GET /search?keyword=X&sort_by=[recency|likes]&page=N endpoint"
+        ],
+        "should": [
+          "Response includes paginated result set with metadata",
+          "Like/engagement endpoint if in scope"
+        ],
+        "avoid": [
+          "Overloading query parameters; use separate endpoints for distinct operations",
+          "Forgetting pagination or sort-by parameters"
+        ]
+      },
+      "sampleAnswer": "POST /posts\n  body: { text, authorId }\n  → 201 { id, text, authorId, timestamp, likeCount }\n\nGET /search?keyword=X&sort_by=recency&page=1&limit=10\n  → 200 { posts: [{ id, text, authorId, timestamp, likeCount }, ...], total, page, pages }\n\nPOST /posts/:id/like\n  body: {}\n  → 200 { id, likeCount }",
+      "hints": [
+        "Search is a read-only operation. What parameters matter? Keyword, sort order, pagination.",
+        "Create a post (write) separately from search (read). The create path triggers indexing; the search path queries the index.",
+        "Don't forget pagination and sort order in the search endpoint — these are not optional for at-scale systems."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through both the write path (post creation + indexing) and the read path (search query).",
+      "howToAnswer": "Write path: API → log write → async indexer updates inverted index (sharded). Read path: API → query all shards in parallel → merge + sort → return. Highlight sharding strategy and freshness mechanism.",
+      "rubric": {
+        "must": [
+          "Sharded inverted index (partitioned by term or post ID) so no shard is a bottleneck",
+          "Async indexing path (post created → published to queue → indexer consumes) for freshness",
+          "Query path: scatter to all shards, gather results, merge and sort",
+          "Ranking mechanism (BM25 score + engagement signals or direct sort by timestamp/likes)"
+        ],
+        "should": [
+          "Recency tiering: hot index (recent posts, full inverted index) + warm/cold (archived index, read-only)",
+          "Replication for availability",
+          "Cache layer for hot queries"
+        ],
+        "avoid": [
+          "Single index that's not sharded — becomes a bottleneck",
+          "Synchronous indexing on write — blocks the post creation API",
+          "Ignoring the merge/sort step on read — each shard returns a partial ranked list, not the global top-K"
+        ]
+      },
+      "sampleAnswer": "Write path: User creates post → API writes to Post DB and publishes 'PostCreated' event to Kafka. Indexer consumers consume events and tokenize the post text. For each term, shard by hash(term) and write (term→[postIds]) to the inverted index (Redis or embedded in search service). Update a separate engagement index (keyword→(postId, likeCount, timestamp)) for sorting.\n\nRead path: User sends GET /search?keyword=X&sort_by=recency. API hashes the keyword to the responsible shard(s). Query all shards in parallel (fan-out). Each shard returns a ranked list of matching postIds (up to top-K=100). Merge all shard results by applying the requested sort order (BM25 score + engagement or pure recency). Return the top 10 to the client.\n\nFreshness: A post is queryable once the indexer has processed and written it to the index (~500-1000ms latency, well within the 1-minute target).\n\nRecency tiering: Keep the last 7 days of posts in a hot index with full inverted and engagement indexes. Older posts move to a warm index (compressed, read-only). Queries always hit hot first, then warm if needed.",
+      "hints": [
+        "The headline trick is sharding by term. Why does this work, and what's the trade-off?",
+        "Indexing must not block the post creation API. What pattern decouples them?",
+        "After the index query, you get a per-shard top-K. How do you merge K shards' top-K lists into a true global top-K?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-scale-queries",
+      "title": "Scale to 100K QPS",
+      "questionPrompt": "Your system currently handles 20K QPS. Now it needs to handle 100K QPS. What changes?",
+      "sampleAnswer": "Bottleneck is likely the search service — either CPU (parsing, ranking) or network (fan-out to shards). Solutions: (1) Increase shard count by 10x (e.g., 10 → 100 shards) so each shard gets ~1K QPS. (2) Add a query cache layer (Redis) in front of the shards; hot queries (trending keywords) hit the cache at <5ms. Cache is invalidated on 'PostCreated' or 'Like' events for affected keywords. (3) Parallelize the merge step using a query-coordinator service that batches shard fan-outs. (4) Consider embedding-based search (dense vectors) as an alternative path for expensive queries — avoid ranking every result.",
+      "rubric": {
+        "must": [
+          "Identify the bottleneck (CPU parsing, network fan-out, or I/O)",
+          "Concrete scaling mechanism: shard count, cache, or alternative retrieval path"
+        ],
+        "should": [
+          "Cache invalidation strategy for near-stale queries",
+          "Latency trade-off: what's the p99 now vs. after scaling?"
+        ],
+        "avoid": [
+          "'Just add more servers' without identifying the bottleneck",
+          "Ignoring the merge step on read; sharding alone doesn't reduce CPU if you're still merging all results"
+        ]
+      },
+      "hints": [
+        "Sharding reduces the data per machine, but doesn't reduce the number of machines you have to talk to. What else must you add?",
+        "Hot queries (trending keywords) benefit from caching. How do you invalidate the cache when posts are created?",
+        "At 100K QPS, every millisecond of latency matters. Where are you paying the most cost in the read path?"
+      ]
+    },
+    {
+      "slug": "dd-freshness-consistency",
+      "title": "Freshness and consistency under contention",
+      "questionPrompt": "A post is created and immediately liked many times. A search for a keyword in that post should include it. What's the risk, and how do you mitigate it?",
+      "sampleAnswer": "Risk: The post is written to the DB, but the indexer has not yet processed and indexed it. If a user searches within 100ms, they don't see it. Trade-off: Strong consistency (index synchronously, block the post-creation API) vs. eventual consistency (index asynchronously, brief delay of ~1-5 seconds). Solution: Use an async indexing queue with a strong SLA (99th percentile indexing lag <5 seconds). Accept that a post is not immediately searchable, but guarantee it's searchable within 5 seconds. For real-time ranking by likes, the engagement index must be updated every time a like happens (publish event to Kafka, indexer increments the like counter). This keeps the like count fresh even if the post's inverted index is not yet ready.",
+      "rubric": {
+        "must": [
+          "Identify the race: post creation vs. indexing availability",
+          "Concrete SLA on indexing lag (e.g., <1 minute, 95th percentile <5 seconds)"
+        ],
+        "should": [
+          "Separate write path for engagement (likes) from text indexing",
+          "Monitoring/alerting on indexing lag"
+        ],
+        "avoid": [
+          "Assuming synchronous indexing is always better (it blocks the write path)",
+          "Forgetting that engagement and text content index at different speeds"
+        ]
+      },
+      "hints": [
+        "Async indexing introduces lag. What's the acceptable lag for this product?",
+        "Engagement (likes) changes frequently. Can you update the engagement index faster than the text index?",
+        "How would you measure and monitor indexing lag? What's the SLO?"
+      ]
+    },
+    {
+      "slug": "dd-failure-modes",
+      "title": "Failure: indexer down or index corruption",
+      "questionPrompt": "The indexer service crashes for 1 hour. Incoming posts are not being indexed. When the indexer recovers, how do you catch up without losing data?",
+      "sampleAnswer": "Indexing is async via a queue (Kafka). Posts are published to the 'PostCreated' topic and persisted. The indexer consumes from the topic, maintaining an offset. On crash, the indexer restarts and resumes from its last committed offset — no data is lost because Kafka retains the log. Posts created during the outage are queued in Kafka and indexed in order once the indexer comes back online (~minutes of catch-up if backlog is large). To prevent search returning stale results, you can emit a 'SearchServiceNotReady' flag if the indexer lag exceeds a threshold, so the API rejects search requests during the outage. Alternatively, accept degraded search (missing newly indexed posts) until the indexer catches up.",
+      "rubric": {
+        "must": [
+          "Persistence of posted events (Kafka or append log)",
+          "Offset tracking on the indexer so it knows where it stopped"
+        ],
+        "should": [
+          "Backpressure handling: if the indexer is too slow, what happens to incoming posts?",
+          "Degradation mode: search still works on already-indexed posts"
+        ],
+        "avoid": [
+          "Losing posts because they're only in the indexer's memory",
+          "Reprocessing the entire dataset on recovery (inefficient)"
+        ]
+      },
+      "hints": [
+        "A durable queue decouples post creation from indexing. Why is this essential for availability?",
+        "How does the indexer know where it stopped processing? What's the mechanism?",
+        "During recovery, is it acceptable for search to miss newly-created (unindexed) posts, or must you block the search API?"
+      ]
+    }
+  ]
+}

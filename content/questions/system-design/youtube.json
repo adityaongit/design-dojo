@@ -1,0 +1,263 @@
+{
+  "id": "youtube",
+  "title": "YouTube",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design YouTube's core system for uploading, encoding, and serving videos. Target ~2B users with ~500M hours watched per day. A user uploads a 10GB video and it should be watchable in multiple resolutions within minutes.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering upload, transcoding, serving at multiple resolutions, and search/discovery.",
+      "exampleHints": {
+        "headline": "Example (Netflix):",
+        "bullets": [
+          "Users can stream a movie from a catalog",
+          "Content adapts to network bandwidth",
+          "Users can pause, resume, and seek"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can upload a video file from their device",
+          "System transcodes the video and makes it available for playback at multiple resolutions"
+        ],
+        "should": [
+          "Users can search for and discover videos",
+          "System streams video with adaptive quality (adjusts to bandwidth)"
+        ],
+        "avoid": [
+          "Drifting into creator monetization, ads, recommendations, or comments unless explicitly asked",
+          "Designing the desktop UI or client player logic"
+        ]
+      },
+      "sampleAnswer": "1. Users can upload a video file (any format) and the system enqueues it for processing.\n2. System transcodes the video into multiple resolutions (240p, 480p, 720p, 1080p) and codecs (H.264, VP9) and stores renditions.\n3. Users can play a video and the player adapts quality to bandwidth.\n4. Users can search for videos by title.",
+      "hints": [
+        "From upload to playback, what are the main user actions? Think about the journey: upload → process → discover → watch.",
+        "On the watch side, the player doesn't control resolution — it's based on network capacity. What does the system offer, and how does the client choose?",
+        "Skip monetization, recommendations, and creator dashboards — focus on the video lifecycle itself."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Storage scale, video processing latency, playback latency and smoothness, durability, availability. Quantify all of them.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Playback latency <1s",
+          "1M concurrent users",
+          "3000 PB stored globally",
+          "99.99% availability"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Quantified scale: 2B users, 500M hours/day watched, 10GB per upload",
+          "Processing latency: video available for playback within minutes of upload",
+          "Playback latency: <2s initial buffering, smooth 30fps streaming",
+          "Durability: videos must never be lost"
+        ],
+        "should": [
+          "Availability: 99.9% for serving, 99% for new uploads",
+          "Adaptive bitrate: quality adjusts to available bandwidth without rebuffering",
+          "Read-heavy workload: plays far exceed uploads"
+        ],
+        "avoid": [
+          "Conflating upload latency with processing latency",
+          "Listing scale without tying it to component decisions later"
+        ]
+      },
+      "sampleAnswer": "- Durability: 11 nines — no video loss ever.\n- Processing latency: <10 min p99 from upload completion to first rendition ready for preview.\n- Playback latency: <2s time-to-first-frame, p99 rebuffer <100ms.\n- Scale: 2B users, 500M hours/day watched (≈ 200M concurrent viewers at avg 2.5 hours each), 10GB typical upload, 1000 PB stored total.\n- Read:write ratio ≈ 10000:1.\n- Availability: 99.9% for video serving (playback), 99% for upload queues.",
+      "hints": [
+        "Worst-case latency on upload: seconds to minutes. Worst-case on playback: sub-second, user-visible. Which drives architecture?",
+        "With 500M hours watched per day, how many concurrent playbacks are active? That tells you edge caching strategy.",
+        "Processing latency is the long pole on the upload side. Where does that bottleneck live, and what parallel work helps?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "Name the nouns that model the problem. Don't define schemas — that's HLD.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "User",
+          "Song",
+          "Playlist",
+          "Album"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Video (metadata, owner, status)",
+          "Rendition (a specific resolution/codec variant of a video)"
+        ],
+        "should": [
+          "User (uploader, viewer)",
+          "UploadJob (tracks transcoding progress)"
+        ],
+        "avoid": [
+          "Inventing monetization or social entities the prompt doesn't ask for"
+        ]
+      },
+      "sampleAnswer": "- User: channel owner, viewer.\n- Video: metadata (id, title, uploader, created_at, status='uploading'|'processing'|'ready'), points to raw file in object storage.\n- Rendition: a specific resolution/codec pair (e.g., '1080p_H264_5000kbps'), with path to encoded file in object storage.\n- UploadJob: tracks transcoding job state (queued, in-progress, done, failed).",
+      "hints": [
+        "A video is not the same as its bytes — separate the metadata from the content.",
+        "One upload produces many renditions. Is a rendition a first-class entity, or just a path stored with the video?",
+        "What data structure helps you track the progress of a long-running transcoding job so a client can check back?"
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "Cover upload, search, playback. Show method, path, request/response bodies.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "POST /songs body: { title, artist }",
+          "GET /search?q=... → Song[]",
+          "GET /songs/:id/stream → audio stream"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Endpoint to initiate upload (with metadata)",
+          "Endpoint to query a video's status (polls for renditions)",
+          "Endpoint to fetch video renditions manifest (lists available resolutions)",
+          "Endpoint to request a specific rendition (returns stream or redirect)"
+        ],
+        "should": [
+          "Search endpoint",
+          "Chunked-upload endpoints for resumability"
+        ],
+        "avoid": [
+          "Single monolithic POST /upload with entire file body",
+          "Returning full video files instead of manifests or streaming URLs"
+        ]
+      },
+      "sampleAnswer": "POST /videos\n  body: { title, description }\n  → 201 { videoId, uploadUrl, sessionToken }\n\nPOST /videos/:videoId/chunks\n  body: binary chunk with range header\n  → 200 { nextChunkOffset }\n\nGET /videos/:videoId/status\n  → 200 { videoId, status, renditions: [ { resolution, codec, url } ] }\n\nGET /videos/:videoId/manifest\n  → 200 { m3u8 or mpd }\n\nGET /videos/:videoId/renditions/:resolution\n  → 302 redirect to CDN URL or stream\n\nGET /search?q=...\n  → 200 { videos: [ { id, title, thumbnail } ] }",
+      "hints": [
+        "Uploads need resumability — not one monolithic POST. What's the negotiation protocol for 'what have you already received?'",
+        "After upload, clients poll for status. What data structure tells them which renditions are ready and where to fetch them?",
+        "Playback is driven by a manifest (m3u8 or mpd) that lists segments and available qualities. Why does the server return a manifest, not a file?",
+        "The actual bytes live on CDN or object storage. What does the API return, and what does the client fetch directly?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through upload, transcoding, and playback.",
+      "howToAnswer": "Boxes: client, API gateway, upload service, transcoding queue, transcoding workers, object storage, metadata DB, CDN, playback service. Show data flow for each path.",
+      "rubric": {
+        "must": [
+          "Separation of upload service, async transcoding pipeline, and playback delivery",
+          "Object storage for raw and transcoded videos",
+          "Metadata DB for video info and rendition tracking",
+          "Async job queue for transcoding (message broker)",
+          "CDN fronting video delivery with origin fallback"
+        ],
+        "should": [
+          "Chunked upload with resumability negotiation",
+          "Parallel transcoding workers pulling jobs from queue",
+          "Manifest generation pointing to CDN URLs",
+          "Per-resolution encoding (multiple codecs, bitrates)"
+        ],
+        "avoid": [
+          "Synchronous transcoding blocking the upload response",
+          "Serving raw uploaded video without transcoding",
+          "Single transcoding service that becomes a bottleneck"
+        ]
+      },
+      "sampleAnswer": "Upload flow: Client chunks the 10GB video and uploads to Upload Service via POST /videos/:videoId/chunks. Upload Service writes chunks to object storage (S3) immediately and marks video status='uploading'. On final chunk, publishes TranscodeJob { videoId, uploadedPath } to a distributed message queue (Kafka/Pub-Sub).\n\nTranscoding flow: Stateless Transcoding Workers (auto-scaled pool) subscribe to the job queue. On job arrival, worker downloads raw video from S3, spawns parallel subtasks (one per resolution: 240p, 480p, 720p, 1080p, 1440p, 2160p), each producing H.264 and VP9 codecs. Writes encoded segments to S3 and updates Metadata DB: INSERT INTO renditions (videoId, resolution, codec, path, status='done'). Workers are horizontally scaled by queue depth.\n\nPlayback flow: Client requests GET /videos/:videoId/manifest → Playback Service queries Metadata DB for available renditions, generates HLS/DASH .m3u8 or .mpd manifest with CDN URLs. Player downloads manifest, selects quality based on bandwidth, and fetches segments from CDN. CDN cache hit rate ~90%; misses pull from S3 origin.\n\nSchema snippet: videos (id PK, title, uploader_id, status, created_at) | renditions (videoId FK, resolution, codec, s3_path, created_at) | metadata (videoId FK, thumbnail_path, indexed_at).",
+      "hints": [
+        "Upload is fast, transcoding is slow. How do you decouple them? What queues the transcoding work, and who pulls it?",
+        "One upload produces 10+ renditions. Can they be encoded in parallel? What's the unit of parallelism — one worker per video, or finer?",
+        "On the playback side, the client doesn't directly fetch files — it fetches a manifest. Why return a list of URLs instead of the bytes?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-transcoding-latency",
+      "title": "Fast transcoding pipeline",
+      "questionPrompt": "How do you get a video ready for playback within minutes instead of hours, given the transcoding workload?",
+      "sampleAnswer": "Parallel encoding per resolution: split the 10GB video into 100 segments (1-min chunks), each segment encoded independently across a pool of worker nodes. A 'segment coordinator' merges outputs into contiguous byte ranges per rendition. Tier 1: encode 240p/360p immediately (low CPU cost, fast), queue 720p/1080p concurrently. Availability tiers: 240p ready in 2 min (median), 1080p in 8 min. Stateless workers auto-scale by queue depth (Kubernetes HPA on job backlog).",
+      "rubric": {
+        "must": [
+          "Segment-level parallelism (split source, encode in parallel, merge)",
+          "Tiered encoding (fast preview renditions first, high-quality last)"
+        ],
+        "should": [
+          "Worker auto-scaling by queue depth",
+          "Mention hardware acceleration (GPU transcoding)",
+          "Concrete latency targets per resolution tier"
+        ],
+        "avoid": [
+          "Serial encoding (one resolution at a time)",
+          "Waiting for all renditions before user can watch preview"
+        ]
+      },
+      "hints": [
+        "If one worker encodes the whole video, p99 latency is hours. How can you split the work, and what's the smallest parallel unit?",
+        "Users don't need 4K immediately — they want *something* to watch in seconds. How do you prioritize?",
+        "Worker pools scale by job queue depth, but encode time varies by codec and resolution. Where's the bottleneck?"
+      ]
+    },
+    {
+      "slug": "dd-manifest-consistency",
+      "title": "Manifest consistency",
+      "questionPrompt": "How do you ensure that a playback manifest never lists a rendition that doesn't yet exist, or conversely, stops offering it after deletion?",
+      "sampleAnswer": "Renditions table has a status column: 'encoding' | 'done' | 'deleting'. Playback Service queries only status='done' rows. Transcoding Worker writes the encoded file *first*, then updates status='done' in a separate transaction (or uses a pre-signed S3 URL with a future expiry, so it's guaranteed to exist by manifest-serve time). On deletion, mark status='deleting', remove from manifest generation, allow in-flight requests to finish, then physically delete S3 objects. This two-phase approach (file → status → manifest) prevents broken links.",
+      "rubric": {
+        "must": [
+          "Rendition status tracking (encoding → done → deleting)",
+          "Manifest generation only references status='done' renditions"
+        ],
+        "should": [
+          "Discuss file-first, status-second ordering",
+          "Handle in-flight requests after status changes"
+        ],
+        "avoid": [
+          "Assuming files and DB rows are always in sync",
+          "Serving a manifest with broken S3 URLs"
+        ]
+      },
+      "hints": [
+        "A manifest is a list of URLs. What makes a URL valid for the client to fetch? Does the file always exist when the URL is listed?",
+        "Two systems are involved: object storage (eventual consistency) and metadata DB (transactional). Which one is the source of truth?",
+        "What if a transcoding worker crashes after uploading the file but before updating the DB? Is that a broken state?"
+      ]
+    },
+    {
+      "slug": "dd-edge-caching-cdn",
+      "title": "Edge caching and CDN",
+      "questionPrompt": "How do you serve 500M hours/day of video to 2B users globally with low latency and low origin load, given that each byte traverses the network once?",
+      "sampleAnswer": "CDN fronts all video delivery: CloudFront, Akamai, or custom edge network. Cache key: (videoId, resolution, segmentId, codec). Popularity skew: top 1% of videos get ~30% of views. CDN hit rate: ~95% (most segments cached at edge for days). On cache miss, edge pulls from regional origin (S3 bucket in same continent). Origin sees ~5% of view traffic (cache misses + unpopular content), well within 1PB/day budget. Per-edge cache: 10-100 TB, TTL per-segment 7 days.",
+      "rubric": {
+        "must": [
+          "CDN caching with a concrete key (video + resolution + segment)",
+          "Hit rate estimation tied to popularity skew"
+        ],
+        "should": [
+          "Multi-region origin fallback",
+          "TTL strategy (vary by freshness of content)",
+          "Quantified origin load reduction"
+        ],
+        "avoid": [
+          "Assuming every view hits origin",
+          "Flat caching strategy without popularity awareness"
+        ]
+      },
+      "hints": [
+        "Not all videos are equal. Trending videos are viewed millions of times; obscure videos once a year. How does the cache strategy adapt?",
+        "500M hours = massive bytes. What's cached at the edge, and when does a request reach the origin?",
+        "Segments are immutable (a video never changes, only new renditions are added). What TTL makes sense?"
+      ]
+    }
+  ]
+}

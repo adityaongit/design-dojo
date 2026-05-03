@@ -1,0 +1,264 @@
+{
+  "id": "price-tracker",
+  "title": "Price Tracking Service",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design a price tracking service like CamelCamelCamel. Users can track prices for products and receive alerts when the price drops below a threshold. Target ~10M tracked products, ~1M alerts per day, and pricing freshness within 24 hours for cold products and hourly for popular items.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering the must-have behavior. Skip analytics, custom rules, or bulk operations unless explicitly asked.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Users can search for a song or artist",
+          "Users can add a song to a playlist",
+          "Users see their saved playlists with content"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can add a product to their watchlist",
+          "Users can set a price alert threshold (notified when price drops below)",
+          "Users receive notifications when their alert triggers"
+        ],
+        "should": [
+          "Users can remove a product from their watchlist",
+          "Users can view price history for a product",
+          "Users can update their alert threshold"
+        ],
+        "avoid": [
+          "Drifting into analytics, dashboards, or custom alert rules (AND, OR logic)",
+          "Adding multi-product alerts or bulk operations"
+        ]
+      },
+      "sampleAnswer": "1. Users should be able to search for a product and view its current price.\n2. Users should be able to add a product to their watchlist with a target price.\n3. Users should be able to receive an alert when a watched product's price drops below the threshold.\n4. Users should be able to view the price history of a product.",
+      "hints": [
+        "Think of three roles in this system: the product, the alert rule, and the user. Which nouns appear in your functional requirements?",
+        "One action is about subscribing, another is about triggering, a third is about consuming. What's the fourth?",
+        "Stay narrow: alerts are simple boolean checks on price. Complex conditions and exclusions are out of scope."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover latency, scale (tracked products, alerts per day), freshness targets, availability, and alert delivery reliability. Tie each to a real product concern.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Search latency <200ms",
+          "Playlist reads are cheap and highly cached",
+          "Scale to billions of songs and millions of users",
+          "..."
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Price freshness targets (e.g., hourly for hot products, 24h for cold)",
+          "Alert latency target (e.g., <5 minutes from price change to notification)",
+          "Scale: ~10M tracked products, ~1M alerts per day",
+          "No alert duplicates (each threshold triggers at most once per price drop)"
+        ],
+        "should": [
+          "High availability (99.9%+)",
+          "At-least-once alert delivery"
+        ],
+        "avoid": [
+          "Promising sub-minute freshness on all products (cost prohibitive)",
+          "Exactly-once without acknowledging the coordination cost"
+        ]
+      },
+      "sampleAnswer": "- Price freshness: 1 hour for popular products (>1k watchers), 24 hours for long tail.\n- Alert latency: <5 minutes from price update to notification delivery.\n- Scale: 10M tracked products, 1M alerts/day, ~100 watches per product on average.\n- Availability: 99.9% uptime.\n- No duplicate alerts: once a user is notified of a price drop, they won't get another until price rises and drops again.\n- Durability: price history must be persisted; alerts must be retried until delivered.",
+      "hints": [
+        "Freshness is tiered, not flat. What drives the difference between hot and cold products? How do you measure 'popularity'?",
+        "Alert delivery is async and lossy by default — what SLO converts it into a reliable system?",
+        "Uniqueness constraint: no double-alerting on the same threshold. What's the state that prevents it?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Song",
+          "Playlist",
+          "User"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Product: the item being tracked (with current price and metadata)",
+          "Alert: the user's watch rule (product_id, user_id, threshold, triggered status)"
+        ],
+        "should": [
+          "Price history record: timestamped price snapshot",
+          "User: subscription and notification preferences"
+        ],
+        "avoid": [
+          "Inventing complex entities for features not in scope"
+        ]
+      },
+      "sampleAnswer": "- Product: { id, name, url, merchant, current_price, last_update_time }.\n- Alert: { id, user_id, product_id, threshold_price, triggered, created_at }.\n- PriceHistory: { product_id, price, timestamp, source }.\n- User: { id, email, preferences }.",
+      "hints": [
+        "Three nouns satisfy the functional requirements. Can you name them?",
+        "Which entity changes often? Which is append-only?",
+        "The 'triggered' status matters for the no-duplicate-alert invariant — mark it."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement. REST is the default — show method, path, request body shape, and response.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "GET /search?q=song_name → Song[]",
+          "POST /playlists/:id/tracks body: { track_id }",
+          "GET /playlists/:id → Playlist with tracks"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST /alerts body: { product_id, threshold_price } → Alert",
+          "GET /products/:id → Product with current price",
+          "GET /alerts/:id/history → PriceHistory[]"
+        ],
+        "should": [
+          "DELETE /alerts/:id",
+          "PUT /alerts/:id body: { threshold_price }",
+          "GET /products/search?q=... → Product[]"
+        ],
+        "avoid": [
+          "Conflating alert creation with a product lookup",
+          "Returning the full price history on every product GET"
+        ]
+      },
+      "sampleAnswer": "POST /alerts\n  body: { product_id, user_id, threshold_price }\n  → 201 { id, product_id, threshold_price, triggered }\n\nGET /products/:id\n  → 200 { id, name, url, merchant, current_price, last_update_time }\n\nDELETE /alerts/:id\n  → 204\n\nGET /alerts/:id/history\n  → 200 { prices: [{ price, timestamp }] }",
+      "hints": [
+        "Four endpoints map to the four functional requirements. Map each one explicitly.",
+        "The watch endpoint takes a product_id and a threshold. What's the response shape?",
+        "History is a separate endpoint, not bundled with the product. Why does that matter for caching?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through the price polling and alert triggering paths.",
+      "howToAnswer": "Boxes and arrows: API tier → DB, price-fetch scheduler → scraper/API clients → DB, alert-trigger worker → notification service. Show the tiered polling queue (priority-based). Walk through both paths end-to-end.",
+      "rubric": {
+        "must": [
+          "API service + Database",
+          "Price-fetch scheduler with a priority queue (popular items polled more often)",
+          "Alert trigger mechanism (index alerts by product_id, cheap diff before notification)",
+          "Notification service (fan-out to user channels)"
+        ],
+        "should": [
+          "Separate fetcher workers (stateless)",
+          "Time-series DB for price history",
+          "Cache layer for popular products",
+          "At-least-once delivery retry queue"
+        ],
+        "avoid": [
+          "Single fetch thread (bottleneck)",
+          "Re-evaluating all alerts on every price change",
+          "No dedupe on alert notifications"
+        ]
+      },
+      "sampleAnswer": "API tier (stateless behind ALB) → RDB (PostgreSQL) for alerts and products.\n\nPrice polling: \n- Scheduler maintains a priority queue of products by watchlist size. Popular items (>1k watches) polled hourly, long tail every 24h.\n- Fetcher pool (100s of workers) pulls from the queue, scrapes / API calls, publishes 'price_fetched' events to Kafka.\n\nPrice history:\n- Stream processor consumes 'price_fetched', stores to TimescaleDB (partitioned by product_id).\n\nAlert triggering:\n- Trigger worker consumes 'price_fetched' events. For product X, looks up only alerts where product_id=X and triggered=false.\n- Cheap diff: compare new price to old price. If price <= threshold, emit 'alert_fired' event and set triggered=true in the alert row.\n\nNotification delivery:\n- Fan-out worker consumes 'alert_fired' events. Looks up user email/SMS preferences. Publishes to SES/Twilio with exponential-backoff retry queue (Kafka dead-letter topic).",
+      "hints": [
+        "The headline trick is the priority queue that biases polling toward high-value products. Sketch that queue and how it's consumed.",
+        "Between price fetching and alert triggering, there's a cheap diff check. What's the old value, and where does it come from?",
+        "Alert delivery is async and multi-channel. How do you retry without spamming? What's the cooldown?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-polling-cadence",
+      "title": "Polling cadence at scale",
+      "questionPrompt": "Your service now tracks 100M products. Fetching all prices once per day costs $10k. How do you decide which products to poll more often without exceeding budget?",
+      "sampleAnswer": "Tier products by watchlist size: tier-1 (>5k watchers) polled 4x/day (~100k products, $8k/day); tier-2 (500-5k watchers) polled 2x/day (~5M products, $1.5k/day); tier-3 (<500) once per 72h (~95M products, $0.5k/day). Track per-user demand signals: if a user adds a product to their watch, bump it up one tier for 24h. Use a min-heap priority queue keyed by (next_poll_time, product_id). Workers pull the top, respecting rate limits per merchant API. Reprioritize on user action (watch/unwatch).",
+      "rubric": {
+        "must": [
+          "Tiered polling strategy based on a metric (watchlist size, volatility, user demand)",
+          "Concrete cost envelope and numbers",
+          "Data structure for the priority queue"
+        ],
+        "should": [
+          "Feedback loop: user actions bump priority",
+          "Per-merchant rate-limit awareness"
+        ],
+        "avoid": [
+          "Flat polling across all products (wastes budget)",
+          "Ignoring the merchant's rate limits"
+        ]
+      },
+      "hints": [
+        "Start with the cost constraint. If you budget $10k/day for fetches, what's your samples/day? Divide that by the product count to get an average cadence.",
+        "Products aren't equal. What metric captures importance? Watchlist size? Price volatility? User activity?",
+        "Implement the feedback: when a user adds a watch, the product gets bumped. When do you demote it back?"
+      ]
+    },
+    {
+      "slug": "dd-no-duplicate-alerts",
+      "title": "No duplicate alerts",
+      "questionPrompt": "How do you guarantee that a user is notified at most once per price drop, even if the price updates multiple times in the trigger-worker pipeline?",
+      "sampleAnswer": "Each alert row has a triggered boolean. On the first price update that crosses the threshold, set triggered=true atomically in the database (use a compare-and-set, or a prepared statement with a WHERE triggered=false clause). Publish 'alert_fired' only on a successful update. If the same price re-arrives due to a retry, the WHERE clause fails — no duplicate. Separately, when price rises above the threshold, reset triggered=false so the next drop can trigger again.",
+      "rubric": {
+        "must": [
+          "Identify the idempotency key (alert_id + threshold_crossed)",
+          "Atomic state transition (triggered flag)",
+          "Explain why a second price update won't double-notify"
+        ],
+        "should": [
+          "Reset logic when price rises again",
+          "Handling race conditions in a distributed trigger worker pool"
+        ],
+        "avoid": [
+          "Application-level deduplication (brittle across retries)",
+          "Logging the event without atomically changing state"
+        ]
+      },
+      "hints": [
+        "The simplest invariant: triggered is a boolean. Once it flips to true, a second update at the same price can't change it. Show the SQL or pseudo-code.",
+        "What if two trigger workers process the same price update in parallel? The database is your lock-free fence.",
+        "When price bounces, the alert should be resettable. What's the condition to flip triggered back to false?"
+      ]
+    },
+    {
+      "slug": "dd-notification-reliability",
+      "title": "At-least-once delivery",
+      "questionPrompt": "Your notification service to email/SMS is flaky (99% success rate). How do you guarantee users receive their alert, even if the first attempt fails?",
+      "sampleAnswer": "Publish alert-fired to a reliable queue (Kafka). A notification worker pulls, sends to SES/Twilio, waits for ACK. On failure (5xx, timeout), republish with exponential backoff (1s, 4s, 16s, ...) capped at 5 retries over 5 minutes. Move to a dead-letter topic after 5 failures. Idempotency: include a unique (alert_id, user_id, price) tuple in the notification ID sent to SES; SES deduplicates within 24h, so if we retry with the same ID, the user sees only one email. Monitor the dead-letter topic for manual recovery.",
+      "rubric": {
+        "must": [
+          "Durable queue (Kafka or SQS) for alert events",
+          "Retry mechanism with exponential backoff",
+          "Idempotency key to prevent duplicate user-facing notifications"
+        ],
+        "should": [
+          "Dead-letter topic for observability",
+          "Max-retry cap to prevent infinite retries",
+          "Acknowledgment protocol (ACK after SES response)"
+        ],
+        "avoid": [
+          "Retrying forever without a cap",
+          "Losing failed notifications (fire-and-forget to SES)",
+          "No idempotency (could send 5 emails for one alert)"
+        ]
+      },
+      "hints": [
+        "Your queue is the source of truth. An alert is 'delivered' once the queue acknowledges the message, not once SES succeeds. Think about the consumer-side ACK semantics.",
+        "Idempotency lives in the downstream service (SES). What's a unique key you can pass to it?",
+        "Five retries over five minutes is a guideline. Why not retry forever? What's the cost of a missing notification?"
+      ]
+    }
+  ]
+}

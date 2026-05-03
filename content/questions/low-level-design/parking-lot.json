@@ -1,0 +1,255 @@
+{
+  "id": "parking-lot",
+  "title": "Parking Lot",
+  "difficulty": "medium",
+  "type": "low-level-design",
+  "prompt": "Design a parking lot management system. The lot has multiple levels, each with compact, regular, and oversized parking spots. Vehicles (motorcycles, cars, trucks) enter via a gate, receive a ticket upon entry, and exit by paying a fee. The parking fee is calculated based on vehicle type and parking duration. Support multiple pricing strategies (e.g., hourly, daily rate).",
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "questionPrompt": "Clarify the requirements. What's in scope and what isn't?",
+      "howToAnswer": "Capture the rules tightly. Decide scope: multi-level vs single, pricing models, vehicle types. State assumptions about payment, reservations, and concurrent access.",
+      "exampleHints": {
+        "headline": "Example (Movie Theater):",
+        "bullets": [
+          "Theater has multiple screens with rows of seats",
+          "Customers book seats, receive confirmation, and pay",
+          "Pricing varies by time (matinee vs evening)",
+          "Out of Scope: loyalty programs, online refunds, special events"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Multiple levels with three spot types (compact, regular, oversized)",
+          "Three vehicle types: motorcycle, car, truck",
+          "Entry gate assigns a ParkingTicket",
+          "Exit gate validates payment and releases the spot",
+          "Pricing based on vehicle type and duration (e.g., hourly rates)"
+        ],
+        "should": [
+          "Configurable pricing strategies (hourly, daily)",
+          "Track available spots per level and type",
+          "Report capacity and occupancy"
+        ],
+        "avoid": [
+          "Building a payment system (assume payment processor exists)",
+          "Designing reservation or waiting-list logic",
+          "Handling networking or distributed systems"
+        ]
+      },
+      "sampleAnswer": "Scope:\n- Multi-level parking lot. Each level has compact, regular, and oversized spots.\n- Vehicle types: motorcycle, car, truck. Each type fits certain spot sizes (motorcycle fits all; car fits regular and oversized; truck fits oversized only).\n- Entry: gate opens if available spot exists, issues a ParkingTicket with entry time and spot ID.\n- Exit: ticket holder pays based on vehicle type and duration. Spot marked free.\n- Pricing strategy: hourly rate per vehicle type (e.g., $2/hr motorcycle, $4/hr car, $6/hr truck).\n\nOut of scope: online reservations, loyalty programs, real payment processing, vehicle license plate OCR.",
+      "hints": [
+        "Think about the state that changes: which spots are occupied, which are free, and by what vehicle type.",
+        "Pricing depends on both vehicle type and time parked. Design a mechanism that plugs different pricing rules without rewriting the lot.",
+        "Clarify: does a compact spot satisfy a car-sized vehicle? What about a motorcycle in a regular spot?"
+      ]
+    },
+    {
+      "slug": "entities-relationships",
+      "title": "Entities & Relationships",
+      "questionPrompt": "What are the core entities and how do they relate?",
+      "howToAnswer": "Pick the orchestrator. Decide what owns lot state (floors, spots), vehicle hierarchy, and pricing logic. Avoid bloated God classes.",
+      "exampleHints": {
+        "headline": "Example (ATM):",
+        "bullets": [
+          "ATM (orchestrator)",
+          "Bank (account ledger)",
+          "Card (user identity)",
+          "Transaction (history record)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "ParkingLot (orchestrator) — coordinates entry/exit and tracks levels",
+          "Level (multiple per lot) — owns spots of each type",
+          "ParkingSpot (with hierarchy: CompactSpot, RegularSpot, OversizedSpot) — tracks occupancy",
+          "Vehicle (with hierarchy: Motorcycle, Car, Truck) — knows its size",
+          "ParkingTicket — issued at entry, paid at exit"
+        ],
+        "should": [
+          "PricingStrategy interface (HourlyStrategy, DailyStrategy) for flexible rates",
+          "Spot.canFit(vehicle) predicate for assignment logic"
+        ],
+        "avoid": [
+          "Mixing vehicle logic with spot assignment in a single class",
+          "Hard-coding prices in multiple places"
+        ]
+      },
+      "sampleAnswer": "- ParkingLot: orchestrates entry/exit, holds multiple Levels, delegates spot-finding to levels.\n- Level: owns three lists (compact, regular, oversized spots), finds the first available spot matching vehicle size.\n- ParkingSpot (and subclasses CompactSpot, RegularSpot, OversizedSpot): tracks if occupied, by which vehicle. Knows which vehicle types fit.\n- Vehicle (and subclasses Motorcycle, Car, Truck): knows its size to determine which spots fit.\n- ParkingTicket: { vehicleId, entryTime, spotId, levelId }. Issued at entry; passed to exit handler.\n- PricingStrategy: interface with calculateFee(vehicleType, duration) -> double. Plugged into the lot.",
+      "hints": [
+        "ParkingLot is the orchestrator — it doesn't own every spot directly. What abstraction lets you add a new level without reshuffling code?",
+        "Vehicle size and spot size are paired — design a way for a spot to answer 'can you fit this vehicle?' without hard-coded type checks.",
+        "Pricing logic is decoupled from the lot and spots. Where should the strategy live?"
+      ]
+    },
+    {
+      "slug": "class-design",
+      "title": "Class Design",
+      "questionPrompt": "Define the classes — fields and methods. Keep rules with the entity that owns the state.",
+      "howToAnswer": "Sketch each class with explicit method signatures. Use enums for vehicle/spot types. Return useful types (not bare bool) from entry/exit methods.",
+      "exampleHints": {
+        "headline": "Example (Movie Theater):",
+        "bullets": [
+          "class Theater: + bookSeat(screenId, row, col) -> Reservation",
+          "class Screen: + availableSeats() -> List<Seat>",
+          "enum SeatType { STANDARD, PREMIUM, WHEELCHAIR }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Vehicle hierarchy with size enum: Motorcycle(SMALL), Car(MEDIUM), Truck(LARGE)",
+          "ParkingSpot hierarchy matching size; canFit(vehicle) -> bool",
+          "ParkingLot.parkVehicle(vehicle) -> ParkingTicket (or throw)",
+          "ParkingLot.unparkVehicle(ticket) -> double (amount owed)",
+          "PricingStrategy.calculateFee(vehicleType, durationMinutes) -> double"
+        ],
+        "should": [
+          "Level.findAvailableSpot(vehicleSize) -> ParkingSpot or null",
+          "Spot subclasses (CompactSpot, RegularSpot, OversizedSpot) override canFit()",
+          "Enums for VehicleType, SpotType, SpotSize"
+        ],
+        "avoid": [
+          "Returning bool from parkVehicle — need to return or throw the ticket",
+          "Type-checking with instanceof in the lot or level (let spots decide)"
+        ]
+      },
+      "sampleAnswer": "```\nenum VehicleType { MOTORCYCLE, CAR, TRUCK }\nenum SpotSize { COMPACT, REGULAR, OVERSIZED }\nenum SpotStatus { FREE, OCCUPIED }\n\nclass Vehicle:\n  id: String\n  type: VehicleType\n  size: SpotSize\n  constructor(id, type):\n    this.id = id\n    this.type = type\n    this.size = type == MOTORCYCLE ? COMPACT : (type == CAR ? REGULAR : OVERSIZED)\n\nclass ParkingSpot:\n  id: String\n  spotSize: SpotSize\n  status: SpotStatus = FREE\n  occupiedBy: Vehicle? = null\n  canFit(vehicle) -> bool:\n    if status == OCCUPIED: return false\n    return vehicle.size <= spotSize\n\nclass CompactSpot(ParkingSpot):\n  constructor(id): super(id, COMPACT)\n\nclass RegularSpot(ParkingSpot):\n  constructor(id): super(id, REGULAR)\n\nclass OversizedSpot(ParkingSpot):\n  constructor(id): super(id, OVERSIZED)\n\nclass Level:\n  levelNumber: int\n  compactSpots: List<CompactSpot>\n  regularSpots: List<RegularSpot>\n  oversizedSpots: List<OversizedSpot>\n  \n  findAvailableSpot(vehicle) -> ParkingSpot?:\n    if vehicle.size == COMPACT:\n      return compactSpots.find(s => s.canFit(vehicle)) ??\n             regularSpots.find(s => s.canFit(vehicle)) ??\n             oversizedSpots.find(s => s.canFit(vehicle))\n    elif vehicle.size == REGULAR:\n      return regularSpots.find(s => s.canFit(vehicle)) ??\n             oversizedSpots.find(s => s.canFit(vehicle))\n    else: // OVERSIZED\n      return oversizedSpots.find(s => s.canFit(vehicle))\n\nclass ParkingTicket:\n  id: String\n  vehicleId: String\n  entryTime: long  // milliseconds\n  spotId: String\n  levelId: int\n\ninterface PricingStrategy:\n  calculateFee(vehicleType: VehicleType, durationMinutes: long) -> double\n\nclass HourlyPricingStrategy implements PricingStrategy:\n  rates: Map<VehicleType, double> = {MOTORCYCLE: 2.0, CAR: 4.0, TRUCK: 6.0}\n  calculateFee(vehicleType, durationMinutes) -> double:\n    hours = ceil(durationMinutes / 60.0)\n    return hours * rates[vehicleType]\n\nclass ParkingLot:\n  id: String\n  levels: List<Level>\n  pricingStrategy: PricingStrategy\n  tickets: Map<String, ParkingTicket> = {}\n  \n  parkVehicle(vehicle) -> ParkingTicket:\n    for level in levels:\n      spot = level.findAvailableSpot(vehicle)\n      if spot != null:\n        spot.status = OCCUPIED\n        spot.occupiedBy = vehicle\n        ticket = new ParkingTicket(generateId(), vehicle.id, now(), spot.id, level.levelNumber)\n        tickets[ticket.id] = ticket\n        return ticket\n    throw NoAvailableSpotException(\"Lot full\")\n  \n  unparkVehicle(ticket) -> double:\n    if ticket not in tickets:\n      throw InvalidTicketException()\n    spot = findSpot(ticket.spotId, ticket.levelId)\n    if spot == null or spot.status == FREE:\n      throw InvalidTicketException()\n    durationMinutes = (now() - ticket.entryTime) / 1000 / 60\n    fee = pricingStrategy.calculateFee(spot.occupiedBy.type, durationMinutes)\n    spot.status = FREE\n    spot.occupiedBy = null\n    remove ticket\n    return fee\n  \n  getAvailableSpotCount() -> Map<SpotSize, int>:\n    counts = {COMPACT: 0, REGULAR: 0, OVERSIZED: 0}\n    for level in levels:\n      counts[COMPACT] += level.compactSpots.count(s => s.status == FREE)\n      counts[REGULAR] += level.regularSpots.count(s => s.status == FREE)\n      counts[OVERSIZED] += level.oversizedSpots.count(s => s.status == FREE)\n    return counts\n```",
+      "hints": [
+        "Vehicle and Spot both care about size. Should they share an enum, or define it independently?",
+        "Pricing is a contract between the lot and a strategy. What's the minimal interface?",
+        "Method signatures matter: parkVehicle should return a ticket, not just success/fail. What about unparkVehicle?"
+      ]
+    },
+    {
+      "slug": "implementation",
+      "title": "Implementation",
+      "questionPrompt": "Pseudo-code the critical methods and trace through one full scenario: entry, duration, exit with payment.",
+      "howToAnswer": "The meaty method is parkVehicle and unparkVehicle — write them carefully. Then trace a concrete sequence: motorcycle enters, parks 90 minutes, exits and pays.",
+      "rubric": {
+        "must": [
+          "parkVehicle correctly finds an available spot, assigns it, and returns a ticket",
+          "unparkVehicle validates the ticket, calculates fee, frees the spot",
+          "Duration is computed from entry/exit times",
+          "Pricing strategy is invoked correctly"
+        ],
+        "should": [
+          "Trace one end-to-end scenario (entry → wait → exit)",
+          "Show how spot assignment respects vehicle size constraints"
+        ],
+        "avoid": [
+          "Forgetting to mark a spot as FREE on unparkVehicle",
+          "Incorrect duration calculation (off-by-one minute)",
+          "Hard-coded pricing in parkVehicle instead of delegating to strategy"
+        ]
+      },
+      "sampleAnswer": "```\nparkVehicle(vehicle):\n  for each level in levels:\n    spot = level.findAvailableSpot(vehicle)\n    if spot != null:\n      spot.status = OCCUPIED\n      spot.occupiedBy = vehicle\n      ticket = new ParkingTicket(\n        id=generateUniqueId(),\n        vehicleId=vehicle.id,\n        entryTime=System.currentTimeMillis(),\n        spotId=spot.id,\n        levelId=level.levelNumber\n      )\n      tickets[ticket.id] = ticket\n      return ticket\n  throw NoAvailableSpotException(\"No spot for \" + vehicle.type)\n\nunparkVehicle(ticket):\n  if ticket not in tickets:\n    throw InvalidTicketException(\"Ticket not found\")\n  level = findLevel(ticket.levelId)\n  spot = level.findSpotById(ticket.spotId)\n  if spot == null or spot.status == FREE:\n    throw InvalidTicketException(\"Spot already freed\")\n  \n  vehicle = spot.occupiedBy\n  durationMinutes = (System.currentTimeMillis() - ticket.entryTime) / 1000 / 60\n  fee = pricingStrategy.calculateFee(vehicle.type, durationMinutes)\n  \n  spot.status = FREE\n  spot.occupiedBy = null\n  tickets.remove(ticket.id)\n  \n  return fee\n```\n\nTrace: Motorcycle (id=MOTO-1, size=COMPACT) enters at t=1000ms.\n1. parkVehicle(MOTO-1): Level 0 finds first free CompactSpot (id=C-01), marks OCCUPIED, creates ticket(id=TKT-1, entryTime=1000ms, spotId=C-01).\n2. Motorcycle parks for 90 minutes = 5400000ms.\n3. At t=1005400ms, unparkVehicle(TKT-1): durationMinutes=(1005400-1000)/1000/60=90. fee=HourlyPricingStrategy.calculateFee(MOTORCYCLE, 90)=ceil(90/60)*2=$2*2=$4. Spot C-01 marked FREE. Ticket removed. Return $4.",
+      "hints": [
+        "parkVehicle must iterate levels until a spot is found — order matters. What if Level 0 is full but Level 1 has space?",
+        "Duration: entry time and exit time are both long integers. Beware of unit mismatch (milliseconds vs minutes vs hours).",
+        "Pricing is a delegated call — the lot doesn't hard-code rates. Trace through a concrete HourlyPricingStrategy example."
+      ]
+    },
+    {
+      "slug": "extensibility",
+      "title": "Extensibility",
+      "questionPrompt": "How would you extend this for: compacted/compact-only levels, reserved spots for EVs, dynamic pricing (peak hours), or reserved parking?",
+      "howToAnswer": "Stay high-level. Point at the seams — where can you add new features without rewriting the core?",
+      "rubric": {
+        "must": [
+          "Reserved spots: extend Level to track reserved vs public spots; findAvailableSpot checks reservation status"
+        ],
+        "should": [
+          "Dynamic pricing: PricingStrategy can check the time of day; PeakHourPricingStrategy multiplies base rate",
+          "EV-only spots: extend ParkingSpot to carry an `isElectric` flag; Vehicle reports fuelType; canFit checks both size and fuel type"
+        ],
+        "avoid": [
+          "Rewriting Level.findAvailableSpot for each new feature — use composition"
+        ]
+      },
+      "sampleAnswer": "Reserved spots: add a `reserved` field to ParkingSpot. In Level.findAvailableSpot, skip reserved spots for non-matching vehicle IDs. ParkingLot.reserveSpot(vehicleId, spotId) pre-assigns.\n\nDynamic pricing: extend PricingStrategy interface with a clock parameter. PeakHourPricingStrategy checks the hour; apply a 1.5x multiplier during peak times (9am–6pm, say).\n\nEV charging: add a `hasCharger` field to Spot. Vehicle gets a `fuelType` enum (GASOLINE, ELECTRIC). Spot.canFit checks both vehicle.size <= spotSize AND (fuelType == ELECTRIC => hasCharger).",
+      "hints": [
+        "Reserved spots: what's the minimal change to Spot and Level to support a reservation flag?",
+        "Dynamic pricing: PricingStrategy already takes vehicle type and duration. What other parameter would let it decide peak pricing?",
+        "EV charging: does every spot need a charger, or just some? Where's the ownership of that constraint?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-spot-assignment",
+      "title": "Efficient spot assignment",
+      "questionPrompt": "How do you find the nearest or least-fragmented available spot without scanning every spot on every entry?",
+      "sampleAnswer": "Pre-compute or lazily cache available spot counts per (level, size). On entry, jump directly to the first level with free spots of that size. Within the level, use a queue (FIFO per spot type) to avoid re-scanning. For a greedy 'first-fit' algorithm, a single pointer per spot type suffices — reset it only when wrapping around. For 'best-fit' (minimize fragmentation), maintain a min-heap of free spots by their row/column distance to the lot entrance, prioritizing closer spots first. Trade-off: first-fit is O(1) amortized; best-fit is O(log n) per entry.",
+      "rubric": {
+        "must": [
+          "Avoid O(n) spot iteration on every entry",
+          "Describe a concrete data structure (queue, pointer, heap)"
+        ],
+        "should": [
+          "Note the amortized or worst-case complexity",
+          "Discuss fragmentation and compaction strategies"
+        ],
+        "avoid": [
+          "Naive 'scan all spots every time' approach",
+          "Forgetting cache invalidation when a spot is freed"
+        ]
+      },
+      "hints": [
+        "If you maintain a list of free spots, how do you keep it up to date as spots become occupied and free?",
+        "First-fit is a simple heuristic: take the first free spot of the right size. What's the cost per entry and exit?",
+        "If you want to minimize wasted space (fragmentation), how would you prioritize which spot to assign?"
+      ]
+    },
+    {
+      "slug": "dd-concurrency",
+      "title": "Concurrent entry and exit",
+      "questionPrompt": "How does the design handle multiple vehicles entering or exiting simultaneously without race conditions or double-booking?",
+      "sampleAnswer": "ParkingLot, Level, and ParkingSpot are the shared mutable state. Synchronize all public methods: parkVehicle and unparkVehicle hold a lock on the lot for the entire operation (find spot, mark occupied, create ticket). This prevents two threads from assigning the same spot to two vehicles. Alternatively, lock individual spots: acquire the spot's lock, check status, transition to OCCUPIED atomically. The spot-level lock is finer-grained and allows concurrent entries into different spots. Deadlock risk: if two threads lock two spots in opposite order, deadlock occurs. Use a global lock on all spots (via the lot) to prevent this.",
+      "rubric": {
+        "must": [
+          "Identify shared mutable state: Level.spots, Spot.status, Lot.tickets",
+          "Propose a concrete synchronization mechanism (lock scope and granularity)"
+        ],
+        "should": [
+          "Discuss deadlock prevention",
+          "Note the trade-off between fine-grained and coarse-grained locking"
+        ],
+        "avoid": [
+          "Sprinkling synchronized everywhere without justification",
+          "Assuming Java concurrent.Lock magic without describing the invariant it protects"
+        ]
+      },
+      "hints": [
+        "What's the smallest critical section you must protect? Find the spot, reserve it, issue the ticket — all atomic?",
+        "Two vehicles both enter and both target the same spot. How do you prevent the race?",
+        "Fine-grained locking (per-spot) is faster but riskier. What's the simplest way to avoid deadlock?"
+      ]
+    },
+    {
+      "slug": "dd-pricing-variants",
+      "title": "Pricing strategy variants",
+      "questionPrompt": "How does the design support multiple pricing models (hourly, daily flat, weekend surcharge, subscription) without hard-coding rules?",
+      "sampleAnswer": "PricingStrategy is an interface: calculateFee(vehicleType, durationMinutes, entryTime, exitTime) -> double. Each variant is a concrete class: HourlyStrategy (ceil(hours) * hourlyRate), DailyFlatStrategy (durationMinutes >= 1440 ? dailyRate : hourlyRate * hours), WeekendSurchargeStrategy (checks entryTime's day-of-week, multiplies by 1.5 on Saturdays/Sundays). ParkingLot holds a PricingStrategy field; swapping strategies is a single assignment: lot.setPricingStrategy(new DailyFlatStrategy()). For A/B testing or time-based rules (e.g., summer vs winter pricing), introduce a PricingStrategyFactory that returns the right strategy based on current date/time.",
+      "rubric": {
+        "must": [
+          "PricingStrategy is an interface with at least 2 concrete implementations",
+          "Each variant is a separate class, not a series of if-statements in a single class"
+        ],
+        "should": [
+          "Note the Strategy pattern and its extensibility",
+          "Show how the lot invokes the strategy without knowing its type"
+        ],
+        "avoid": [
+          "If-statements in calculateFee checking vehicle type; type info is already in the parameter",
+          "Hard-coded logic in ParkingLot related to pricing"
+        ]
+      },
+      "hints": [
+        "Strategy pattern: the lot doesn't choose which pricing rule to apply. Where's the seam that lets you swap?",
+        "Some pricing depends on entry time (peak hours, day of week). What parameters must calculateFee accept?",
+        "Factory pattern: if pricing rules change dynamically (morning vs afternoon), where does that logic live?"
+      ]
+    }
+  ]
+}

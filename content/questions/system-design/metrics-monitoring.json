@@ -1,0 +1,269 @@
+{
+  "id": "metrics-monitoring",
+  "title": "Metrics Monitoring",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design a metrics ingestion, storage, and querying system like Prometheus or Datadog. The system must collect time-series metrics (CPU, memory, request latency) from thousands of hosts, store them durably, and support real-time alerting and historical queries. Target ~1M samples/sec ingest, 99.9% availability, sub-second query latency on recent data, and 1-year retention with tiered storage.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "Ingest metrics from agents, store time-series data, query with filters/aggregations, define alerts. Don't drift into visualization (Grafana) or advanced ML features.",
+      "exampleHints": {
+        "headline": "Example (Stock Price Ticker):",
+        "bullets": [
+          "Agents push stock prices (AAPL, GOOG) at regular intervals",
+          "Query: 'Get average AAPL price over the last hour'",
+          "Alert: 'Notify if AAPL drops below threshold'"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Accept metrics (name, timestamp, value, labels) from multiple agents",
+          "Store metrics durably and retrieve them by name, labels, and time range",
+          "Query metrics with aggregations (sum, avg, max) and label filters",
+          "Evaluate alert rules and forward to notification system"
+        ],
+        "should": [
+          "Support sampling / downsampling for older data",
+          "Scrape or pull metrics automatically via service discovery"
+        ],
+        "avoid": [
+          "Designing the alerting notification UI — that's handled downstream",
+          "Confusing metrics (time-series) with logs or traces",
+          "Overspecifying custom aggregation functions"
+        ]
+      },
+      "sampleAnswer": "1. Agents (via scrape or push) send metrics: name, timestamp, numeric value, key-value labels.\n2. Store raw metrics in a time-series database, partitioned by series ID.\n3. Query API: retrieve samples by metric name, label filters, and time range; apply aggregation (sum, avg, max, min).\n4. Alert engine: evaluate rule expressions on incoming/recent samples; fire alerts matching a threshold.\n5. Optionally: downsample old data to coarser intervals to save space.",
+      "hints": [
+        "Think of a metric as a labeled numeric stream over time. What's the minimal data you need to capture it?",
+        "Two separate operations: storing raw samples vs. aggregating them. Keep them distinct.",
+        "Alerts aren't dashboards — they're a rules engine that watches for conditions and fires."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Ingest rate, query latency, retention, availability, durability. Put numbers on everything.",
+      "exampleHints": {
+        "headline": "Example (Stock Price Ticker):",
+        "bullets": [
+          "Ingest: 100K prices/sec from 10K symbols",
+          "Query latency: <500ms for 1-hour window, <5s for 1-year window",
+          "Storage: 2 years retention",
+          "Availability: 99.95%"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Ingest throughput (samples/sec)",
+          "Query latency targets for recent vs. historical data",
+          "Data retention period and storage scale",
+          "Durability: no sample loss on single-host failure"
+        ],
+        "should": [
+          "Availability target (e.g., 99.9%)",
+          "Alert delivery latency (e.g., <1 min to detection)"
+        ],
+        "avoid": [
+          "Vague retention ('keep data forever')",
+          "Ignoring the write-heavy, read-sparse nature of time-series systems",
+          "Forgetting that old data must be queried cheaply (not sacrificing P99)"
+        ]
+      },
+      "sampleAnswer": "- Ingest: 1M samples/sec sustained (1K hosts × 1K metrics/host, or 10K hosts × 100 metrics/host).\n- Cardinality: up to 1B unique series (hostname × metric × labels).\n- Query latency: <1s for recent data (last 24h), <5s for monthly aggregations.\n- Retention: 1 year raw data; older data downsampled to 1h intervals.\n- Durability: no sample loss; multi-AZ replication for storage.\n- Availability: 99.9% uptime; queries degrade gracefully on partial outage.\n- Alert detection: <1 min from sample ingestion to alert firing.",
+      "hints": [
+        "Cardinality (number of unique label combinations) often dominates cost. What constraint helps you bound it?",
+        "Recent queries (last 24h) are hot. Old queries are rare. Tier your storage accordingly.",
+        "Ingest is write-heavy. Don't use a schema that forces index writes on every sample."
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "Metric (the stream), Sample (a single data point), Series (metric + label set), Alert Rule.",
+      "exampleHints": {
+        "headline": "Example (Stock Price Ticker):",
+        "bullets": [
+          "Metric: 'stock_price'",
+          "Sample: { timestamp: 1000, value: 150.25 }",
+          "Series: { metric: 'stock_price', labels: { symbol: 'AAPL' } }",
+          "AlertRule: { expr: 'stock_price{symbol=AAPL} < 100', for: '5m' }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Sample: (timestamp, value) — the atomic unit",
+          "Series: (metric name, label set) — identifies a unique stream",
+          "AlertRule: expression, threshold, evaluation window"
+        ],
+        "should": [
+          "Dimension: a label key (e.g., 'host', 'instance')",
+          "Chunk: a compressed block of samples"
+        ],
+        "avoid": [
+          "Treating samples and series as the same thing"
+        ]
+      },
+      "sampleAnswer": "- Sample: { timestamp (Unix ns or ms), value (float64) }.\n- Series: { metric_name (string), labels (map<key, value>) }. Together, metric + labels form the unique series ID.\n- SeriesMetadata: { seriesID, lastUpdatedAt, chunkRefs }.\n- Chunk: a compressed block of (timestamp, value) pairs, typically 2-4h of data per chunk.\n- AlertRule: { name, expr (PromQL-like), for (evaluation window), severity, action (notification target) }.",
+      "hints": [
+        "A series is uniquely identified by metric name + label set. How do you assign it a stable ID?",
+        "Chunks are immutable once written. Why does this matter for concurrent ingest?",
+        "Labels are sparse — most series won't have all possible label keys. What data structure handles this?"
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API surface.",
+      "howToAnswer": "Scrape targets via pull, query with filters/aggregation, define rules. Keep it minimal — internal components talk via efficient protocols.",
+      "exampleHints": {
+        "headline": "Example (Stock Price Ticker):",
+        "bullets": [
+          "GET /metrics → returns all symbol prices in Prometheus format",
+          "POST /api/query body: { query: 'avg(stock_price) by (symbol)', start, end }",
+          "POST /api/rules body: { expr, threshold, for, action }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Scrape endpoint (pull-based metrics collection)",
+          "Query endpoint (time range, filters, aggregations)",
+          "Alert rule definition and status endpoint"
+        ],
+        "should": [
+          "Service discovery endpoint (dynamic target list)",
+          "Metrics metadata endpoint (label values, cardinality)"
+        ],
+        "avoid": [
+          "Inventing complex push APIs — pull is simpler at scale"
+        ]
+      },
+      "sampleAnswer": "Pull (Scrape):\nGET /metrics\n  → Prometheus-format output:\n    http_requests_total{method=\"GET\",path=\"/api\",status=\"200\"} 1234\n    cpu_usage_percent{host=\"node1\"} 45.2\n\nQuery:\nPOST /api/query\n  body: { query: \"avg(cpu_usage_percent) by (host)\", start: 1000000, end: 2000000, step: 60 }\n  → { data: [ { labels: {host: \"node1\"}, values: [[ts1, 45.2], [ts2, 44.8], ...] }, ... ] }\n\nAlerts:\nGET /api/rules → list all alert rules\nPOST /api/rules body: { name, expr, for_sec, severity }\nGET /api/alerts → list currently firing alerts",
+      "hints": [
+        "Scrape format is simple — agent outputs key=value pairs. How do you parse and normalize it?",
+        "Query needs a time-series query language (or simple filters). What's the minimal query surface?",
+        "Alert rules live in Prometheus. How do they flow to the external Alertmanager?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the architecture. Walk through the ingest and query paths.",
+      "howToAnswer": "Service discovery → scrape pool → ingester → TSDB storage. Query router → TSDB read layer → Alertmanager. Highlight the headline trick: pull-based scrape with series partitioning, chunk compression, and separate hot/cold storage.",
+      "rubric": {
+        "must": [
+          "Service discovery component (Consul, Kubernetes API, static config)",
+          "Stateless scraper pool that pulls metrics from targets",
+          "Ingester that buffers and writes to TSDB",
+          "TSDB storage partitioned by series ID (e.g., hash(metric+labels) % shards)",
+          "Chunk compression (delta encoding, bitpacking)",
+          "Query router that hits recent hot data and tiered cold storage",
+          "Alert rule evaluator and dedup before fan-out to Alertmanager"
+        ],
+        "should": [
+          "Bloom filter or inverted index for label lookups",
+          "Write-Ahead Log (WAL) for durability between flushes",
+          "Background compaction of chunks and blocks",
+          "Downsampling pipeline for old data"
+        ],
+        "avoid": [
+          "Treating all samples equally — tier by age",
+          "Push-only ingest — pull gives you better control",
+          "Single-node TSDB — partition and replicate"
+        ]
+      },
+      "sampleAnswer": "Ingest Path:\n1. Service Discovery: reads Consul/K8s API every 30s. Builds a dynamic list of scrape targets (host, port, labels).\n2. Scraper Pool: N stateless scraper pods, each responsible for a hash-based subset of targets. Pulls /metrics from each target every 15s (configurable). Parses Prometheus format.\n3. Ingester: batches samples in memory (buffer 2-3 min of data). Assigns each unique (metric, labels) pair to a series ID via a sharded series-ID allocator (Cassandra or DynamoDB). Writes (timestamp, value) to a local Chunk in memory.\n4. TSDB Blocks: every 2 hours, the ingester flushes accumulated chunks to disk as an immutable Block. Block contains index (series → chunks), compressed chunks, and metadata.\n5. WAL: samples are write-ahead-logged before buffering in memory, so a crash replays uncommitted data.\n6. Tiered Storage: recent blocks (< 24h) kept in fast SSD; older blocks moved to S3/GCS (cold storage).\n\nQuery Path:\n1. Query hits a stateless Query Service (load-balanced).\n2. Label lookup: for a query like 'cpu_usage{host=\"node1\"}', use the label index to find matching series IDs.\n3. Chunk lookup: once we have series IDs, find which blocks contain samples in the requested time range.\n4. Hot-path (recent data): read from in-memory Ingester or fast SSD blocks. Merge results.\n5. Cold-path (old data): read downsampled blocks from S3. Downsampling reduces query cost (1h samples instead of 1m).\n6. Aggregation: apply PromQL operations (sum, avg, rate) on the merged samples.\n\nAlert Path:\n1. Alert Rule Evaluator: every 15s (configurable), read each rule. Execute the query expression against the TSDB.\n2. Thresholding: if the result crosses the threshold, mark the alert as FIRING. If below for 'for' window, mark RESOLVED.\n3. Dedup: multiple Prometheus replicas may independently fire the same alert. A dedup layer (Redis or in-memory state) groups identical alerts by (rule, labels) and only forwards one copy to Alertmanager.\n4. Fan-out to Alertmanager: send firing alerts. Alertmanager handles grouping, routing, and delivery (email, Slack, PagerDuty).",
+      "hints": [
+        "The headline trick: partition scrape targets by hash so one scraper always owns the same target. Why does this help?",
+        "Chunk compression is critical: delta encoding + bitpacking can reduce 1-year data to petabytes instead of exabytes. Understand the encoding.",
+        "Tiered storage: recent queries hit memory/SSD. Old queries hit downsampled blocks. How does downsampling work (e.g., keep only hourly max/min/avg)?"
+      ]
+    }
+  ],
+  "dataFlow": {
+    "slug": "data-flow",
+    "title": "Data Flow",
+    "description": "Metrics flow from agents through scraping, buffering, compression, and multi-tier storage, with queries routed to hot or cold tiers and alerts evaluated and deduplicated before fan-out."
+  },
+  "deepDives": [
+    {
+      "slug": "dd-cardinality-explosion",
+      "title": "Cardinality explosion",
+      "questionPrompt": "Your cardinality grows to 10B series. TSDB explodes in memory and query time becomes unbounded. How do you detect and mitigate runaway cardinality without losing data?",
+      "sampleAnswer": "Prevention: enforce cardinality limits per metric (e.g., max 1M unique series per metric). If a label (like user_id or request_id) has unbounded values, drop it from ingestion or replace it with a hash bucket. Detection: track the cardinality of each metric in a side-car process; if it exceeds a threshold, alert ops. Mitigation: 1) relabel rules to drop high-cardinality labels before writing, 2) rate-limit ingest on problematic metrics, 3) evict old series more aggressively. Storage: store cardinality estimates (HyperLogLog) per metric to enable quick queries without materializing all series.",
+      "rubric": {
+        "must": [
+          "Cardinality limit per metric with concrete action on breach (drop, rate-limit, relabel)",
+          "Detection mechanism (monitoring cardinality growth)"
+        ],
+        "should": [
+          "Relabel rules to drop high-cardinality dimensions",
+          "HyperLogLog or similar for cheap cardinality estimation"
+        ],
+        "avoid": [
+          "Ignoring cardinality as a problem",
+          "Storing all series in memory without bounds"
+        ]
+      },
+      "hints": [
+        "If a label has unbounded values (like timestamps or IDs), it's a cardinality bomb. How do you detect it before it crashes the system?",
+        "Relabel rules let you drop or rename labels at scrape time. Why is this better than post-hoc deletion?",
+        "Cardinality is hard to query directly — use a probabilistic data structure."
+      ]
+    },
+    {
+      "slug": "dd-consistency-ordering",
+      "title": "Out-of-order samples and consistency",
+      "questionPrompt": "Samples arrive out-of-order (slow scraper, network jitter). How do you handle them without dropping data or breaking time-series continuity? And how do you ensure query results are consistent even during partial failures?",
+      "sampleAnswer": "Out-of-order: accept samples with timestamps up to T-max_drift (e.g., 24h old) using a rolling time window. Store them in a separate 'ooo' buffer and merge with the main chunk on flush. This avoids breaking the immutability of committed chunks. Consistency: on multi-replica systems (e.g., Prometheus HA pairs), deduplicate and pick the highest timestamp if there's a conflict. For queries, snapshot the WAL and block list at query start time — don't allow queries to race the ingest path. Eventually-consistent is OK because time-series are append-only.",
+      "rubric": {
+        "must": [
+          "Mechanism to accept out-of-order samples (buffer or rolling window)",
+          "Merge strategy when flushing (preserve all, dedup on higher timestamp)"
+        ],
+        "should": [
+          "Query-time dedup across replicas",
+          "Snapshot isolation (queries see a consistent view)"
+        ],
+        "avoid": [
+          "Dropping out-of-order samples silently",
+          "Blocking ingestion on out-of-order detection"
+        ]
+      },
+      "hints": [
+        "Out-of-order samples will always happen in production (GC pauses, network jitter). What's the acceptable window?",
+        "Chunks are immutable once flushed. Where do out-of-order samples live before being merged?",
+        "Multi-replica dedup: if two Prometheus servers scrape the same target and you see conflicting values, which one do you keep?"
+      ]
+    },
+    {
+      "slug": "dd-alert-scalability",
+      "title": "Alert evaluation and dedup at scale",
+      "questionPrompt": "You have 10K alert rules and 1M samples/sec. Evaluating every rule every 15s is expensive. How do you scale rule evaluation? And how do you deduplicate alerts from multiple Prometheus replicas before notifying?",
+      "sampleAnswer": "Scaling rule evaluation: partition rules by hash across multiple evaluation workers (similar to scraper sharding). Each worker is responsible for a subset of rules and evaluates them concurrently. Cache query results across rules that share the same expression (e.g., multiple rules querying 'rate(http_errors_total)'). Use an in-memory query result cache with a short TTL. Dedup: collect all firing alerts (rule name, label set) into a shared dedup state (Redis with a 10-min sliding window). If the same (rule, labels) pair fires from multiple replicas within a short window, deduplicate and send only one copy to Alertmanager. Alertmanager itself also groups and silences, so dedup is a first-pass filter.",
+      "rubric": {
+        "must": [
+          "Partition rule evaluation across workers (concrete: hash(rule_name) % num_workers)",
+          "Dedup mechanism with concrete state store (Redis, shared cache)"
+        ],
+        "should": [
+          "Query result caching within the evaluation window",
+          "Alertmanager integration (fan-out after dedup)"
+        ],
+        "avoid": [
+          "Evaluating all rules on all replicas (N² cost)",
+          "Dedup delay > 10 min (users see duplicate notifications)"
+        ]
+      },
+      "hints": [
+        "Rule evaluation is CPU-bound. Partition rules like you partition scrape targets — what's the partitioning key?",
+        "Query result caching: two rules that both query the same expression should share the cached result. How long should you cache it?",
+        "Dedup window: if a rule fires on two replicas at t=0 and t=2s, should you send one alert or two?"
+      ]
+    }
+  ]
+}

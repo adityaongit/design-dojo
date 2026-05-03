@@ -1,0 +1,263 @@
+{
+  "id": "strava",
+  "title": "Strava",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design Strava, a fitness tracking and social platform. Users record activities (runs, hikes, bike rides), post them to their feed, see friends' activities, and compete on segment leaderboards. Target 10M DAU with 500M total activities. Segment leaderboards must show top 100 runners per segment within 2 seconds.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "Focus on the must-have user actions: record an activity, view a feed, view leaderboards. Skip admin features and premium mechanics unless asked.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Users can search and listen to songs",
+          "Users can create and follow playlists",
+          "Users see a personalized feed of new releases"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can record an activity (run, hike, bike, etc.) with GPS data and metrics (distance, time, elevation, heart rate).",
+          "Users can view their own activity feed and friends' activity feeds.",
+          "Users can view segment leaderboards (top runners for a specific route segment)."
+        ],
+        "should": [
+          "Users can like or comment on activities.",
+          "Users can follow other users."
+        ],
+        "avoid": [
+          "Drifting into training plans, coaching, or premium features",
+          "Designing the mobile client UI"
+        ]
+      },
+      "sampleAnswer": "1. Users can record an activity with GPS data, distance, duration, elevation, and optional metrics like heart rate.\n2. Users can view their own activity feed.\n3. Users can view friends' activities in their feed.\n4. Users can see segment leaderboards for specific route segments.\n5. Users can like or comment on activities.",
+      "hints": [
+        "Strava is fundamentally a recording + feed system. Frame the core flows: upload activity, view feed, discover segments.",
+        "Segment leaderboards are the unique UX that differentiates Strava. What data must you track to build them?",
+        "Stick to the core — activity recording, feed viewing, leaderboard ranking. Premium features and coaching are out of scope."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Scale (10M DAU, 500M activities), latency targets for feeds and leaderboards, durability of GPS traces, eventual consistency on the feed.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Sub-100ms latency on search",
+          "Availability > consistency on playlists",
+          "Durability of user libraries",
+          "Handle 1M concurrent streams"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Feed latency: <500ms p99 for feed generation (eventual consistency is OK).",
+          "Leaderboard latency: <2s p99 for top-100 queries.",
+          "Durability of GPS traces and activity metadata.",
+          "Scale: 10M DAU, 500M lifetime activities, peak ~100k activity uploads/min."
+        ],
+        "should": [
+          "Availability target (99.9%+).",
+          "Read-heavy workload (100:1 read:write ratio on activities)."
+        ],
+        "avoid": [
+          "Listing NFRs without concrete latency numbers.",
+          "Requiring strong consistency on the activity feed (impractical at scale)."
+        ]
+      },
+      "sampleAnswer": "- Feed latency: <500ms p99 (eventual consistency acceptable — users tolerate seconds-old activity visibility).\n- Leaderboard query latency: <2s p99 for top-100 per segment.\n- Durability: GPS traces and metrics must not be lost.\n- Scale: 10M DAU, 500M activities lifetime, ~100k uploads/min at peak.\n- Read:write ~10:1 on activities (heavy feed reads, fewer uploads).\n- Availability: 99.9%.",
+      "hints": [
+        "What's the user-facing latency that matters most? Feed generation, leaderboard ranking, or both?",
+        "GPS traces are large (10-100 KB per activity). Factor that into durability and storage cost.",
+        "Leaderboards are read-heavy but require freshness. Is eventual consistency with a 5-min TTL acceptable, or do you need real-time?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "List the nouns: User, Activity, Segment, SegmentRun, Follow, etc. Don't define schemas yet.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "User",
+          "Song",
+          "Playlist",
+          "Play (event)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "User",
+          "Activity (the recorded workout with metrics and GPS data)",
+          "Segment (a pre-defined or detected route section)",
+          "SegmentRun (a user's performance on a segment from a single activity)"
+        ],
+        "should": [
+          "Follow (user-to-user social link)",
+          "Like / Comment (on activities)"
+        ],
+        "avoid": [
+          "Inventing entities like 'Badge' or 'Achievement' without explicit scope."
+        ]
+      },
+      "sampleAnswer": "- User: athlete profile, privacy settings.\n- Activity: recorded workout (GPS trace, distance, duration, elevation, heart rate).\n- Segment: a known route section defined by start/end GPS coordinates. Often crowd-sourced.\n- SegmentRun: a single user's time on a segment within one activity.\n- Follow: social link (user follows another user).",
+      "hints": [
+        "Distinguish a Segment from the many SegmentRuns on it. A segment is persistent; a run is an event.",
+        "GPS data is heavy — should it live in Activity or be a separate entity? Think storage and query patterns.",
+        "Add Follow and Like only if they're in the functional requirements."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "Endpoints for recording, fetching feed, and fetching leaderboards. Show request/response shapes.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "POST /songs/:id/play",
+          "GET /me/feed → [Song]",
+          "POST /playlists body: { name, song_ids }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST endpoint to create an activity (with GPS trace, distance, duration).",
+          "GET endpoint to fetch activity feed (with pagination or cursor).",
+          "GET endpoint to fetch segment leaderboard (top N runners)."
+        ],
+        "should": [
+          "POST endpoint to like an activity.",
+          "POST endpoint to follow a user."
+        ],
+        "avoid": [
+          "Omitting pagination on feed or leaderboard endpoints.",
+          "Uploading entire GPS traces as JSON in one request (consider chunking or raw binary)."
+        ]
+      },
+      "sampleAnswer": "POST /activities\n  body: { userId, gpxTrace, distance, duration, elevation, heartRate?, activityType }\n  → 201 { activityId }\n\nGET /feed?limit=20&cursor=xxx → { activities: [{ id, userId, distance, duration, likes, comments }], nextCursor }\n\nGET /segments/:segmentId/leaderboard?limit=100 → { entries: [{ rank, userId, time, date }] }\n\nPOST /activities/:id/like body: { userId } → 204\n\nPOST /users/:id/follow → 204",
+      "hints": [
+        "Recording an activity is a write. Fetching the feed and leaderboards are heavy reads — what makes each efficient?",
+        "Pagination is critical for feed and leaderboard endpoints at scale. Use a cursor, not offset.",
+        "GPS traces can be large (10-100 KB). How do you accept them? Chunked upload, raw binary, or embedded JSON?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the architecture. Walk through the activity upload, feed generation, and leaderboard ranking paths.",
+      "howToAnswer": "Boxes and arrows: client → API → service layer → databases / caches / pipelines. Explain the feed fan-out strategy and leaderboard materialization.",
+      "rubric": {
+        "must": [
+          "Client / Load balancer / API service tier.",
+          "Activity storage (durable, scalable) + GPS data store.",
+          "Feed generation pipeline (async, fan-out to followers).",
+          "Leaderboard computation and storage (materialized, refreshed periodically)."
+        ],
+        "should": [
+          "Cache layer (Redis) for hot activities and leaderboards.",
+          "Message queue for async activity processing.",
+          "Segment detection or matching service (identify which segments an activity covers).",
+          "CDN for static segment metadata."
+        ],
+        "avoid": [
+          "Computing leaderboards on-the-fly for every request (too slow).",
+          "Fan-out-on-write for every activity to every follower (impractical at 10M DAU).",
+          "Storing raw GPS traces directly in the main activity table."
+        ]
+      },
+      "sampleAnswer": "Upload path: Client → ALB → Activity Service. Service validates, writes Activity metadata to Postgres, enqueues GPS trace to blob store (S3). Publishes 'activity.created' event to Kafka.\n\nFeed path: Kafka workers consume 'activity.created', lookup user's followers from graph DB (Redis), fanout activity to follower feed caches (Redis ZSET, sorted by timestamp). Feed API reads from cache; cold misses fetch from Postgres with <500ms SLA.\n\nLeaderboard path: Segment Matcher service processes activities: identifies which segments apply (via GPS bounding box + precise matching), computes segment run time. Updates a SegmentRun table (Postgres). Leaderboard Job runs every 5 min: rebuilds top-100 per segment, writes materialized view to Redis. Leaderboard API serves from Redis <2s p99. Archive runs older than 30 days to cold storage.\n\nSchema: Activities table (id, userId, distance, duration, elevation, activityType, createdAt). SegmentRun table (id, userId, segmentId, activityId, time, date). Segment table (id, name, startLat, startLng, endLat, endLng, distance).",
+      "hints": [
+        "Separate the write path (activity upload) from the read paths (feed, leaderboard). They have different latency and consistency needs.",
+        "Fan-out-on-write would mean writing to every follower's feed on upload. What's the alternative? Fan-out-on-read?",
+        "Leaderboards are read-heavy but queries need to be fast. Materialize them periodically (e.g., every 5 min) into Redis or a separate table."
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-fanout-feed",
+      "title": "Feed fanout strategy",
+      "questionPrompt": "You have 10M DAU. Sustained load is ~10k activity uploads/sec; peak is 100k/min. How do you generate feeds in <500ms without timing out? Why does pure fan-out-on-write fail?",
+      "sampleAnswer": "Sustained: ~10k uploads/sec (600k/min). Peak: 100k/min (8% of sustained). Pure fan-out-on-write fails due to write amplification: at 100k uploads/min and avg 200 followers per user, you'd write 20M feed entries/min to Postgres — that's 333k writes/sec, which exceeds most DBs' write capacity. Solution: hybrid approach. Kafka workers consume activity.created, push only activityId + timestamp to follower feed caches (Redis ZSET, async). For high-follower accounts (followers > 50k), skip the push entirely and use pull-on-read (feed query scans creator's recent activities). Feed API: Redis ZRANGE on user:123:feed → [activityId, timestamp] (~5-10ms), then parallel batch-hydrate activity details from Postgres (20 at a time, ~50ms). Common-case <100ms p99. Cache TTL 7 days, evict LRU past 1000 activities. This bounds write load to ~2-3M writes/min, well within capacity.",
+      "rubric": {
+        "must": [
+          "Clearly state the chosen strategy: hybrid (push to cache + pull for celebrities).",
+          "Show write-amplification math: peak uploads × avg followers ⇒ failure threshold (e.g., 20M writes/min infeasible).",
+          "Explain why pure fan-out-on-write fails: database write bottleneck.",
+          "Define the celebrity cutoff (e.g., followers > 50k) and justify avoiding fanout for them."
+        ],
+        "should": [
+          "Cache layer details: Redis ZSET, TTL, LRU eviction.",
+          "Hydration strategy: separate activity-detail fetch from feed push."
+        ],
+        "avoid": [
+          "Omitting the write-amplification math or claiming fan-out-on-write is feasible without cap.",
+          "Conflating sustained vs. peak load; 100k/min is peak, not sustained baseline."
+        ]
+      },
+      "hints": [
+        "At 100k uploads/min and 200 avg followers, pure fan-out writes 20M entries/min to your DB. How many rows/sec is that, and does your Postgres handle it?",
+        "Some accounts (celebrities, brands) have millions of followers. Should you always fanout to them, or switch to pull-based for outliers?",
+        "Cache the feed as a sorted set: user:userId:feed → {activityId: timestamp}. The API reads from cache and hydrates details separately."
+      ]
+    },
+    {
+      "slug": "dd-leaderboard-freshness",
+      "title": "Leaderboard freshness & scale",
+      "questionPrompt": "Your leaderboard must rank 10M athletes on 1M segments and answer 'top 100 for segment X' in <2s. How often should you update it, and where do you store it?",
+      "sampleAnswer": "Materialized views: Leaderboard Job runs every 5 minutes. For each segment, it queries SegmentRun table (indexed on segmentId + time, partitioned by date) to find all runs in the last 90 days, sorts by time ascending, and writes the top-100 (and top-1000 for tie-breaking) to a materialized table (Postgres) or to Redis hash (segment:123:leaderboard → userId → time). Cold reads hit the materialized table or Redis (single-digit ms). Between refreshes, leaderboard is stale by up to 5 min. If freshness is critical, hybrid approach: pre-compute top-100 every 5 min in Redis. Real-time updates push only if a new run breaks top-100 for that segment (streaming upsert with a bloom filter to skip irrelevant runs). This caps the real-time overhead to ~10 CPU%, while 95% of queries hit the pre-computed view.",
+      "rubric": {
+        "must": [
+          "Describe the refresh frequency (e.g., every 5 minutes) and the trigger.",
+          "Identify the storage choice (materialized table, Redis, or both) and why.",
+          "Acknowledge the staleness window and when it matters (e.g., during an event)."
+        ],
+        "should": [
+          "Explain the query pattern (index on segmentId, sort by time).",
+          "Discuss hybrid real-time + pre-computed approach for critical segments."
+        ],
+        "avoid": [
+          "Claiming you can compute top-100 per segment on every query at 1M segments.",
+          "Ignoring the 5-min stale data cost."
+        ]
+      },
+      "hints": [
+        "Computing 1M segment leaderboards every second is not feasible. Pick a refresh cadence (5, 10, or 60 min) and justify it.",
+        "Where does the pre-computed leaderboard live? Postgres for durability, Redis for speed?",
+        "What triggers a real-time update? Is a user willing to wait 5 min to see their new run on the leaderboard, or does breaking top-100 require instant visibility?"
+      ]
+    },
+    {
+      "slug": "dd-segment-matching",
+      "title": "Matching activities to segments",
+      "questionPrompt": "When a user uploads a new activity with a 10 km GPS trace, how do you identify which of 1M segments they just ran?",
+      "sampleAnswer": "Use geospatial indexing and shape matching. Store each segment as a polyline (start, end, midpoints). On activity upload, extract activity polyline from GPS trace. Use a spatial index (PostGIS, quad-tree, or geohash) to find all segments whose bounding box overlaps the activity's bounding box (broad phase). For each candidate segment, run a line-distance algorithm (Fréchet or Hausdorff distance) to check if the activity polyline is within 50m of the segment polyline (narrow phase). This narrows 1M segments to ~100 candidates, then ~5 exact matches. Store the match in SegmentRun table. Async processing: Kafka worker does the matching, writes SegmentRun rows, and triggers leaderboard update. Candidate matching is O(1M) in index lookups + O(100) in detail comparisons, ~1-2s per activity. Pre-index major segments (top-10k by popularity) for faster lookups.",
+      "rubric": {
+        "must": [
+          "Name a geospatial indexing technique (PostGIS, geohash, quad-tree, R-tree).",
+          "Explain the two-phase approach: broad (bounding box), then narrow (distance check)."
+        ],
+        "should": [
+          "Mention a line-distance algorithm (Fréchet, Hausdorff, Levenshtein) for shape matching.",
+          "Discuss thresholds (e.g., 50m tolerance for a match)."
+        ],
+        "avoid": [
+          "Claiming you can compare 1M segments against every trace without indexing.",
+          "Ignoring edge cases like overlapping segments or partial-match traces."
+        ]
+      },
+      "hints": [
+        "GPS traces are polylines (lists of lat/lng points). Segments are also polylines. How do you compare them efficiently?",
+        "Spatial indexing helps but is not enough. You need a narrow phase to avoid false positives.",
+        "Most activities only match a handful of segments. Is the matching service a bottleneck, or can you make it async?"
+      ]
+    }
+  ]
+}

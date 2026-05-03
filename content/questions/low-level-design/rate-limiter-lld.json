@@ -1,0 +1,270 @@
+{
+  "id": "rate-limiter-lld",
+  "title": "Rate Limiter",
+  "difficulty": "hard",
+  "type": "low-level-design",
+  "prompt": "Design a rate limiter that enforces request quotas per client/user. Support multiple algorithms: Token Bucket, Leaky Bucket, Fixed Window, Sliding Window Log, and Sliding Window Counter. The RateLimiter interface should allow querying whether a request is allowed and should integrate with pluggable Clock (for testability) and Storage backends (in-memory vs distributed). Thread-safe and efficiently track state per unique key (user ID, IP address, etc.).",
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "questionPrompt": "Clarify the requirements. What's in scope and what isn't?",
+      "howToAnswer": "Capture the rules tightly. Decide the algorithm scope (support all 5 or just one), limits per client, time windows, and storage strategy. State assumptions about concurrency and persistence.",
+      "exampleHints": {
+        "headline": "Example (Web Cache):",
+        "bullets": [
+          "Cache GET requests with a time-to-live (TTL)",
+          "Evict stale entries on TTL expiry or LRU when full",
+          "Support both in-memory and Redis-backed storage",
+          "Out of Scope: distributed cache coordination, multi-node consistency"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Single rate limiter instance enforces a quota: max N requests in M seconds per key",
+          "isAllowed(key) -> bool: returns whether a request is permitted",
+          "Support at least one algorithm (Token Bucket, Leaky Bucket, Fixed Window, Sliding Window Log, or Sliding Window Counter)",
+          "Thread-safe under concurrent requests"
+        ],
+        "should": [
+          "Support pluggable algorithms (strategy pattern)",
+          "Pluggable Clock for testability (not hard-coded System.currentTimeMillis)",
+          "Pluggable Storage (in-memory vs Redis-like backend)",
+          "Track per-key state independently"
+        ],
+        "avoid": [
+          "Designing a distributed consensus mechanism (keep it single-process or delegate to Storage)",
+          "UI or HTTP integration (focus on the core algorithm classes)",
+          "Automatically expiring old keys without explicit storage cleanup"
+        ]
+      },
+      "sampleAnswer": "Scope:\n- Single RateLimiter instance. Constructor takes rate (requests per second/minute), window size in milliseconds, and algorithm type.\n- isAllowed(key: str) -> bool: returns true if request is allowed, false if quota exceeded.\n- Support Token Bucket as primary algorithm; extensible to others.\n- Thread-safe: use synchronized blocks or ConcurrentHashMap per algorithm.\n- In-memory Storage by default; pluggable Storage interface for Redis-like backends.\n- Clock interface for testing (defaults to System.currentTimeMillis).\n\nOut of scope:\n- Distributed rate limiting (no cross-process consensus).\n- HTTP response codes or middleware integration.\n- Automatic key expiration (Storage is responsible for TTL if needed).\n- Rate limiter for different tiers (e.g., free vs premium) — single quota per key.",
+      "hints": [
+        "Rate limiting is about allowing N events per M seconds. Clarify: what's a 'request'? What identifies a client?",
+        "Pick one algorithm first (Token Bucket is intuitive). Then think about what seams let you swap other algorithms cleanly.",
+        "Thread-safety is critical: concurrent requests on the same key must serialize their state updates. How?"
+      ]
+    },
+    {
+      "slug": "entities-relationships",
+      "title": "Entities & Relationships",
+      "questionPrompt": "What are the core entities and how do they relate?",
+      "howToAnswer": "Pick the orchestrator (RateLimiter). Decide what owns the algorithm state (per-key buckets, counters, queues). Identify pluggable abstractions (Storage, Clock, RateLimitingAlgorithm).",
+      "exampleHints": {
+        "headline": "Example (Parking Lot):",
+        "bullets": [
+          "ParkingLot (orchestrator, manages all spots)",
+          "ParkingSpot (individual space, with vehicle state)",
+          "Vehicle (type and plate)",
+          "ParkingTicket (receipt with entry/exit time)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "RateLimiter (orchestrator): holds algorithm and storage, dispatches isAllowed(key)",
+          "RateLimitingAlgorithm (interface): defines the contract (isAllowed, updateState per algorithm type)",
+          "Storage (interface): stores per-key state (buckets, counters, timestamps)"
+        ],
+        "should": [
+          "Clock (interface): injection point for time, not System.currentTimeMillis",
+          "Concrete implementations: TokenBucketRateLimiter, LeakyBucketRateLimiter, FixedWindowRateLimiter, SlidingWindowLogRateLimiter, SlidingWindowCounterRateLimiter",
+          "Per-key locks or thread-safe map to serialize concurrent access to the same key"
+        ],
+        "avoid": [
+          "Putting all algorithm logic on RateLimiter itself; use strategy pattern",
+          "Hardcoding Storage to HashMap; inject via constructor"
+        ]
+      },
+      "sampleAnswer": "- RateLimiter (orchestrator): receives a rate limit config (max requests, window), algorithm type, Clock, and Storage. isAllowed(key) delegates to the algorithm's check method and updates state via Storage.\n- RateLimitingAlgorithm (interface): abstract contract with isAllowed(key, currentTime, state) -> bool and updateState(key, currentTime, state) -> newState.\n- Storage (interface): get(key) -> state, put(key, state) -> void. In-memory impl uses ConcurrentHashMap<String, PerKeyState>. Redis impl delegates to Lua script.\n- Clock (interface): now() -> long. Defaults to System.currentTimeMillis().\n- Per-key synchronization: RateLimiter maintains a lock per key (or a global lock for simplicity; trade-off between throughput and complexity).",
+      "hints": [
+        "Identify the orchestrator: which class is called by the user? Which owns the algorithm and storage?",
+        "Rate limiter state is per-key: bucket for one user, separate bucket for another. How do you isolate them without a God class?",
+        "Clock is a seam: why inject it? (testability — you can fast-forward time in a unit test without waiting)"
+      ]
+    },
+    {
+      "slug": "class-design",
+      "title": "Class Design",
+      "questionPrompt": "Define the classes — fields and methods. Keep algorithm logic separate from orchestration.",
+      "howToAnswer": "Sketch each class with explicit method signatures and what they return. Use enums for algorithm types. Constructor parameters: rate, window, algorithm, clock, storage.",
+      "exampleHints": {
+        "headline": "Example (Elevator):",
+        "bullets": [
+          "class Elevator: + moveToFloor(floor) -> bool, + getCurrentFloor() -> int",
+          "class ElevatorController: + requestFloor(floor, direction) -> void",
+          "enum Direction { UP, DOWN }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "interface RateLimitingAlgorithm: + isAllowed(key, currentTime, state) -> bool",
+          "class RateLimiter: + isAllowed(key: str) -> bool, constructor(rate, windowMs, algorithm, clock, storage)",
+          "interface Storage: + get(key) -> PerKeyState?, + put(key, state) -> void",
+          "Enum for algorithm types (TOKEN_BUCKET, LEAKY_BUCKET, etc.)"
+        ],
+        "should": [
+          "TokenBucketState: + tokens: double, + lastRefillTime: long",
+          "FixedWindowState: + count: long, + windowStart: long",
+          "SlidingWindowLogState: + timestamps: List<Long>",
+          "SlidingWindowCounterState: + currentCount: long, + prevCount: long, + windowStart: long",
+          "LeakyBucketState: + queue: Queue<Long>, + lastLeakTime: long",
+          "Clock interface: + now() -> long"
+        ],
+        "avoid": [
+          "Methods returning bare bool without context (ok, return the allow/deny decision clearly)",
+          "Hard-coded constants (rate, window size) — pass via constructor",
+          "Mixing algorithm logic with orchestration in one class"
+        ]
+      },
+      "sampleAnswer": "```\nenum AlgorithmType { TOKEN_BUCKET, LEAKY_BUCKET, FIXED_WINDOW, SLIDING_WINDOW_LOG, SLIDING_WINDOW_COUNTER }\n\ninterface RateLimitingAlgorithm:\n  isAllowed(key: str, currentTime: long, state: PerKeyState?) -> bool\n  updateState(key: str, currentTime: long, state: PerKeyState?) -> PerKeyState\n\ninterface Storage:\n  get(key: str) -> PerKeyState?\n  put(key: str, state: PerKeyState) -> void\n\nclass RateLimiter:\n  rate: int  // requests per window\n  windowMs: long\n  algorithm: RateLimitingAlgorithm\n  clock: Clock\n  storage: Storage\n  keyLocks: ConcurrentHashMap<str, ReentrantLock>  // per-key synchronization\n  \n  constructor(rate, windowMs, algorithm, clock, storage):\n    this.rate = rate\n    this.windowMs = windowMs\n    this.algorithm = algorithm\n    this.clock = clock\n    this.storage = storage\n  \n  isAllowed(key: str) -> bool:\n    lock = getOrCreateLock(key)\n    lock.lock()\n    try:\n      currentTime = clock.now()\n      state = storage.get(key)\n      allowed = algorithm.isAllowed(key, currentTime, state)\n      if allowed:\n        newState = algorithm.updateState(key, currentTime, state)\n        storage.put(key, newState)\n      return allowed\n    finally:\n      lock.unlock()\n\nclass TokenBucketRateLimiter implements RateLimitingAlgorithm:\n  rate: double  // tokens per millisecond\n  capacity: int\n  \n  constructor(requestsPerSecond, capacity):\n    this.rate = requestsPerSecond / 1000.0\n    this.capacity = capacity\n  \n  isAllowed(key: str, currentTime: long, state: TokenBucketState?) -> bool:\n    if state == null:\n      state = new TokenBucketState(capacity, currentTime)\n    refill(state, currentTime)\n    if state.tokens >= 1.0:\n      return true\n    return false\n  \n  updateState(key: str, currentTime: long, state: TokenBucketState?) -> TokenBucketState:\n    if state == null:\n      state = new TokenBucketState(capacity, currentTime)\n    refill(state, currentTime)\n    state.tokens -= 1.0\n    return state\n  \n  refill(state: TokenBucketState, currentTime: long) -> void:\n    elapsed = currentTime - state.lastRefillTime\n    tokensToAdd = elapsed * rate\n    state.tokens = min(state.tokens + tokensToAdd, capacity)\n    state.lastRefillTime = currentTime\n\nclass TokenBucketState:\n  tokens: double\n  lastRefillTime: long\n\ninterface Clock:\n  now() -> long\n\nclass SystemClock implements Clock:\n  now() -> long:\n    return System.currentTimeMillis()\n```",
+      "hints": [
+        "Separate algorithm logic from RateLimiter orchestration: use an interface and strategy pattern.",
+        "State changes must be atomic: read current state, check quota, update state. Lock per key to prevent race conditions.",
+        "Token Bucket state: tokens (double, not int, for fractional refills) and lastRefillTime. How do you refill on each check?"
+      ]
+    },
+    {
+      "slug": "implementation",
+      "title": "Implementation",
+      "questionPrompt": "Pseudo-code the meaty methods and trace through one scenario.",
+      "howToAnswer": "Focus on the Token Bucket refill logic and the isAllowed check. Then trace a concrete sequence: first request at t=0, second at t=100ms, third at t=150ms with 10 req/sec capacity.",
+      "rubric": {
+        "must": [
+          "Token Bucket refill: elapsed time * rate, capped by capacity",
+          "isAllowed check: refill, decrement, update state atomically",
+          "Proper lock acquisition and release (no deadlock, exception-safe)"
+        ],
+        "should": [
+          "Trace through a concrete scenario with timestamps",
+          "Show handling of null state (first request ever on a key)",
+          "Demonstrate fractional token arithmetic (e.g., 50ms elapsed at 0.01 tokens/ms = 0.5 tokens added)"
+        ],
+        "avoid": [
+          "Integer arithmetic for tokens (loses precision)",
+          "Recomputing refill on every check without caching lastRefillTime",
+          "Forgetting to lock before reading and updating state"
+        ]
+      },
+      "sampleAnswer": "```\nTokenBucketRateLimiter.refill(state, currentTime):\n  elapsedMs = currentTime - state.lastRefillTime\n  tokensToAdd = elapsedMs * rate  // e.g., 100ms * 0.01 tokens/ms = 1.0 token\n  state.tokens = min(state.tokens + tokensToAdd, capacity)\n  state.lastRefillTime = currentTime\n\nRateLimiter.isAllowed(key):\n  lock = keyLocks.computeIfAbsent(key, k -> new ReentrantLock())\n  lock.lock()\n  try:\n    currentTime = clock.now()\n    state = storage.get(key)\n    allowed = algorithm.isAllowed(key, currentTime, state)\n    if allowed:\n      newState = algorithm.updateState(key, currentTime, state)\n      storage.put(key, newState)\n    return allowed\n  finally:\n    lock.unlock()\n```\n\nTrace: rate = 10 req/sec, capacity = 10 tokens.\n\nRequest 1 at t=0ms:\n  state = null, create new TokenBucketState(tokens=10, lastRefillTime=0)\n  refill: elapsed = 0, tokens = 10 + 0 = 10\n  tokens >= 1.0 → allowed = true\n  updateState: tokens = 10 - 1 = 9, lastRefillTime = 0\n  storage.put(user1, state)\n  return true\n\nRequest 2 at t=100ms:\n  state = get from storage: TokenBucketState(tokens=9, lastRefillTime=0)\n  refill: elapsed = 100 - 0 = 100ms, tokensToAdd = 100 * 0.01 = 1.0, tokens = min(9 + 1, 10) = 10\n  tokens >= 1.0 → allowed = true\n  updateState: tokens = 10 - 1 = 9, lastRefillTime = 100\n  return true\n\nRequest 3 at t=150ms:\n  state: TokenBucketState(tokens=9, lastRefillTime=100)\n  refill: elapsed = 150 - 100 = 50ms, tokensToAdd = 50 * 0.01 = 0.5, tokens = min(9.5, 10) = 9.5\n  tokens >= 1.0 → allowed = true\n  updateState: tokens = 9.5 - 1 = 8.5, lastRefillTime = 150\n  return true\n\n(After 11 rapid requests, tokens = 0, next request blocked until refill happens.)",
+      "hints": [
+        "The refill formula is elapsed * rate, capped by capacity. Why is it safe to cap? (Bucket cannot overflow beyond capacity.)",
+        "Per-key locks serialize state updates. Why not a global lock? (Throughput: concurrent requests to different keys can proceed in parallel.)",
+        "Trace a full scenario: initial state, refill, decrement, state persisted, next request resumes from that state."
+      ]
+    },
+    {
+      "slug": "extensibility",
+      "title": "Extensibility",
+      "questionPrompt": "How would the design extend for: (1) supporting multiple algorithms (switch at runtime), (2) metrics/observability (track allow/deny counts), (3) distributed rate limiting (Redis backend)?",
+      "howToAnswer": "Stay high-level. Point at the seams in the design that make each change clean without rewriting core classes.",
+      "exampleHints": {
+        "headline": "Example (Tic Tac Toe):",
+        "bullets": [
+          "N-in-a-row: Board already takes winLength, just pass 5 instead of 3",
+          "AI opponent: Player becomes an interface; HumanPlayer / AIPlayer impls",
+          "Networked play: introduce MoveSource (Local vs Websocket)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Multiple algorithms: RateLimiter already takes an algorithm parameter. Instantiate TokenBucket / LeakyBucket / FixedWindow as separate classes implementing RateLimitingAlgorithm. Switch at runtime by passing different instances."
+        ],
+        "should": [
+          "Metrics: introduce an Observer interface (AllowDenyObserver) that RateLimiter notifies after each check. Default no-op; Prometheus impl counts allow/deny per key.",
+          "Distributed: Storage interface is already pluggable. Implement Storage with Redis client + Lua script. RateLimiter logic stays unchanged; algorithm state lives on the server, checked via Storage API."
+        ],
+        "avoid": [
+          "Rewriting RateLimiter for each algorithm variant",
+          "Hard-coding metrics to a single backend",
+          "Mixing algorithm logic with distribution logic"
+        ]
+      },
+      "sampleAnswer": "Multiple algorithms:\nRateLimiter constructor already takes RateLimitingAlgorithm. Create concrete classes: TokenBucketRateLimiter, LeakyBucketRateLimiter, FixedWindowRateLimiter, etc. Caller decides: `new RateLimiter(rate, window, new TokenBucketRateLimiter(...), clock, storage)`. No changes to RateLimiter itself.\n\nMetrics/Observability:\nIntroduce interface Observer { onAllow(key, time), onDeny(key, time) }. RateLimiter maintains a list of observers. After each isAllowed check, call observer.onAllow or observer.onDeny. Prometheus impl tracks counters per algorithm and key. RateLimiter is unaware of metrics backend.\n\nDistributed (Redis):\nStorage interface is the seam. Implement RedisStorage { get(key) -> decode Lua result, put(key, state) -> encode state, call Redis EVAL }. Per-algorithm Lua scripts (token-bucket.lua, sliding-window-counter.lua) handle the state check+update atomically on the server. RateLimiter.isAllowed stays the same; all network logic hidden in Storage impl.",
+      "hints": [
+        "Algorithms: your constructor already takes a RateLimitingAlgorithm. What's the minimal change to swap Token Bucket for Sliding Window Counter?",
+        "Metrics: after each allow/deny decision, notify observers. Does RateLimiter care who listens?",
+        "Distributed: the Storage interface is the boundary. On one side: in-memory HashMap. On the other: Redis + Lua. RateLimiter doesn't know the difference."
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-algorithm-fairness",
+      "title": "Algorithm trade-offs",
+      "questionPrompt": "Token Bucket allows bursts up to capacity; Sliding Window Counter approximates sliding; Leaky Bucket enforces strict drain rate. When would you choose each? What are the trade-offs?",
+      "sampleAnswer": "Token Bucket: allows bursts (up to capacity) while enforcing average rate. Best for APIs expecting bursty traffic (mobile app batching, database writes in bulk). Trade-off: requires floating-point math; over-generous to sudden bursts.\n\nSliding Window Counter: blends two fixed windows with a weighted average. Memory: 2 keys per client. Rare edge case where it over-allows slightly at window boundaries. Best for most APIs — good accuracy, low memory.\n\nSliding Window Log: records every request timestamp. Memory: O(n) per key (one timestamp per request). True sliding window, no approximation. Best for high-value APIs (payments, fraud detection) where exact fairness is critical and memory cost is acceptable.\n\nLeaky Bucket (policing): rejects overflow immediately (FIFO queue drops excess). Strict no-burst behavior. Best for protecting backend services: hard guarantee that downstream never sees more than the drain rate.\n\nLeaky Bucket (shaping): queues excess requests, drains at fixed rate. Adds latency but guarantees all requests eventually process (if queue doesn't overflow). Best for request smoothing, traffic shaping.\n\nFixed Window: simplest, lowest memory. Window boundary allows 2x burst (N req in last 1s of window + N req in first 1s of next window). Best for simple login throttling or coarse-grained limits.",
+      "rubric": {
+        "must": [
+          "Explain burst behavior of at least 2 algorithms",
+          "Trade-off: memory vs accuracy for at least 2 algorithms"
+        ],
+        "should": [
+          "Recommend algorithm for a specific use case (mobile, payment, backend protection)",
+          "Discuss Fixed Window's 2x boundary burst and why Sliding Window fixes it"
+        ],
+        "avoid": [
+          "Saying one algorithm is always best; they have different trade-offs",
+          "Confusing Leaky Bucket policing vs shaping modes"
+        ]
+      },
+      "hints": [
+        "Burst behavior: Token Bucket fills up when idle, Leaky enforces steady drain, Sliding Window Log never allows more than rate × window per any continuous interval. Which matches your use case?",
+        "Memory: Fixed Window / Token Bucket use O(1) per client. Sliding Window Log uses O(n). Which can you afford?",
+        "Test case: at time 0, 10 requests arrive. At time 1s, 10 more arrive. With 10 req/sec limit, which algorithms allow both batches? Which reject the first batch?"
+      ]
+    },
+    {
+      "slug": "dd-concurrency-correctness",
+      "title": "Thread safety and correctness",
+      "questionPrompt": "How do you ensure that concurrent requests to the same key don't cause race conditions or double-counting?",
+      "sampleAnswer": "Shared state per key (tokens, counter, timestamps) must be read-updated atomically. Per-key locking (via ReentrantLock or synchronized on key-specific object) ensures that two concurrent requests on the same key serialize their state check+update:\n\n1. Lock key X.\n2. Read state from storage.\n3. Refill (or recalculate counter).\n4. Check quota.\n5. Update state (decrement tokens or increment counter).\n6. Persist to storage.\n7. Unlock key X.\n\nWithout locking, Thread A and Thread B both read state with 1 token left, both see 'allowed', both decrement — state ends up at -1 instead of 0.\n\nAlternative: atomic operations (AtomicLong for fixed-window counter) avoid explicit locks but only work for simple counters, not complex state (floating-point tokens, timestamps). For most algorithms, per-key locks are the clearest approach.\n\nDistributed (Redis): use Lua scripts (EVAL or EVALSHA). Lua code runs atomically on the server, no client-side locks needed. Script reads state, checks quota, updates state — all in one Redis round trip.",
+      "rubric": {
+        "must": [
+          "Identify the shared state (tokens, counter, timestamps)",
+          "Explain why it must be atomic (read-check-update)",
+          "Concrete synchronization mechanism (per-key lock or Lua)"
+        ],
+        "should": [
+          "Trace a race condition scenario and show how locking prevents it",
+          "Discuss per-key vs global lock trade-off (throughput)"
+        ],
+        "avoid": [
+          "Sprinkling synchronized / lock everywhere without justification",
+          "Assuming storage.get() + algorithm.isAllowed() + storage.put() is atomic when it's not"
+        ]
+      },
+      "hints": [
+        "State = tokens (or counter, or timestamps). If two threads read simultaneously and both think there's quota, what goes wrong?",
+        "Lock granularity: lock per key (fine-grained, high throughput) vs global lock (coarse, simpler, lower throughput). Which for a rate limiter?",
+        "Distributed: Lua scripts on Redis replace per-key locks. Why is EVAL atomic? (Server executes script without interruption.)"
+      ]
+    },
+    {
+      "slug": "dd-distributed-state",
+      "title": "Distributed rate limiting",
+      "questionPrompt": "How does the design support a distributed backend (Redis) where state is shared across multiple servers?",
+      "sampleAnswer": "Storage interface is the seam. RedisStorage.get(key) and put(key, state) delegate to Redis:\n\n1. get(key) → HGETALL key (retrieve all fields of a hash: tokens, lastRefillTime for Token Bucket).\n2. put(key, state) → HSET key field value (persist new state).\n\nFor true atomicity (no TOCTOU bugs), use Redis Lua scripting:\n\n```\nlocal state = redis.call('HGETALL', KEYS[1])\nlocal tokens = tonumber(state.tokens or 10)\nlocal lastRefillTime = tonumber(state.lastRefillTime or 0)\nlocal currentTime = tonumber(ARGV[1])\nlocal rate = tonumber(ARGV[2])\n\nlocal elapsed = currentTime - lastRefillTime\nlocal tokensToAdd = elapsed * rate / 1000\ntokens = math.min(tokens + tokensToAdd, 10)\n\nif tokens >= 1 then\n  tokens = tokens - 1\n  redis.call('HSET', KEYS[1], 'tokens', tokens, 'lastRefillTime', currentTime)\n  return 1  -- allowed\nelse\n  return 0  -- denied\nend\n```\n\nMultiple servers call the same Redis Lua script with the same key; Redis guarantees serial execution of the script. State is not in-process; it's on the Redis server, shared across all clients.\n\nSerialization: per-algorithm state struct must encode/decode to/from Redis Hash or String (JSON for complex types).\n\nTTL: Redis EXPIRE or PEXPIRE on keys to auto-cleanup old clients (optional; depends on requirements).",
+      "rubric": {
+        "must": [
+          "Storage interface is the seam; RedisStorage impl swaps in for in-memory HashMap",
+          "Lua script for atomic read-check-update (no client-side locking)",
+          "Encoding state (tokens, counter, etc.) for transmission to Redis"
+        ],
+        "should": [
+          "Show Redis Lua script for Token Bucket algorithm",
+          "Discuss TTL for auto-cleanup",
+          "Mention that RateLimiter orchestration is unchanged; only Storage differs"
+        ],
+        "avoid": [
+          "Doing read-check-update in separate Redis calls (TOCTOU race)",
+          "Hardcoding algorithm logic in Redis script; prefer per-algorithm scripts as separate files"
+        ]
+      },
+      "hints": [
+        "State lives on Redis, not in your process. How does RedisStorage.get(key) and put(key, state) work?",
+        "Atomicity: if two servers call Redis for the same key, Redis Lua script ensures only one refills and decrements at a time. Why not use WATCH + MULTI + EXEC? (Lua is simpler, faster, single round trip.)",
+        "Per-algorithm Lua: Token Bucket script differs from Sliding Window script. How do you organize them (separate .lua files, loader in RedisStorage constructor)?"
+      ]
+    }
+  ]
+}

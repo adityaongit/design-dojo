@@ -1,0 +1,258 @@
+{
+  "id": "local-delivery",
+  "title": "Local Delivery Service",
+  "difficulty": "easy",
+  "type": "system-design",
+  "prompt": "Design a local courier service that matches packages with available couriers in real-time. The system should support package pickup and delivery within a city. Target ~50k daily deliveries with same-day service, real-time courier location tracking, and estimated arrival times.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering the must-have behavior. Separate customer, courier, and admin flows. Skip nice-to-haves like payment processing or customer reviews unless explicitly asked.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Customers can place an order and track its status",
+          "Drivers can accept deliveries and update their location",
+          "Customers see estimated arrival time"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Customers can submit a package and request delivery",
+          "Couriers can view available deliveries and accept them",
+          "Customers can track delivery status and courier location in real-time"
+        ],
+        "should": [
+          "Couriers can update delivery status (picked up, delivered)",
+          "System suggests pickup and delivery windows"
+        ],
+        "avoid": [
+          "Drifting into payment processing, returns, or customer reviews",
+          "Including admin dashboards unless explicitly asked"
+        ]
+      },
+      "sampleAnswer": "1. Customers should be able to submit a package and request a delivery within their city.\n2. Couriers should be able to view available deliveries and accept them.\n3. Customers should be able to track their delivery status and see the courier's real-time location.\n4. Couriers should be able to mark packages as picked up and delivered.",
+      "hints": [
+        "Two sides: customer and courier. What can each do with a package?",
+        "Real-time is a key phrase — what visibility does each side need?",
+        "Stay focused on delivery operations. Skip billing, returns, and ratings."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover latency targets (ETA accuracy, location updates), availability, scale (deliveries/day, concurrent couriers), and real-time constraints. Quantify each requirement.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Low latency matching (seconds)",
+          "High availability (99.9%+)",
+          "Scale: 50k deliveries/day",
+          "Location updates every 5–10 seconds"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Low latency matching — match courier to package in <5 seconds",
+          "Real-time location updates — push updates every 5–10 seconds",
+          "Scale: ~50k daily deliveries, ~2k concurrent couriers",
+          "High availability — 99.9% uptime for matching and tracking"
+        ],
+        "should": [
+          "ETA accuracy — within 5 minutes",
+          "Durability — delivery records must not be lost"
+        ],
+        "avoid": [
+          "Conflating latency targets (matching vs ETA vs location updates)",
+          "Ignoring the real-time location aspect"
+        ]
+      },
+      "sampleAnswer": "- Matching latency: <5 seconds from package creation to courier assignment.\n- Location updates: every 5–10 seconds to customers and dispatch system.\n- Scale: ~50k deliveries/day = ~2 RPS average, ~600 RPS peak; ~2k concurrent couriers.\n- Availability: 99.9% uptime for matching and location tracking.\n- ETA accuracy: ±5 minutes.\n- Durability: all delivery records must be persisted and recoverable after failure.",
+      "hints": [
+        "Matching is the critical path. What latency budget does matching have, and what does tracking need?",
+        "Location updates are different from matching — what's the frequency, and why?",
+        "Quantify the load: deliveries/day, concurrent couriers, and RPS."
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Package, Courier, Delivery, Location. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Order",
+          "Dasher",
+          "Location"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Package — the item to be delivered",
+          "Courier — the person making the delivery",
+          "Delivery — the assignment of a package to a courier"
+        ],
+        "should": [
+          "Location — real-time position of a courier",
+          "DeliveryStatus — history of state changes (pending, picked up, delivered)"
+        ],
+        "avoid": [
+          "Inventing entities the requirements don't justify"
+        ]
+      },
+      "sampleAnswer": "- Package: { id, origin, destination, size, weight, createdAt }\n- Courier: { id, name, phone, currentLocation, isAvailable }\n- Delivery: { id, packageId, courierId, status, assignedAt, pickedUpAt, deliveredAt }\n- Location: { courierId, lat, lng, timestamp }\n- DeliveryStatus: enumeration (pending, assigned, picked_up, delivered)",
+      "hints": [
+        "What are the three main actors or artifacts in the system?",
+        "Which entity represents the live state of a courier, and which is historical?"
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement. REST is the default — show method, path, request body shape, and response.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "POST /orders — place order",
+          "GET /deliveries/:id — tracking",
+          "POST /deliveries/:id/accept — driver accepts"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST endpoint to create a delivery request",
+          "GET endpoint to track delivery status",
+          "POST endpoint for courier to accept a delivery",
+          "POST endpoint to update delivery status (pickup, delivery)"
+        ],
+        "should": [
+          "GET endpoint to list available deliveries for a courier",
+          "Webhooks or polling for location updates",
+          "Returns appropriate HTTP status codes"
+        ],
+        "avoid": [
+          "Mixing multiple concerns in one endpoint",
+          "Forgetting to specify request/response shapes"
+        ]
+      },
+      "sampleAnswer": "POST /deliveries\n  body: { originAddress, destinationAddress, packageSize, phone }\n  → 201 { deliveryId, estimatedPickupTime }\n\nGET /deliveries/:id\n  → 200 { id, status, courierLocation, estimatedArrival }\n\nGET /deliveries/available\n  query: { courierId }\n  → 200 { deliveries: [...] }\n\nPOST /deliveries/:id/accept\n  body: { courierId }\n  → 200 { accepted }\n\nPOST /deliveries/:id/status\n  body: { status: 'picked_up' | 'delivered', timestamp }\n  → 200 { success }",
+      "hints": [
+        "Start with the two key actions: submitting a delivery and accepting it.",
+        "Customers need to see status and location; couriers need a list of nearby deliveries.",
+        "Distinguish state-change endpoints (accept, status update) from read endpoints (track, list)."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through each endpoint.",
+      "howToAnswer": "Boxes and arrows: mobile clients → load balancer → API service → database. Add a matching service, location cache, and real-time messaging. Walk through the matching flow (how does a package find a courier?) and the tracking flow.",
+      "rubric": {
+        "must": [
+          "Client / Load balancer / API service / Database",
+          "Matching algorithm or strategy (e.g., nearest courier, availability check)",
+          "Real-time location tracking mechanism (WebSocket, gRPC, or polling)"
+        ],
+        "should": [
+          "Location cache for hot courier positions",
+          "Message queue for asynchronous status updates",
+          "Geospatial index (e.g., quadtree, R-tree) for fast nearest-neighbor lookup",
+          "Schema: Delivery, Courier, Location entities"
+        ],
+        "avoid": [
+          "Skipping the matching algorithm",
+          "Not addressing how location updates reach customers in real-time"
+        ]
+      },
+      "sampleAnswer": "Architecture:\n- Mobile app (customer & courier) ↔ ALB\n- API service (stateless, deployed on multiple AZs)\n- Matching service (subscribes to location updates, performs geospatial queries)\n- Location service (maintains in-memory cache of courier positions, broadcasts updates via WebSocket to customers)\n- PostgreSQL + PostGIS for delivery history and package metadata\n- Redis for hot location cache (courier ID → lat/lng + timestamp)\n- Kafka for location updates and status-change events\n\nMatching flow:\n1. Customer submits delivery request via POST /deliveries.\n2. API validates address and price, writes to DB.\n3. Matching service queries Redis for couriers within 5km radius, sorts by distance + acceptance rate.\n4. Sends notification (push or polling) to top 3 couriers in parallel.\n5. First acceptance wins; other offers are retracted.\n6. Delivery is assigned; customer sees courier info and WebSocket-streamed location.\n\nLocation flow:\n1. Courier app sends location every 10 seconds to location service.\n2. Location service updates Redis and publishes event to Kafka.\n3. Kafka topic triggers push notifications or WebSocket updates to relevant customers.",
+      "hints": [
+        "Matching is the headline trick. How do you find the nearest available courier without scanning the entire database?",
+        "Location updates must flow to customers in real-time. What's the channel: WebSocket, polling, or both?",
+        "Geospatial indexing is key — what data structure lets you find couriers near a destination in <100ms?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-matching-latency",
+      "title": "Sub-5-second matching",
+      "questionPrompt": "How do you match a package to a courier in under 5 seconds, even with thousands of couriers?",
+      "sampleAnswer": "1. Maintain an in-memory geospatial index of all available couriers (Redis with geospatial commands, or a local quadtree). 2. On package creation, query the index for couriers within 5km, sorted by distance. 3. Send parallel notifications to the top 3; first to accept wins. 4. Write the assignment to DB in the background. If the matching service's local index is out-of-date (stale by <30s), acceptable — a slightly suboptimal match is better than missing the SLO. For fault tolerance, replicate the matching service so a failure doesn't block all matches.",
+      "rubric": {
+        "must": [
+          "In-memory geospatial index (not a DB scan)",
+          "Concrete data structure or service (Redis geo, quadtree, etc.)",
+          "Parallel notification strategy to reduce acceptance latency"
+        ],
+        "should": [
+          "Handling of stale index",
+          "Fault tolerance for the matching service"
+        ],
+        "avoid": [
+          "Full database scan per match",
+          "Sequential notifications (one at a time)"
+        ]
+      },
+      "hints": [
+        "A full database scan is too slow. What in-memory structure pre-computes nearby couriers?",
+        "Sending notifications is slow too. Should you send to one courier or a few in parallel?",
+        "Your index becomes stale — is that acceptable, and at what staleness threshold does it break the system?"
+      ]
+    },
+    {
+      "slug": "dd-real-time-location",
+      "title": "Real-time location tracking",
+      "questionPrompt": "How do you push courier location updates to customers in real-time without overwhelming your system?",
+      "sampleAnswer": "1. Couriers send location every 10 seconds to a location service (or directly to a WebSocket gateway). 2. Location service batches updates (e.g., collect 100 updates, send every 1 second) to reduce network traffic. 3. Push to customers via WebSocket for active connections; fall back to polling or push notifications for inactive sessions. 4. Store location history in a time-series DB (e.g., InfluxDB, Cassandra) for analytics and reconciliation. 5. Use geohashing to partition the location stream so no single process becomes a bottleneck.",
+      "rubric": {
+        "must": [
+          "Identify the push mechanism (WebSocket, polling, or hybrid)",
+          "Batching or aggregation strategy to avoid message explosion"
+        ],
+        "should": [
+          "Time-series storage for history",
+          "Fallback for inactive connections",
+          "Partitioning strategy for scale"
+        ],
+        "avoid": [
+          "Pushing every location update to every customer (will saturate the network)",
+          "Ignoring inactive sessions"
+        ]
+      },
+      "hints": [
+        "Sending every courier update to every customer is too much. What's a reasonable batching strategy?",
+        "Not all customers are actively watching. How do you handle the difference between active and inactive sessions?",
+        "At thousands of concurrent deliveries, a single WebSocket server can't handle all location updates. How do you partition?"
+      ]
+    },
+    {
+      "slug": "dd-availability-failures",
+      "title": "Availability under failures",
+      "questionPrompt": "What happens if the matching service crashes, or the location cache is lost? How does the system stay available?",
+      "sampleAnswer": "Matching service: stateless, replicated behind a load balancer across 3 AZs. On crash, traffic reroutes to replicas in <5s. The geospatial index is rebuilt from the location cache on startup (warm recovery in <10s). Location cache (Redis): multi-AZ replication with automatic failover. If the entire Redis node is lost, locations fall back to querying the last-known position from the database (latency increases to ~100ms, but no outage). Delivery operations use an idempotent protocol: re-sending a match or status update is safe because both the DB and Kafka record the source ID and timestamp.",
+      "rubric": {
+        "must": [
+          "Identify the critical component",
+          "Concrete failover or replication plan"
+        ],
+        "should": [
+          "Graceful degradation (e.g., slower but still available)",
+          "Idempotency to handle retries"
+        ],
+        "avoid": [
+          "Single points of failure left unaddressed"
+        ]
+      },
+      "hints": [
+        "What's the most critical component? If it goes down, what does the system fall back to?",
+        "When the matching service crashes, how does it recover its geospatial index? Is rebuilding fast enough?",
+        "If the location cache is lost, is location tracking completely unavailable, or degraded?"
+      ]
+    }
+  ]
+}

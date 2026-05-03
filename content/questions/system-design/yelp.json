@@ -1,0 +1,260 @@
+{
+  "id": "yelp",
+  "title": "Yelp",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design a location-based business review and discovery service like Yelp. Users search for nearby businesses by location, view reviews and ratings, and leave reviews. Target ~500M DAU globally with ~200M businesses indexed, and peak read traffic of 100k QPS from mobile location searches.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "Focus on search, browse, and review. List user actions: search nearby, view details, post review. Don't drift into messaging, ads, or account management.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Users can search for songs by location / genre",
+          "Users can view song details and play",
+          "Users can like or playlist a song"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can search for nearby businesses given a location (lat/long or address)",
+          "Users can view business details (photos, hours, ratings, reviews)",
+          "Users can submit a review with rating and text"
+        ],
+        "should": [
+          "Filter by business category / type",
+          "Sort by distance or rating",
+          "Search by business name / category across the map"
+        ],
+        "avoid": [
+          "Designing user accounts / authentication",
+          "Designing the business admin dashboard",
+          "Designing ads or recommendations"
+        ]
+      },
+      "sampleAnswer": "1. Users can search for businesses within a radius of a given location.\n2. Users can view business details, reviews, and ratings.\n3. Users can submit a review with a rating (1–5 stars) and optional text.\n4. Users can filter by category (restaurants, bars, coffee shops, etc.).",
+      "hints": [
+        "A location-based search app has a different entry point than web search. How does a user specify 'where am I looking?'",
+        "Once you find businesses, what details does the user see on the list view vs detail view?",
+        "Reviews are user-generated content. What does submitting a review require?"
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Highlight read-heavy + geospatial. Latency for nearby search, scale (DAU, businesses, QPS), availability for mobile, freshness of reviews.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Search results must return in <100ms p99",
+          "System should handle 100k concurrent search queries",
+          "Eventually consistent on user playlists"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Nearby search latency <200ms p99 (mobile users expect fast)",
+          "Read-heavy workload (100:1 read:write)",
+          "Scale: 200M indexed businesses, 500M DAU",
+          "Geospatial index capable of range queries (nearby within radius)"
+        ],
+        "should": [
+          "Availability prioritized (eventual consistency on reviews OK)",
+          "Reviews indexed for full-text search",
+          "Freshness: reviews visible within seconds"
+        ],
+        "avoid": [
+          "Requiring strong consistency on review visibility",
+          "Treating geospatial search as a plain keyword search"
+        ]
+      },
+      "sampleAnswer": "- Nearby search: <200ms p99 latency from location input to list of 20 results.\n- Read:write ratio ~100:1 (searches vs reviews submitted).\n- Scale: 200M businesses, 500M DAU, 100k peak QPS on search.\n- Geospatial range query: find all businesses within N km of a point.\n- Availability: 99.9% SLA. Eventual consistency on reviews (visible within 5s).\n- Durability: a review or rating change must be persisted.",
+      "hints": [
+        "Geospatial queries are fundamentally different from keyword search. What's the access pattern — distance-based or grid-based?",
+        "Mobile search is latency-sensitive. What's a reasonable p99 target for 'show me restaurants near me'?",
+        "Reviews are append-heavy but reads dominate. Does a new review need to show instantly, or is eventual consistency OK?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "List the nouns: Business, Review, User (if in scope), possibly a geospatial index proxy entity.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Song",
+          "Playlist",
+          "User"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Business (name, category, location, contact, hours, rating aggregate)"
+        ],
+        "should": [
+          "Review (userId, businessId, rating, text, timestamp)",
+          "User (optional, but needed if account scope)",
+          "Photo (optional, but common in Yelp)"
+        ],
+        "avoid": [
+          "Over-modeling before you know the schema"
+        ]
+      },
+      "sampleAnswer": "- Business: id, name, category, lat, lng, address, phone, hours, aggregateRating, reviewCount.\n- Review: id, businessId, userId, rating (1–5), text, createdAt.\n- Photo: id, businessId, userId, url (optional if in scope).\n- User: id, name (if auth in scope).",
+      "hints": [
+        "Which entity is the 'root' that geospatial queries work on?",
+        "Ratings get aggregated. Is the aggregateRating stored denormalized on the Business, or computed on read?"
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement: search, get details, post review. REST. Include parameters for location, radius, category.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "GET /search?q=song&limit=20 → Song[]",
+          "GET /songs/:id → Song details",
+          "POST /playlists/:id/tracks body: { trackId }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "GET /businesses/search?lat=X&lng=Y&radius=1000 → Business[]",
+          "GET /businesses/:id → Business details with reviews",
+          "POST /reviews body: { businessId, rating, text } → 201 Review"
+        ],
+        "should": [
+          "category parameter on search",
+          "sort parameter (distance, rating)",
+          "pagination on reviews (cursor or offset)"
+        ],
+        "avoid": [
+          "Putting lat/lng in the path instead of query",
+          "Returning all reviews in detail endpoint (paginate)"
+        ]
+      },
+      "sampleAnswer": "GET /businesses/search?lat=37.7749&lng=-122.4194&radius=1000&category=restaurant&sort=distance&limit=20\n  → 200 { businesses: [{ id, name, lat, lng, rating, distance, reviewCount }] }\n\nGET /businesses/:id\n  → 200 { id, name, category, lat, lng, address, phone, hours, aggregateRating, reviewCount, photo[], reviews (paginated) }\n\nPOST /reviews\n  body: { businessId, rating, text }\n  → 201 { reviewId, createdAt }",
+      "hints": [
+        "Search endpoint is the hot path. Include lat/lng as query parameters, not path. What other filtering helps the user narrow down?",
+        "The detail view can fetch reviews separately (paginated) rather than embedding all of them.",
+        "POST /reviews can be idempotent if you include a client-generated key."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the architecture. Walk through the search path and the review submission path.",
+      "howToAnswer": "Geospatial index is the headline trick. Show: client → LB → API → cache → geospatial DB (or separate index). Show review write path going to a queue/log for async indexing.",
+      "rubric": {
+        "must": [
+          "Geospatial index (geohash, quadtree, or S2) for nearby search",
+          "Separation of read path (search) and write path (reviews)",
+          "Aggregated rating stored denormalized or computed on read"
+        ],
+        "should": [
+          "Cache for hot businesses / locations",
+          "Separate database or index for geospatial queries",
+          "Async review indexing (eventual consistency)",
+          "Read replicas for search load"
+        ],
+        "avoid": [
+          "Full-table scans to find nearby businesses (no geospatial index)",
+          "Synchronous re-aggregation of ratings on every review write"
+        ]
+      },
+      "sampleAnswer": "Client → ALB → API Service (stateless) → Cache (Redis) → Geospatial Index Service\n\nSearch path:\n1. Client sends (lat, lng, radius, category).\n2. API checks cache for recent queries in that region.\n3. Cache miss → geospatial index (e.g., Elasticsearch with geo_shape, or a custom service using geohash/S2).\n4. Index returns business IDs + metadata.\n5. Cache populates for 5 min.\n6. Response includes id, name, distance, rating.\n\nDetail view:\n1. GET /businesses/:id → fetch full details from Business DB.\n2. Reviews queried separately (paginated) from Reviews DB.\n3. AggregateRating recomputed on read from recent reviews, or cached if fresh enough.\n\nReview write path:\n1. POST /reviews → enqueue into a Kafka topic.\n2. Review service consumes, writes to Reviews DB.\n3. Async job updates aggregateRating and invalidates cache for the business.\n4. Geospatial index updated eventually.\n\nGeospatial index choice: Geohash (simple, fixed grid) or S2 (Google's library, better coverage). Geohash example: divide world into cells; for each business, compute geohash at precision 8 (110m accuracy). On search, compute geohash for user location, query nearby cells. Filter results by haversine distance to refine.",
+      "hints": [
+        "The headline trick is how you find businesses within a radius without scanning all 200M. What data structure makes that fast?",
+        "Search is read-heavy (100k QPS); reviews are write-heavy but lower volume. Can they share a database, or do they need separate paths?",
+        "Geohash is one option (simple, fixed cells). S2 is another (hierarchical). Quadtree is another (tree-based). Pick one and explain why it fits."
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-geospatial-scale",
+      "title": "Scale to 100k QPS searches",
+      "questionPrompt": "How can your system scale to support 100k nearby searches per second?",
+      "sampleAnswer": "Geospatial index is sharded by geohash prefix (or S2 cell hierarchy). Each shard is a separate index replica serving one region of the world, holding ~10–50M businesses. ALB routes by lat/lng to the appropriate shard. Within each shard, 5 read replicas (Elasticsearch nodes or custom service) share load; each handles ~4k QPS. Cache (Redis cluster, 10 shards) holds hot cells (cities, airports) with 95% hit rate, so only ~5k QPS hit the index layer. For cold regions (sparse data), the index returns directly without cache.",
+      "rubric": {
+        "must": [
+          "Geospatial partitioning (shard by region or geohash prefix)",
+          "Read replica count with concrete QPS per replica",
+          "Cache hit rate assumption"
+        ],
+        "should": [
+          "Horizontal scaling of stateless API tier",
+          "Load balancer routing by region"
+        ],
+        "avoid": [
+          "Single monolithic geospatial index",
+          "'Just add more servers' with no layer"
+        ]
+      },
+      "hints": [
+        "A single geospatial index handling 100k QPS is expensive. Can you shard the index? What's the partition key?",
+        "Not all cities get the same traffic. Hot cities (SF, NYC) spike higher. How do you handle hot cells?",
+        "What's a reasonable cache hit rate for location searches? Think about user behavior."
+      ]
+    },
+    {
+      "slug": "dd-rating-consistency",
+      "title": "Fresh ratings & eventual consistency",
+      "questionPrompt": "A user submits a review. When does the aggregated rating on the business update? Can another user see a stale rating?",
+      "sampleAnswer": "Primary path: user submits review → enqueued to Kafka. Worker processes asynchronously, writes to Reviews DB, updates Business.aggregateRating and Business.reviewCount. Recency: indexing lag is <5 seconds on average (worker processes every 100ms). Clients cache aggregateRating from detail-view fetches for 1 min, so stale reads are ≤1 min old — acceptable for eventual consistency. For critical-path latency, the search list view shows aggregateRating from cache (refreshed every 5 min from the DB). A user who just posted a review can be shown 'your review posted' (latency-free) separately from the updated aggregate (which may lag by a few seconds).",
+      "rubric": {
+        "must": [
+          "Async review indexing (not synchronous on write)",
+          "Concrete lag number (seconds to minutes)",
+          "Plan for stale reads"
+        ],
+        "should": [
+          "Separate the 'review posted' confirmation from rating aggregate update",
+          "Cache invalidation strategy"
+        ],
+        "avoid": [
+          "Blocking on rating aggregation on write (breaks 100k QPS)",
+          "Claiming strong consistency for a highly-contended rating"
+        ]
+      },
+      "hints": [
+        "Aggregating a rating on every review write would be slow. What's the alternative?",
+        "Is it OK for a user to post a review and not see their own review in the aggregate immediately?",
+        "How do you invalidate the cached rating when it updates?"
+      ]
+    },
+    {
+      "slug": "dd-geohash-tradeoffs",
+      "title": "Geospatial index choice",
+      "questionPrompt": "Compare geohash, quadtree, and S2 for indexing 200M businesses. Which would you pick, and why?",
+      "sampleAnswer": "Geohash: simple, fixed-size grid cells. Precision 8 → ~110m cells. Look up cells in range of the user (9 cells for 111m radius). Pro: easy to implement, cacheable by cell. Con: hot-spot cells (Times Square) can have millions of businesses, range queries span many cells. Quadtree: dynamic subdivision based on density. Adapts to clumps (cities vs deserts). Pro: fewer regions to scan. Con: complex rebalancing, non-uniform cell sizes. S2: Google's hierarchical geometry library. Cells at different levels cover different areas. Pro: elegant, space-filling curve. Con: library dependency, steeper learning curve. Pick: geohash for simplicity (most engineers know it, easy to test). Use geohash at precision 8 (110m) for initial lookup, then haversine-distance filter top-20 results. If hot-spot cells become a bottleneck (millions of businesses per cell), move to S2 or add secondary index (e.g., business category + quadtree).",
+      "rubric": {
+        "must": [
+          "Name the three approaches",
+          "Tradeoff analysis: lookup latency vs implementation complexity",
+          "Pick one with justification"
+        ],
+        "should": [
+          "Discuss hot-spot handling",
+          "Mention secondary indexes for high-density areas"
+        ],
+        "avoid": [
+          "Vague 'geohash is better' without explaining why",
+          "Ignoring hot-spot clusters in dense cities"
+        ]
+      },
+      "hints": [
+        "Geohash divides the world into a fixed grid. What's a weakness in areas with millions of nearby businesses?",
+        "Quadtree is dynamic — it subdivides until each cell has ~k businesses. Why doesn't it solve the problem perfectly?",
+        "S2 is Google's answer, but does every company use it? What's the cost of rolling your own geohash index?"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,260 @@
+{
+  "id": "tinder",
+  "title": "Tinder",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design a swipe-based dating app like Tinder. Users create a profile, browse nearby profiles via swipes, match with others who also swiped right, and send messages to matches. Target ~50M daily active users, ~1M concurrent users during peak hours, and support global deployment with geo-proximity matching.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering the must-have behavior. Focus on swipes, matches, and messaging; skip analytics, recommendations, or premium features unless asked.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Restaurants can list menus and item availability",
+          "Customers can search restaurants and place orders",
+          "Drivers can accept orders and track delivery"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can view nearby profiles and swipe (left/right)",
+          "Users can see when they match and send messages to matches",
+          "Users can receive and read messages in real-time"
+        ],
+        "should": [
+          "Users can set location, distance radius, and filtering preferences",
+          "Undo a swipe (optional, but common in dating apps)"
+        ],
+        "avoid": [
+          "Drifting into recommendations, user matching algorithm, or premium tiers unless asked",
+          "Super-likes, boosts, or other monetization features"
+        ]
+      },
+      "sampleAnswer": "1. Users should be able to view profiles nearby (filtered by distance and preferences) and swipe left (pass) or right (like).\n2. When two users swipe right on each other, they match and can start messaging.\n3. Users should be able to send and receive messages with matches in real-time.\n4. Users should be able to set their location and search preferences (distance radius, age range, gender).",
+      "hints": [
+        "Think of three user actions: the browse-and-swipe action, the match-confirmation action, and the messaging action.",
+        "Location is a first-class citizen in dating apps — filtering happens at the browse stage, not the match stage.",
+        "Stay focused on the core loop: discover, like, match, message. Leave recommendations and algorithms for later."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover availability, latency targets, scale (DAU/QPS/storage), geo-distribution, and any real-time constraints. Tie each to a product concern.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Availability > consistency (it's okay if a recent order shows stale status briefly)",
+          "Low latency on order placement (<100ms)",
+          "Support real-time driver location updates",
+          "..."
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Geo-proximity matching (return profiles within radius in milliseconds)",
+          "Real-time message delivery (<1s latency)",
+          "High availability (99.99%+) — downtime means users can't match",
+          "Quantified scale: ~50M DAU, ~1M concurrent, ~1B swipes/day"
+        ],
+        "should": [
+          "Low latency profile fetches (<100ms)",
+          "Eventually-consistent matching (two users swipe right, not necessarily in exact sync)",
+          "Global deployment with regional data residency"
+        ],
+        "avoid": [
+          "Listing NFRs without concrete numbers",
+          "Promising exact real-time consistency on matches"
+        ]
+      },
+      "sampleAnswer": "- Geo-proximity: fetch profiles within N km in <100ms p99.\n- Message delivery: <1s end-to-end (publisher to subscriber).\n- Availability: 99.99%+ — outages kill user engagement.\n- Scale: ~50M DAU, ~1M concurrent, ~1B swipes/day (~11.5k swipes/sec).\n- Read:write ratio skewed — profiles read frequently, written rarely. Swipes written frequently, read during match calculation.\n- Global with regional data centers; eventual consistency on match notifications is OK.",
+      "hints": [
+        "Pick a latency target for the critical path: swipe response. Is 100ms acceptable, or does it need to be faster?",
+        "Geo-proximity search is a key NFR — how does it influence your architecture vs a traditional social feed system?",
+        "Real-time messaging and match notifications are different beasts. Which is more latency-sensitive?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Restaurant",
+          "Order",
+          "Delivery"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "User (profile with location, photos, preferences)",
+          "Swipe (like or pass on a profile)",
+          "Match (two swipes meet)"
+        ],
+        "should": [
+          "Message (between two matched users)",
+          "Location (current or preferred)"
+        ],
+        "avoid": [
+          "Inventing entities for features not in scope (Super-like, Boost, Payment)"
+        ]
+      },
+      "sampleAnswer": "- User: id, name, age, location (lat/long), bio, photos, preferences (distance, age range, gender).\n- Swipe: userId, targetUserId, direction (left/right), timestamp.\n- Match: userId1, userId2, matchedAt timestamp.\n- Message: senderId, receiverId, text, timestamp, read status.",
+      "hints": [
+        "Profile is User. Interaction is Swipe. Outcome is Match. Conversation is Message.",
+        "Location is embedded in User; it changes as users move. How does that affect your schema?",
+        "What metadata matters for each entity? Focus on what drives the read path."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement. REST is default — show method, path, body, and response. For messaging, note WebSocket or long-polling.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "POST /orders  body: { restaurantId, items }  → { orderId }",
+          "GET /orders/:id → { status, items, eta }",
+          "POST /orders/:id/cancel → { status }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "GET /profiles endpoint that returns nearby profiles (paginated)",
+          "POST /swipes endpoint to submit a swipe",
+          "GET /matches endpoint to list matches",
+          "WebSocket or server-sent events for real-time messages"
+        ],
+        "should": [
+          "POST /messages endpoint for sending a message",
+          "GET /conversations/:matchId endpoint to fetch chat history",
+          "Query params for geo-filtering (lat, lng, radius, minAge, maxAge)"
+        ],
+        "avoid": [
+          "Putting profile data in the URL path",
+          "Polling for messages instead of a persistent connection"
+        ]
+      },
+      "sampleAnswer": "GET /profiles?lat=40.7&lng=-74.0&radius=5&minAge=25&maxAge=35\n  → { profiles: [{ id, name, age, photos, bio, distance }] }\n\nPOST /swipes\n  body: { targetUserId, direction: \"left\" | \"right\" }\n  → { matched: true }  [if both swiped right]\n\nGET /matches\n  → { matches: [{ userId, name, lastMessage, timestamp }] }\n\nWS /messages/:matchId\n  client sends: { text }\n  server sends: { senderId, text, timestamp }",
+      "hints": [
+        "The profile-fetch endpoint drives the swipe decision — what params let you filter at the server level?",
+        "Swipes are writes. Do they return the match result immediately, or does that come via a push event?",
+        "Messaging can be long-polling or WebSocket. Which is simpler to start with, and which scales better?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through each endpoint.",
+      "howToAnswer": "Boxes and arrows: client → load balancer → API service → databases (user, swipe, match, message). Note the geo-index and real-time messaging layer. Walk through the swipe and message paths end-to-end.",
+      "rubric": {
+        "must": [
+          "Load balancer → stateless API tier → databases",
+          "Geo-spatial index (e.g., Geohash or R-tree based DB) for profile discovery",
+          "Real-time messaging transport (WebSocket, Kafka, Redis Pub/Sub)"
+        ],
+        "should": [
+          "Cache layer (Redis) for hot profiles and preferences",
+          "Message queue (Kafka) for async match notifications",
+          "Separate read replicas for profile fetches",
+          "Schema sketch (User table with lat/lng, Swipe table, Match table, Message table)"
+        ],
+        "avoid": [
+          "Skipping the geo-index — it's the headline trick",
+          "Treating messaging like a simple DB query instead of an event stream"
+        ]
+      },
+      "sampleAnswer": "Client → ALB → API Service (stateless, ~100 instances at peak).\n\nUser Profile DB: primary + 2 read replicas, indexed on (lat, lng) via Geohash. Cached in Redis with 5-min TTL.\n\nSwipe Service: writes to Swipe table (DynamoDB or Cassandra, partitioned by userId). On write, check Match table for reciprocal swipe. If match found, emit to Kafka 'match-event' topic.\n\nMatch Service: consumes match-events, writes to Match table, emits 'match-notify' event to WebSocket broker.\n\nMessage Service: client sends via REST or WebSocket, written to Message table (time-series DB like Cassandra). WebSocket server maintains persistent connections, receives events from Kafka, pushes to connected clients.\n\nWrite path (swipe): API → Swipe DB → check Match DB → emit event → client returns immediately.\nRead path (profiles): API queries User DB (geo-index via Geohash) → cache hit returns from Redis → client shows deck.\nMessage path: client → WebSocket → Kafka → Message DB & WebSocket broker → recipient's WebSocket connection.",
+      "hints": [
+        "The headline trick is the geo-index. How do you efficiently query 'profiles within 5km of me'? Geohashing? R-tree? Time to pick.",
+        "Swipes are fast writes; messages are persistent. How do their data flows differ?",
+        "Match detection happens on the server side during a swipe. What happens if the second user swipes right 5 seconds later? Can you afford a 5-second eventual-consistency window?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-geo-scale",
+      "title": "Geo-proximity scaling",
+      "questionPrompt": "How do you ensure profile discovery stays fast (<100ms) when serving 1M concurrent users across the globe, each with different radius preferences?",
+      "sampleAnswer": "Geohash-based sharding: partition the User table by Geohash prefix (e.g., 8-character hash → ~4.8km cells at equator). Each region's API servers hit only the shards covering their geographic area + adjacent cells. Replicate hot cells (dense urban areas) across 2-3 shards. Redis cache in each region stores the top-1000 active profiles per geo-cell, updated via a background job. Most queries hit the local Redis in <5ms; cache miss queries the DB shard (10-20ms), still under budget.",
+      "rubric": {
+        "must": [
+          "Explicit geo-sharding scheme (Geohash, QuadTree, or S2 geometry)",
+          "Explain why it keeps queries local / bounded"
+        ],
+        "should": [
+          "Cache hot geo-cells",
+          "Handle boundaries — user on the edge of two cells",
+          "Acknowledge dense vs sparse regions"
+        ],
+        "avoid": [
+          "'Just query all profiles and filter on the client'",
+          "Full-table scans for every profile fetch"
+        ]
+      },
+      "hints": [
+        "Geohashing turns (lat, lng) into a Z-order curve string. Why does that help partitioning?",
+        "A user on a cell boundary can see profiles from adjacent cells. How many adjacent cells do you query to keep latency bounded?",
+        "Urban cells are hot. Sparse regions are cold. Do you replicate differently?"
+      ]
+    },
+    {
+      "slug": "dd-match-race",
+      "title": "Match correctness (race-free matching)",
+      "questionPrompt": "How do you guarantee that when two users swipe right on each other, they match exactly once, even if the swipes arrive microseconds apart?",
+      "sampleAnswer": "Match table has a unique constraint on (min(userId1, userId2), max(userId1, userId2)) — enforced at the DB level. On swipe: check if a reciprocal swipe exists in the Swipe table. If yes, attempt INSERT into Match table with the sorted user pair. If a match already exists (idempotent retries or race), the UNIQUE constraint rejects duplicates silently (upsert semantics). The second user's swipe-request also checks and returns the existing match. DB-level constraint is the source of truth, not application logic.",
+      "rubric": {
+        "must": [
+          "Name the invariant: each pair matches at most once",
+          "Concrete mechanism: DB constraint or atomic check-then-write"
+        ],
+        "should": [
+          "Handle idempotent retries",
+          "Discuss what happens on constraint violation"
+        ],
+        "avoid": [
+          "Application-level deduplication without a backing constraint",
+          "Potential race: 'check then insert' without atomicity"
+        ]
+      },
+      "hints": [
+        "Two swipes for the same pair can arrive in any order. What data structure (constraint on which columns?) prevents duplicates?",
+        "The DB checks the constraint on WRITE. What happens if the write fails? Does the client know?",
+        "How do you make the check idempotent so a retry doesn't cause issues?"
+      ]
+    },
+    {
+      "slug": "dd-message-ordering",
+      "title": "Message ordering and delivery",
+      "questionPrompt": "How do you guarantee that messages between two users arrive in order, even with concurrent sends and network delays?",
+      "sampleAnswer": "Each message has a sequence number (vector clock for the match pair, or centralized counter per match in Redis). Store messages in a time-series DB (Cassandra) with partition key = (matchId, sequenceNumber). Consumers (WebSocket clients) track the last received sequence number; on reconnect, they query for missed messages (sequenceNumber > lastSeq) and replay before processing new publishes. WebSocket broker uses Kafka partitioned by matchId to ensure ordering across connections — a single Kafka partition orders all events for a match.",
+      "rubric": {
+        "must": [
+          "Explicit ordering mechanism (sequence number, timestamp, or Kafka partition)",
+          "Storage: which field orders the retrieval?"
+        ],
+        "should": [
+          "Handle client reconnects and replay",
+          "Idempotent delivery (same message doesn't get shown twice)"
+        ],
+        "avoid": [
+          "Relying on wall-clock time alone (clock skew, retries cause reordering)",
+          "No mechanism to handle missed messages on reconnect"
+        ]
+      },
+      "hints": [
+        "What's the source of truth for message order? Timestamps can skew; counters need a coordinator.",
+        "When a client reconnects, how does it know which messages it's already seen?",
+        "Kafka topics can guarantee ordering per partition. Which partition key ensures the same match always goes to the same partition?"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,255 @@
+{
+  "id": "news-aggregator",
+  "title": "News Aggregator",
+  "difficulty": "easy",
+  "type": "system-design",
+  "prompt": "Design a news aggregator service that fetches articles from multiple news sources and presents them to users ranked by relevance and freshness. The service should support fetching from ~10k news sources and serve ~50M daily active users. Target sub-second search and <5 second latency for feed delivery.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering the must-have behavior. Skip nice-to-haves and admin features unless explicitly asked.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Users can search for songs by artist or title",
+          "Users see a personalized playlist of recommendations",
+          "Users can play, pause, and skip within a playlist"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can fetch and view the latest articles from multiple sources",
+          "Users can search articles by keywords or title"
+        ],
+        "should": [
+          "Users can filter or browse articles by category or topic",
+          "Articles are ranked by freshness and relevance"
+        ],
+        "avoid": [
+          "Drifting into user accounts, preferences, or analytics unless asked",
+          "Inventing complex ranking algorithms at the FR stage"
+        ]
+      },
+      "sampleAnswer": "1. Users should be able to retrieve the latest aggregated news articles from multiple sources.\n2. Users should be able to search articles by keywords.\n3. Users should be able to browse articles by category or topic.\n4. Articles should be ranked by freshness and relevance.",
+      "hints": [
+        "A news aggregator has two main user actions: browsing the feed and searching. What does each look like?",
+        "Beyond reading and searching, what optional browsing patterns strengthen the design? Think about scope — categories, sources, dates.",
+        "Stay focused on the read side. Admin features (source management, scraping rules) are not user-facing."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover availability, latency targets with concrete numbers, scale (DAU/QPS/storage), and consistency model. Tie each requirement to a real product concern.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Low search latency (<500ms p99)",
+          "Playlist generation in real-time",
+          "System should scale to millions of concurrent users",
+          "High availability (99.9%+)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Feed delivery latency <5 seconds from article publication",
+          "Search latency <1 second p99",
+          "Quantified scale: 50M DAU, 10k news sources, fresh articles within 5 minutes"
+        ],
+        "should": [
+          "Availability > consistency (eventual consistency acceptable)",
+          "Support for 100k articles ingested per minute"
+        ],
+        "avoid": [
+          "Listing requirements without concrete numbers",
+          "Demanding strong consistency on a distributed crawler"
+        ]
+      },
+      "sampleAnswer": "- Feed delivery: articles must be searchable and browsable within 5 seconds of publication.\n- Search latency: <1 second p99 for keyword searches.\n- Scale: 50M DAU, ~10k news sources, 100k articles/minute ingestion, total corpus ~100M articles.\n- Availability > consistency: eventual consistency is acceptable; brief staleness on feeds is fine.\n- Deduplication: avoid indexing duplicate/near-duplicate articles from different sources.",
+      "hints": [
+        "Feed latency and search latency are different pressures — one is freshness, the other is query speed. How do they shape the architecture?",
+        "Estimate DAU, QPS for reads, articles per minute. That drives indexing and search index size.",
+        "Duplicate articles from multiple sources are a correctness concern — you need a deduplication strategy."
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Song",
+          "Artist",
+          "Playlist"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Article (the news content)",
+          "NewsSource (the publisher)"
+        ],
+        "should": [
+          "Category or Topic (for filtering)",
+          "ArticleMetadata (e.g., publish time, URL, source)"
+        ],
+        "avoid": [
+          "Inventing entities the requirements don't justify"
+        ]
+      },
+      "sampleAnswer": "- Article: { id, title, content, sourceId, sourceUrl, publishedAt, category, contentHash }\n- NewsSource: { id, name, feedUrl, fetchInterval, lastFetchedAt }\n- Category: { id, name }\n- ArticleMetadata: { articleId, keywords, imageUrl, summary }",
+      "hints": [
+        "What's the minimal noun set to satisfy the functional requirements? You need the article and its source.",
+        "What metadata on the article helps with ranking and dedup? Think freshness, categorization, and duplicate detection."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement. REST is the default — show method, path, request body shape, and response.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "GET /search?q=query → Article[]",
+          "GET /feed?category=tech → Article[]",
+          "POST /subscribe body: { source: string }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "GET endpoint to fetch the latest feed (with pagination)",
+          "GET endpoint to search articles"
+        ],
+        "should": [
+          "Optional category or source filter on feed",
+          "Pagination support (cursor or offset)"
+        ],
+        "avoid": [
+          "Forgetting HTTP status codes and response shapes",
+          "Overcomplicating the API with too many optional parameters upfront"
+        ]
+      },
+      "sampleAnswer": "GET /articles/feed\n  query: { category?, sourceId?, limit=20, cursor? }\n  → 200 { articles: Article[], nextCursor, totalCount }\n\nGET /articles/search\n  query: { q: string, category?, limit=20, offset=0 }\n  → 200 { articles: Article[], totalCount }\n\nGET /sources\n  → 200 { sources: NewsSource[] }",
+      "hints": [
+        "Two main read paths: feed (latest articles) and search (keyword lookup). One endpoint for each.",
+        "Feed needs pagination — cursor or offset? What optional filters make sense without scope creep?",
+        "Keep responses lean — return only what the client needs to render the feed or search results."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through each endpoint.",
+      "howToAnswer": "Boxes and arrows: client → API → service layer → search index / cache / database. Show the data flow for article ingestion and retrieval. Walk through both the feed and search paths.",
+      "rubric": {
+        "must": [
+          "Article fetcher / crawler that polls news sources (RSS, APIs, etc.)",
+          "Deduplication logic to avoid storing duplicate articles",
+          "Search index (inverted index or similar) for keyword lookup",
+          "Feed cache or database for recent articles",
+          "API layer that serves search and feed requests"
+        ],
+        "should": [
+          "Category classifier or tag extraction",
+          "TTL / freshness policy on cached articles",
+          "Separate read and write paths"
+        ],
+        "avoid": [
+          "Skipping deduplication — near-duplicate articles will pollute the index",
+          "Single fetch-and-serve without ranking"
+        ]
+      },
+      "sampleAnswer": "Crawlers (distributed): poll RSS feeds and news APIs every 30-60 seconds per source. Fetch raw article data.\n\nParser + Dedup: normalize article URLs and content (lowercase, strip tracking params, compute SHA-256 of article body). Check dedup store (Cassandra or DynamoDB) for existing article hash. If new, enrich with category/keywords via a lightweight NLP classifier.\n\nIndex: write article metadata to a search index (Elasticsearch or Solr). Inverted index on title, content, keywords.\n\nPrimary store: write full article to Cassandra (time-partitioned by publish date). Keyed by (sourceId, articleId).\n\nFeed cache: Redis sorted set per category, keyed by (publishTime desc, articleId). ~1 hour of hot articles, ~100k articles per category.\n\nRead path (feed):\nClient → ALB → API service → cache hit (publishTime range query) → return Article[] OR cache miss → Cassandra (with category filter) → backfill cache → return.\n\nRead path (search):\nClient → ALB → API service → Elasticsearch search index (query parser) → fetch top-K article IDs → Cassandra for full text (batch) → return ranked results.",
+      "hints": [
+        "The headline trick is deduplication before indexing. What's the right hash, and where does it live?",
+        "Feed and search are different pressure points: one needs freshness, the other needs query speed. How does your architecture handle both?",
+        "Show the fetcher → parser → dedup → index flow. Then show the read flows (feed vs search) separately."
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-feed-freshness",
+      "title": "Sub-5-second feed freshness",
+      "questionPrompt": "How do you ensure articles appear in the feed within 5 seconds of publication?",
+      "sampleAnswer": "Reframe: the 5s SLO measures index-write-to-search-availability latency, not crawl-to-availability. Crawlers intentionally poll sources on their own schedule (30-60s per source, driven by source freshness requirements), not a tunable knob. Event-driven pipeline: after a crawler fetches an article, it emits to Kafka. Parser/dedup consumers normalize and check the dedup store (~100ms). Index writer then writes to Elasticsearch and Redis cache in parallel (~1s for index, <10ms for cache). End-to-end: parse/dedup 100ms + index write 1s ≈ 1.1s p99 from fetch landing. The crawl interval (30-60s) is separate and decoupled from indexing latency — set per source based on its update frequency.",
+      "rubric": {
+        "must": [
+          "Event-driven indexing: Kafka or streaming queue between fetch and parse/index",
+          "Latency budget breakdown: parse/dedup ~100ms + index write ~1s",
+          "Crawl interval decoupled from indexing latency (separate optimization dials)"
+        ],
+        "should": [
+          "Parallel writes to cache (fast) and index (slower)",
+          "Acknowledgment that p99 is driven by index-write tail, not crawler scheduling"
+        ],
+        "avoid": [
+          "Claiming crawl frequency tuning achieves 5s freshness (conflates two dials)",
+          "Omitting the dedup phase in latency math"
+        ]
+      },
+      "hints": [
+        "Freshness has two independent paths: how often you fetch (crawler schedule) and how fast you index (event-driven speed). Which affects the 5s SLO?",
+        "Index write is the bottleneck. What architecture choice lets you shorten it without waiting for strong consistency?",
+        "After indexing completes, how do users see the new article? Cache hit path is instant; search path hits the index."
+      ]
+    },
+    {
+      "slug": "dd-deduplication",
+      "title": "Duplicate and near-duplicate detection",
+      "questionPrompt": "How do you prevent the same article from appearing twice in the index when two sources publish it?",
+      "sampleAnswer": "Canonicalize the article: normalize title (lowercase, strip punctuation), extract the author byline and publication date. Compute a canonical form. Use SHA-256 hash of the canonicalized content. Check a sharded dedup store (Cassandra table keyed by contentHash) — if the hash exists, record the new sourceId + URL as an alternate source for that article, but don't re-index. If new, write both the article and the hash mapping. This prevents indexing duplicates while preserving source attribution.",
+      "rubric": {
+        "must": [
+          "Define what 'duplicate' means (exact vs near-duplicate)",
+          "Concrete hash or canonical form strategy",
+          "Dedup storage keyed by content hash"
+        ],
+        "should": [
+          "Preserve source attribution (multiple sources for one article)",
+          "Handle minor variations (whitespace, punctuation)"
+        ],
+        "avoid": [
+          "URL-based dedup only (fails when the same article is republished at different URLs)",
+          "Dedup after indexing (wastes storage and index writes)"
+        ]
+      },
+      "hints": [
+        "URL-based dedup is insufficient — the same article often appears at different URLs. What's a better key?",
+        "Exact-match hashing works for duplicates but misses near-duplicates (paraphrased rewrites). How far do you go?",
+        "When an article is a duplicate, do you still record that a new source published it? Why?"
+      ]
+    },
+    {
+      "slug": "dd-scale-search",
+      "title": "Search latency at 50M DAU",
+      "questionPrompt": "How do you keep search latency under 1 second p99 with 100M articles in the index?",
+      "sampleAnswer": "Elasticsearch cluster: 10 shards × 3 replicas for write throughput and read parallelism. Hot tier for recent articles (last 7 days, ~10M articles, low latency). Warm tier for older articles. Query routing: search queries hit all 10 shards in parallel; each shard computes top-K results; coordinator merges and returns top-K. Index refresh every 1 second keeps new articles searchable within 1s. For hot queries (breaking news, trending topics), add a separate HOT_QUERIES cache in Redis (most-searched-terms keyed by (query, date), TTL 5min). Query results cached for 10 seconds.",
+      "rubric": {
+        "must": [
+          "Search index sharding and replica strategy",
+          "Concrete latency targets per tier (hot/warm)",
+          "Query merging / scatter-gather mechanism"
+        ],
+        "should": [
+          "Cache for trending queries",
+          "Tiering by article age"
+        ],
+        "avoid": [
+          "Single-node search index (doesn't scale)",
+          "Searching all articles sequentially"
+        ]
+      },
+      "hints": [
+        "Search latency is dominated by I/O — which layers can you parallelize? How many shards?",
+        "Sharding by time (recent articles on one shard) trades between latency and correctness — discuss the tradeoff.",
+        "Most queries hit a few hot terms (breaking news, celebrities). How does caching help without staling the index?"
+      ]
+    }
+  ]
+}

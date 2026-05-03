@@ -1,0 +1,265 @@
+{
+  "id": "inventory-management",
+  "title": "Inventory Management",
+  "difficulty": "hard",
+  "type": "low-level-design",
+  "prompt": "Design an inventory management system for a multi-warehouse e-commerce platform. The system tracks product stock across multiple locations, handles additions and removals, supports reservations, and enables transfers between warehouses. Ensure audit trails for all movements and prevent overselling through reservation mechanics. The system must gracefully handle concurrent operations.",
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "questionPrompt": "Clarify the requirements. What's in scope and what isn't?",
+      "howToAnswer": "Capture the core operations tightly. Decide scope: reserved vs available stock, audit logging, reservation timeouts, multi-warehouse transfers, low-stock alerts. State assumptions out loud.",
+      "exampleHints": {
+        "headline": "Example (Movie Theater Inventory):",
+        "bullets": [
+          "Track ticket inventory across multiple screens and showtimes",
+          "Reserve seats before payment; release on timeout",
+          "Prevent overselling via available vs reserved buckets",
+          "Out of Scope: Payment processing, seat layout, pricing tiers"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Add stock to a warehouse for a product",
+          "Remove/deduct stock from a warehouse",
+          "Reserve stock (available → reserved, fails if insufficient)",
+          "Confirm reservation (reserved → sold) or release (reserved → available)",
+          "Prevent negative inventory / overselling",
+          "Query available stock per product per warehouse"
+        ],
+        "should": [
+          "Transfer stock between warehouses atomically",
+          "Audit trail (timestamp, action, quantity, warehouse)",
+          "Low-stock alerts via observer pattern",
+          "Reservation timeout handling"
+        ],
+        "avoid": [
+          "Building a UI or checkout flow",
+          "Distributed consensus across data centers",
+          "Pricing or promotions logic"
+        ]
+      },
+      "sampleAnswer": "Scope:\n- Track product stock across multiple warehouses.\n- Add/remove stock operations.\n- Reservation pattern: reserve before payment, confirm or release.\n- Query available stock and reserved counts.\n- Transfer stock between warehouses (atomic at object level).\n- Audit all movements with timestamp.\n- Observer-based low-stock alerts.\n\nOut of scope:\n- Payment processing or order fulfillment.\n- Pricing, discounts, or promotions.\n- UI or API gateway.",
+      "hints": [
+        "Inventory has two buckets per product per warehouse: available and reserved. Why separate them?",
+        "Reservation is a workflow: verify → hold → confirm/release. Where does the timeout live?",
+        "Audit trail means immutable records. What data structure captures this without recomputation?"
+      ]
+    },
+    {
+      "slug": "entities-relationships",
+      "title": "Entities & Relationships",
+      "questionPrompt": "What are the core entities and how do they relate?",
+      "howToAnswer": "Pick the orchestrator (InventoryManager or InventoryService). Decide what owns stock counts, reservations, and audit history. Avoid scattering logic across entities.",
+      "exampleHints": {
+        "headline": "Example (Movie Theater):",
+        "bullets": [
+          "Theater (orchestrator): manages Screens and Showtime sessions",
+          "Showtime (owns seat inventory): available vs reserved counts",
+          "Reservation: links a user to a Showtime",
+          "AuditLog: immutable event records"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "InventoryManager or InventoryService (orchestrator)",
+          "Warehouse entity",
+          "Product / SKU entity",
+          "StockLevel (owns available + reserved per product per warehouse)",
+          "Reservation entity with timestamp and timeout"
+        ],
+        "should": [
+          "AuditLog for immutable transaction records",
+          "Observer / Listener for low-stock alerts",
+          "ReorderStrategy interface for extensibility"
+        ],
+        "avoid": [
+          "Putting all stock logic on InventoryManager (God class)",
+          "Mixing audit concerns with live inventory"
+        ]
+      },
+      "sampleAnswer": "- InventoryManager: orchestrator, coordinates all operations, routes to Warehouses and AuditLog.\n- Warehouse: owns a map of Product → StockLevel. Handles add/remove/reserve/confirm locally.\n- StockLevel: owns available and reserved counts for one product in one warehouse. Encodes reservation rules.\n- Reservation: record of a product reservation with id, timestamp, expiryTime, status (PENDING | CONFIRMED | RELEASED).\n- AuditLog: append-only log of all movements (add, remove, reserve, confirm, release, transfer).\n- StockAlertListener (interface): notified when available stock falls below threshold.",
+      "hints": [
+        "Who drives the workflow: InventoryManager calls methods on Warehouse, or vice versa?",
+        "StockLevel owns both available and reserved. Does it enforce the reservation contract, or does the caller?",
+        "Audit records must be immutable and ordered. What structure avoids mutation and recomputation?"
+      ]
+    },
+    {
+      "slug": "class-design",
+      "title": "Class Design",
+      "questionPrompt": "Define the classes — fields and methods. Keep rules with the entity that owns the state.",
+      "howToAnswer": "Sketch each class with explicit method signatures. Use enums for states. Methods return rich types (e.g., ReservationResult, not bool). Constructors take warehouse capacity, reorder thresholds.",
+      "exampleHints": {
+        "headline": "Example (Movie Theater):",
+        "bullets": [
+          "class Showtime: + reserve(userId, count) -> ReservationResult",
+          "class StockLevel: + availableCount(), + reservedCount(), + reserve(qty) -> Reservation | throws",
+          "enum ReservationStatus { PENDING, CONFIRMED, RELEASED, EXPIRED }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "StockLevel.reserve(quantity) -> Reservation (throws if qty > available)",
+          "StockLevel.confirm(reservationId) -> void",
+          "StockLevel.release(reservationId) -> void (idempotent)",
+          "Warehouse.addStock(productId, qty, source)",
+          "Warehouse.removeStock(productId, qty, reason) | throws",
+          "InventoryManager.transfer(fromWarehouse, toWarehouse, productId, qty) atomic",
+          "ReservationStatus enum { PENDING, CONFIRMED, RELEASED, EXPIRED }"
+        ],
+        "should": [
+          "AuditEntry / AuditLog append-only interface",
+          "StockAlertListener interface with onLowStock(warehouse, product, level)",
+          "Warehouse configurable via constructor with capacity and reorder threshold",
+          "Reservation expires via background job or lazy expiry check"
+        ],
+        "avoid": [
+          "Returning bool from reserve/confirm/release — use rich enum or exception",
+          "Hard-coded thresholds; pass via constructor",
+          "Mixing audit appends with live inventory reads"
+        ]
+      },
+      "sampleAnswer": "```\nenum ReservationStatus { PENDING, CONFIRMED, RELEASED, EXPIRED }\nenum AdjustmentType { RECEIVED, SOLD, RETURNED, DAMAGED, TRANSFERRED_OUT, TRANSFERRED_IN }\n\nclass StockLevel:\n  productId: string\n  warehouseId: string\n  available: int\n  reserved: int\n  reservations: Map<reservationId, Reservation>\n  \n  reserve(qty: int, expiryMs: long) -> Reservation:\n    if qty > available: throw InsufficientStockError\n    available -= qty\n    reserved += qty\n    res = new Reservation(id, qty, now, now + expiryMs, PENDING)\n    reservations[res.id] = res\n    return res\n  \n  confirm(reservationId: string) -> void:\n    res = reservations.get(reservationId)\n    if not res or res.status != PENDING: throw InvalidReservationError\n    reserved -= res.qty\n    res.status = CONFIRMED\n  \n  release(reservationId: string) -> void:\n    res = reservations.get(reservationId)\n    if not res or res.status != PENDING: return\n    available += res.qty\n    reserved -= res.qty\n    res.status = RELEASED\n  \n  availableQty() -> int: return available\n  reservedQty() -> int: return reserved\n\nclass Warehouse:\n  id: string\n  name: string\n  stock: Map<productId, StockLevel>   // one StockLevel per product\n  capacity: long\n  reorderThreshold: int\n  listeners: List<StockAlertListener>\n  \n  addStock(productId: string, qty: int, source: string) -> void:\n    sl = stock.getOrCreate(productId)\n    sl.available += qty\n    auditLog.append(ADD, productId, warehouseId, qty, source, now)\n    if sl.available <= reorderThreshold:\n      notifyListeners(productId, sl.available)\n  \n  removeStock(productId: string, qty: int, reason: string) -> void:\n    sl = stock.get(productId)\n    if not sl or qty > sl.available: throw InsufficientStockError\n    sl.available -= qty\n    auditLog.append(REMOVE, productId, warehouseId, qty, reason, now)\n  \n  getAvailable(productId: string) -> int:\n    sl = stock.get(productId)\n    return sl ? sl.available : 0\n  \n  registerAlertListener(listener: StockAlertListener) -> void:\n    listeners.add(listener)\n\nclass InventoryManager:\n  warehouses: Map<warehouseId, Warehouse>\n  auditLog: AuditLog\n  \n  transfer(fromWarehouseId: string, toWarehouseId: string, productId: string, qty: int) -> void:\n    // Two-phase at object level: verify, then mutate both\n    fromWh = warehouses[fromWarehouseId]\n    toWh = warehouses[toWarehouseId]\n    \n    if qty > fromWh.getAvailable(productId):\n      throw InsufficientStockError\n    \n    // Atomic commit: deduct from source, add to dest, single audit record\n    fromWh.removeStock(productId, qty, \"TRANSFER_OUT\")\n    toWh.addStock(productId, qty, \"TRANSFER_IN\")\n    auditLog.append(TRANSFER, productId, fromWarehouseId, toWarehouseId, qty, now)\n  \n  reserve(warehouseId: string, productId: string, qty: int, expiryMs: long) -> Reservation:\n    wh = warehouses[warehouseId]\n    sl = wh.stock.get(productId)\n    return sl.reserve(qty, expiryMs)\n  \n  confirm(reservationId: string) -> void:\n    // Caller knows which warehouse; looks up and confirms\n    sl = findStockLevelByReservation(reservationId)\n    sl.confirm(reservationId)\n    auditLog.append(CONFIRM_RESERVATION, reservationId, now)\n  \n  release(reservationId: string) -> void:\n    sl = findStockLevelByReservation(reservationId)\n    sl.release(reservationId)\n    auditLog.append(RELEASE_RESERVATION, reservationId, now)\n\nclass Reservation:\n  id: string\n  productId: string\n  qty: int\n  createdAt: long\n  expiresAt: long\n  status: ReservationStatus\n\nclass AuditEntry:\n  id: string\n  type: AdjustmentType\n  productId: string\n  warehouseId: string\n  qty: int\n  timestamp: long\n  metadata: map\n\ninterface StockAlertListener:\n  onLowStock(warehouseId: string, productId: string, availableQty: int) -> void\n```",
+      "hints": [
+        "reserve() must atomically move qty from available → reserved and create a Reservation record. What throws if insufficient?",
+        "confirm() and release() are idempotent on a Reservation. Should they modify the StockLevel or just the Reservation itself?",
+        "Transfer must be atomic from the caller's view: either both sides change or neither. How do you avoid partial updates?"
+      ]
+    },
+    {
+      "slug": "implementation",
+      "title": "Implementation",
+      "questionPrompt": "Pseudo-code the major methods and trace through one scenario.",
+      "howToAnswer": "The reserve/confirm/release workflow and transfer are the meaty methods. Trace a concrete scenario: add stock, place reservation, confirm it, then handle a later release due to timeout.",
+      "rubric": {
+        "must": [
+          "Reserve method: decrement available, increment reserved, create Reservation record",
+          "Transfer method: verify source, deduct from source, add to dest, single audit entry",
+          "Trace one full scenario: add stock → reserve → confirm",
+          "Bounds-check and null-safe access"
+        ],
+        "should": [
+          "Show expiry check (lazy or background)",
+          "Trace a release due to timeout or cancellation",
+          "Show audit appends are ordered and immutable"
+        ],
+        "avoid": [
+          "Off-by-one in qty tracking",
+          "Race conditions from reading available, then writing",
+          "Forgetting to update both available and reserved on confirm"
+        ]
+      },
+      "sampleAnswer": "```\nreserve(productId, qty, expiryMs):\n  sl = warehouse.stock[productId]\n  if not sl:\n    sl = new StockLevel(productId, warehouseId)\n    warehouse.stock[productId] = sl\n  \n  if sl.available < qty:\n    throw InsufficientStockError(\"Need \" + qty + \", have \" + sl.available)\n  \n  sl.available -= qty\n  sl.reserved += qty\n  \n  res = new Reservation(uuid(), qty, now(), now() + expiryMs, PENDING)\n  sl.reservations[res.id] = res\n  \n  return res\n\nconfirm(reservationId):\n  sl = findStockLevel(reservationId)  // scans warehouses for reservation\n  res = sl.reservations[reservationId]\n  \n  if not res:\n    throw ReservationNotFoundError\n  if res.status != PENDING:\n    throw InvalidReservationStateError(res.status)\n  \n  // Confirm: reserved was held, now it's committed (deducted from both buckets)\n  sl.reserved -= res.qty\n  res.status = CONFIRMED\n  auditLog.append(CONFIRM, res.productId, sl.warehouseId, res.qty, now())\n\nrelease(reservationId):\n  sl = findStockLevel(reservationId)\n  res = sl.reservations.get(reservationId)\n  \n  if not res or res.status != PENDING:\n    return  // idempotent: already released or expired\n  \n  // Release: put reserved qty back to available\n  sl.available += res.qty\n  sl.reserved -= res.qty\n  res.status = RELEASED\n  auditLog.append(RELEASE, res.productId, sl.warehouseId, res.qty, now())\n\ntransfer(fromWarehouseId, toWarehouseId, productId, qty):\n  fromWh = warehouses[fromWarehouseId]\n  toWh = warehouses[toWarehouseId]\n  \n  if not fromWh or not toWh:\n    throw WarehouseNotFoundError\n  \n  fromSl = fromWh.stock[productId]\n  if not fromSl or fromSl.available < qty:\n    throw InsufficientStockError\n  \n  // Two-phase commit at object level:\n  // 1. Verify both sides exist and source has qty\n  // 2. Mutate atomically (single lock on InventoryManager or per Warehouse)\n  \n  fromSl.available -= qty\n  fromWh.auditLog.append(TRANSFER_OUT, productId, qty, toWarehouseId, now())\n  \n  toSl = toWh.stock.getOrCreate(productId)\n  toSl.available += qty\n  toWh.auditLog.append(TRANSFER_IN, productId, qty, fromWarehouseId, now())\n  \n  // Global audit entry for cross-warehouse visibility\n  globalAuditLog.append(TRANSFER, productId, fromWarehouseId, toWarehouseId, qty, now())\n```\n\nScenario Trace:\n1. addStock(warehouse=SF, product=LAPTOP, qty=10, source=SUPPLIER)\n   → StockLevel.available = 10, reserved = 0.\n   → AuditLog: [ADD, LAPTOP, SF, 10, SUPPLIER, t=1000]\n\n2. reserve(warehouse=SF, product=LAPTOP, qty=3, expiryMs=60000)\n   → StockLevel.available = 7, reserved = 3.\n   → Reservation(id=RES123, qty=3, createdAt=1000, expiresAt=61000, PENDING).\n   → AuditLog: [RESERVE, LAPTOP, SF, 3, RES123, t=1001]\n\n3. confirm(RES123)\n   → Lookup: found in SF warehouse StockLevel.\n   → Check status: PENDING ✓\n   → StockLevel.available stays 7, reserved = 0 (confirmed = deducted).\n   → Reservation.status = CONFIRMED.\n   → AuditLog: [CONFIRM, LAPTOP, SF, 3, RES123, t=1002]\n\n4. (Later) release(RES123)  // e.g., user cancels order\n   → Lookup: found, status = CONFIRMED.\n   → Idempotent: no-op, already released. Return.\n\n5. transfer(fromWh=SF, toWh=NYC, product=LAPTOP, qty=4)\n   → SF available = 7, verify 4 <= 7 ✓\n   → SF.available = 3, NYC.available = 0 → 4.\n   → AuditLog SF: [TRANSFER_OUT, LAPTOP, 4, NYC, t=1003]\n   → AuditLog NYC: [TRANSFER_IN, LAPTOP, 4, SF, t=1003]\n   → Global: [TRANSFER, LAPTOP, SF, NYC, 4, t=1003]",
+      "hints": [
+        "Reserve is a read-modify-write: check available >= qty, then decrement available, increment reserved, and create Reservation. Is this atomic?",
+        "Confirm means the reservation is locked in: the reserved qty is now final (sold, can't be released). What invariant holds before and after?",
+        "Transfer: you deduct from one Warehouse and add to another. If the second write fails, the first is left hanging. How do you avoid a split-brain state?"
+      ]
+    },
+    {
+      "slug": "extensibility",
+      "title": "Extensibility",
+      "questionPrompt": "How would you extend this for: low-stock auto-reorder with pluggable strategies, multi-location transfers with approval workflows, or split shipments across warehouses?",
+      "howToAnswer": "Stay high-level. Point at the seams in the design that make the change clean.",
+      "rubric": {
+        "must": [
+          "Low-stock reorder: introduce ReorderStrategy interface; Warehouse notifies listeners → triggers strategy"
+        ],
+        "should": [
+          "Approval workflow: introduce Transfer approval entity; transfer is PENDING_APPROVAL until approved",
+          "Split shipment: iterate over warehouses in order, reserve from each until qty fulfilled"
+        ],
+        "avoid": [
+          "Rewriting StockLevel to handle reorder logic",
+          "Hard-coding approval rules in InventoryManager"
+        ]
+      },
+      "sampleAnswer": "Low-stock auto-reorder: Introduce ReorderStrategy interface with `shouldReorder(available, threshold, leadTime) -> bool` and `calculateOrderQty(available, threshold) -> int`. Warehouse.addStock notifies listeners; the ReorderListener checks strategy and places an auto-reorder with the supplier system. No changes to core reserve/confirm.\n\nApproval workflow: Transfer becomes a first-class entity with status PENDING_APPROVAL | APPROVED | REJECTED. InventoryManager.transfer() creates a Transfer record but doesn't mutate warehouses until InventoryManager.approveTransfer() is called. Approval can be manual (admin UI) or automatic (policy check).\n\nSplit shipment: new method fulfillAcrossWarehouses(productId, qty) iterates over a prioritized Warehouse list, trying to reserve from each until qty is satisfied. If one warehouse can't cover all, it reserves what it can and moves to the next. Returns a list of Reservations. If total reserved < qty, releases all and throws InsufficientStockError.",
+      "hints": [
+        "Reorder strategy: what's the seam that lets you swap ThresholdBased for ML-predicted for seasonal demand?",
+        "Approval: Transfer should be a separate entity that StockLevel doesn't know about. Where does the business rule for approval live?",
+        "Split shipment: you're iterating warehouses and reserving in sequence. If one fails mid-loop, do you roll back earlier reservations?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-concurrency",
+      "title": "Concurrent access and race conditions",
+      "questionPrompt": "The system handles concurrent reserve, confirm, remove, and transfer operations. Where are the critical sections, and how do you prevent race conditions like double-reservations or inventory going negative?",
+      "sampleAnswer": "Shared mutable state is the available and reserved counts in StockLevel, plus the Reservation map. Critical sections: (1) StockLevel.reserve() must read available, compare against qty, then decrement available and increment reserved atomically — a thread could read available=10, lose the race, and both threads reserve 8, leaving available=-6. Use synchronized block on StockLevel per operation, or a per-StockLevel lock. (2) StockLevel.confirm() and release() must read/write status and the counts atomically. (3) Transfer must lock both Warehouses to avoid one thread transferring out while another transfers in, leading to double-counting. A global lock on InventoryManager's transfer method is simplest (coarse but safe); finer granularity locks (per Warehouse, then per StockLevel) add complexity but allow concurrent transfers from different Warehouses. Reservation.status is updated after the counts, so a stale read sees reserved > available momentarily — acceptable if confirm/release are idempotent. AuditLog appends must maintain order; use a synchronized or thread-safe queue.",
+      "rubric": {
+        "must": [
+          "Identify shared mutable state (available, reserved, Reservation status)",
+          "Describe the atomic operation for reserve (read, compare, mutate)",
+          "Explain locking strategy to prevent double-reserve or negative inventory"
+        ],
+        "should": [
+          "Note the race between confirming a reservation and releasing it",
+          "Discuss granularity trade-off: global lock vs per-warehouse vs per-StockLevel lock"
+        ],
+        "avoid": [
+          "Sprinkling synchronized everywhere without justification",
+          "Assuming reads are free (they're not if other threads are mutating)"
+        ]
+      },
+      "hints": [
+        "Sketch a race condition: Thread A reads available=10, Thread B reads available=10. Both try to reserve 8. What goes wrong?",
+        "Locking reserve() prevents the double-reserve. Does it also need to lock confirm() and release()? Why or why not?",
+        "What's the minimal lock scope for transfer()? Lock both warehouses, or just the source, or the whole manager?"
+      ]
+    },
+    {
+      "slug": "dd-reservation-timeout",
+      "title": "Reservation expiry and cleanup",
+      "questionPrompt": "Reservations expire after a TTL (e.g., 10 minutes). How do you detect and clean up expired reservations without scanning the entire system on every operation?",
+      "sampleAnswer": "Lazy expiry on access is the primary pattern: on confirm(), check if reservation.expiresAt < now() and auto-release it (idempotent) before attempting confirm. This catches expirations without a background job. For strict TTL enforcement, a background job periodically scans all StockLevels and releases pending reservations older than their TTL. To avoid scanning millions of reservations, use a priority queue (min-heap) of upcoming expirations — O(log N) to insert on reserve, O(log N) to pop and process. Another option: partition reservations by expiry hour, then scan only the current hour's bucket. The cost is O(1) space per reservation plus O(N_expired) work per cleanup cycle, where N_expired << N_total.",
+      "rubric": {
+        "must": [
+          "Describe lazy expiry check on confirm/release",
+          "Describe background job or data structure for bulk cleanup"
+        ],
+        "should": [
+          "Note the cost trade-off: CPU on every check vs background job delay",
+          "Mention idempotent release on double-check"
+        ],
+        "avoid": [
+          "Full scan of all reservations on every operation",
+          "Leaving expired reservations locked forever"
+        ]
+      },
+      "hints": [
+        "When does a reservation become 'stale' (not yet released, but past TTL)? How do you discover it?",
+        "If you check expiry lazily, which operations trigger the check? Only confirm, or also getAvailable?",
+        "For a background job: what's the ideal frequency? Too often = CPU waste. Too rare = locked inventory accumulates."
+      ]
+    },
+    {
+      "slug": "dd-transfer-atomicity",
+      "title": "Two-phase transfer correctness",
+      "questionPrompt": "How does transfer() ensure atomicity: either both sides update or neither? What if one warehouse is unavailable or a write fails partway through?",
+      "sampleAnswer": "Object-level two-phase commit: (1) Verify Phase: lock both Warehouses, check source has qty, check destination exists. (2) Commit Phase: deduct from source, add to destination, append audit records. If any step throws, release locks and abort — no partial mutations. The entire transfer is guarded by locks on both Warehouses, so concurrent transfers don't see torn reads. If a write to auditLog fails (rare, but possible), the in-memory stock is already mutated — recovery requires manual audit. In a production system with durable ACID storage, transactions would ensure atomicity: BEGIN, UPDATE warehouse A, UPDATE warehouse B, COMMIT as a single atomic operation. For in-memory-only design, a global lock on InventoryManager ensures serial transfer execution. For higher concurrency, lock Manager, then lock both Warehouses in a consistent order (e.g., by ID) to avoid deadlock.",
+      "rubric": {
+        "must": [
+          "Describe the verify and commit phases",
+          "Identify the lock(s) that ensure atomicity"
+        ],
+        "should": [
+          "Discuss partial failure recovery (e.g., audit write fails)",
+          "Note deadlock prevention via lock ordering"
+        ],
+        "avoid": [
+          "Updating source and dest without holding both locks",
+          "Assuming audit writes are 'good enough' without acknowledging the risk"
+        ]
+      },
+      "hints": [
+        "If you lock source, transfer out, release lock, then lock dest and transfer in, what could go wrong between the two?",
+        "What's the minimal lock acquisition order that avoids deadlock when two threads do A→B and B→A transfers simultaneously?",
+        "In a distributed system with multiple nodes, how does two-phase commit differ from object-level locks?"
+      ]
+    }
+  ]
+}

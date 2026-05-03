@@ -1,0 +1,270 @@
+{
+  "id": "movie-booking",
+  "title": "Movie Ticket Booking",
+  "difficulty": "medium",
+  "type": "low-level-design",
+  "prompt": "Design a movie ticket booking system. Users search for movies, browse theaters and showtimes, select specific seats from a seat map (rows A-Z, seat numbers 0-20), and reserve multiple seats atomically. The system must handle concurrent bookings of the same seat — exactly one succeeds. Support reservation cancellation to release seats.",
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "questionPrompt": "Clarify the requirements. What's in scope and what isn't?",
+      "howToAnswer": "Scope the problem tightly: multi-theater, multi-screen architecture, seat-level granularity, atomic multi-seat reservations, concurrent conflict resolution. Decide out-of-scope items explicitly: payment, seat types, pricing tiers, rescheduling, UI.",
+      "exampleHints": {
+        "headline": "Example (Parking Lot):",
+        "bullets": [
+          "Multiple theaters, each with multiple screens with identical seat layouts",
+          "Users search movies or browse theaters → select a showtime → pick seats → reserve atomically",
+          "Concurrent seat claims: exactly one succeeds; others fail cleanly",
+          "Cancellation releases seats immediately",
+          "Out of Scope: payment processing, variable pricing, UI, notifications"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Multi-theater, multi-screen architecture",
+          "Seat availability tracking with atomic multi-seat reservations",
+          "Concurrent booking conflict: exactly one succeeds",
+          "Cancellation releases seats",
+          "Simple title-based movie search"
+        ],
+        "should": [
+          "Confirmation ID generation",
+          "Seat layout: rows A-Z, seats 0-20"
+        ],
+        "avoid": [
+          "Payment processing, PCI compliance",
+          "Variable seat pricing or types",
+          "UI rendering or HTML templating",
+          "Notification / email system"
+        ]
+      },
+      "sampleAnswer": "Scope:\n- Multi-theater, multi-screen booking system.\n- Users search movies by title, browse theater offerings, select showtimes, pick seats (row + number), and book multiple seats in one atomic transaction.\n- Exactly one user succeeds when two try to book the same seat concurrently; the other fails with ConflictException.\n- Cancellation immediately releases booked seats.\n\nOut of scope: payment, variable seat pricing, rescheduling, push notifications, UI.",
+      "hints": [
+        "Sketch the user journey: search → browse → select → reserve. At which step do concurrency conflicts happen?",
+        "Atomic multi-seat reservation is the headline constraint. What must serialize to guarantee exactly one succeeds?",
+        "Define what 'release seats on cancel' means: do reserved-but-not-confirmed seats auto-expire? Or do they stay locked until explicit cancellation?"
+      ]
+    },
+    {
+      "slug": "entities-relationships",
+      "title": "Entities & Relationships",
+      "questionPrompt": "What are the core entities and how do they relate?",
+      "howToAnswer": "Identify the orchestrator (BookingSystem). Map out Theater, Showtime, Seat, Reservation hierarchy. Decide which entity owns the seat-lock state. Avoid scattering lock logic across classes.",
+      "exampleHints": {
+        "headline": "Example (ATM):",
+        "bullets": [
+          "ATM (orchestrator) controls the workflow",
+          "Account (owns balance state and transaction rules)",
+          "Transaction (withdrawal record with atomic amount deduction)",
+          "Card (credential; ATM validates via Card)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "BookingSystem: orchestrates searches and reservations across all theaters",
+          "Theater: container for multiple screens",
+          "Showtime: links movie, screen, date/time",
+          "Seat: individual booking unit with state (AVAILABLE | RESERVED)",
+          "Reservation: transaction record with reservation ID"
+        ],
+        "should": [
+          "Screen: collection of seats with layout metadata",
+          "Explicit seat-lock ownership — which class manages AVAILABLE → RESERVED transition?"
+        ],
+        "avoid": [
+          "Putting all seat-locking logic on BookingSystem",
+          "Treating Seat as a dumb data container without state rules"
+        ]
+      },
+      "sampleAnswer": "- BookingSystem: orchestrates the booking workflow; finds theaters, searches movies, initiates reservations.\n- Theater: owns a list of Screens with the same layout.\n- Screen: owns a 2D array of Seats and manages seat availability.\n- Showtime: links a Movie, Screen, and temporal slot (date/time). Showtimes are created by Theater.\n- Seat: individual unit with state (AVAILABLE | RESERVED) and a reserved-by (nullable Reservation ID).\n- Reservation: transaction record with ID, Showtime reference, list of booked Seats, and status (PENDING | CONFIRMED | CANCELLED).\n\nBookingSystem queries Theater.searchShowtimes(movieTitle, date). Caller picks a Showtime, then calls BookingSystem.reserveSeats(showtime, seatList) — this is where concurrency conflicts happen. Screen owns the seat-locking logic.",
+      "hints": [
+        "Identify the shared state under concurrent access. Seat availability is the hot zone — who owns it?",
+        "Which class should orchestrate the entire booking flow (search, showtime selection, reservation)? Avoid a God class.",
+        "Seat state (AVAILABLE vs RESERVED) must be atomic to prevent lost reservations. Which class owns that invariant?"
+      ]
+    },
+    {
+      "slug": "class-design",
+      "title": "Class Design",
+      "questionPrompt": "Define the classes — fields, methods, and return types. Keep seat-locking rules with the entity that owns the state.",
+      "howToAnswer": "Sketch each class with explicit signatures. Use enums for Seat and Reservation state. Reservation.reserve(Showtime, List<Seat>) returns a Reservation or throws ReservationConflictException. Show what each method returns — not bare bools.",
+      "exampleHints": {
+        "headline": "Example (Tic Tac Toe):",
+        "bullets": [
+          "class Game: + playMove(col: int) -> GameResult",
+          "class Board: + dropDisc(col: int, color: Color) -> (row, col) | throws ColumnFullException",
+          "enum GameResult { IN_PROGRESS, RED_WINS, YELLOW_WINS, DRAW }",
+          "enum Color { RED, YELLOW }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "BookingSystem.reserveSeats(showtime: Showtime, seats: List<Seat>) -> Reservation | throws ReservationConflictException",
+          "Screen.reserveSeats(seats: List<Seat>) -> synchronized method with atomic multi-seat claim",
+          "Seat enum: { AVAILABLE, RESERVED }",
+          "Reservation enum: { PENDING, CONFIRMED, CANCELLED }",
+          "Theater.searchShowtimes(movieTitle: String, date: Date) -> List<Showtime>"
+        ],
+        "should": [
+          "Showtime stores movie, screen, dateTime, and a reference to the Screen's seats",
+          "Reservation.getConfirmationId() -> String (UUID-based)",
+          "BookingSystem.cancelReservation(reservationId: String) -> void | throws ReservationNotFoundException"
+        ],
+        "avoid": [
+          "Returning bool from reserveSeats — callers need to know which seats failed and why",
+          "Hard-coded seat layout dimensions in multiple places"
+        ]
+      },
+      "sampleAnswer": "```\nenum SeatState { AVAILABLE, RESERVED }\nenum ReservationStatus { PENDING, CONFIRMED, CANCELLED }\n\nclass Seat:\n  row: char      // A-Z\n  number: int    // 0-20\n  state: SeatState\n  reservedBy: String?  // Reservation ID\n\nclass Showtime:\n  id: String\n  movie: Movie\n  screen: Screen\n  dateTime: DateTime\n  getAvailableSeats() -> List<Seat>  // immutable view of available seats\n\nclass Screen(rows=26, cols=21):\n  seats: Seat[rows][cols]\n  synchronized reserveSeats(seatList: List<Seat>, reservationId: String) -> void | throws ReservationConflictException:\n    // Atomically claim all seats or roll back\n    for seat in seatList:\n      if seat.state != AVAILABLE: throw ReservationConflictException\n    for seat in seatList:\n      seat.state = RESERVED\n      seat.reservedBy = reservationId\n  synchronized releaseSeats(reservationId: String) -> void:\n    for each seat where seat.reservedBy == reservationId:\n      seat.state = AVAILABLE\n      seat.reservedBy = null\n\nclass Reservation:\n  id: String (UUID)\n  showtime: Showtime\n  seats: List<Seat>\n  status: ReservationStatus\n  createdAt: DateTime\n  getConfirmationId() -> String\n\nclass BookingSystem:\n  theaters: Map<String, Theater>\n  searchMovies(title: String) -> List<Movie>\n  searchShowtimes(movie: Movie, date: Date) -> List<Showtime>\n  reserveSeats(showtime: Showtime, seats: List<Seat>) -> Reservation | throws ReservationConflictException:\n    reservation = new Reservation(showtime, seats, PENDING)\n    showtime.screen.reserveSeats(seats, reservation.id)\n    return reservation\n  cancelReservation(reservationId: String) -> void | throws ReservationNotFoundException:\n    reservation = findReservation(reservationId)\n    reservation.showtime.screen.releaseSeats(reservationId)\n    reservation.status = CANCELLED\n```",
+      "hints": [
+        "Return type for reserveSeats should be richer than bool. What does the caller need to know on success vs failure?",
+        "Seat state mutation is the critical section. Which method signature should be synchronized, and why?",
+        "Validate that all seats belong to the same Showtime's Screen. Where should that check live?"
+      ]
+    },
+    {
+      "slug": "implementation",
+      "title": "Implementation",
+      "questionPrompt": "Pseudo-code the seat-locking logic and trace through a concurrent scenario.",
+      "howToAnswer": "The headline method is Screen.reserveSeats — write the critical section carefully. Show the atomic multi-seat check-and-claim. Then trace two concurrent threads competing for the same seat.",
+      "exampleHints": {
+        "headline": "Example (Tic Tac Toe):",
+        "bullets": [
+          "checkWin(row, col): walk all 4 directions from the placed cell, count consecutive",
+          "Bounds-check array access",
+          "Trace: place 4 in a row, checkWin walks all directions, sums to 4 ≥ winLength → return true"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Screen.reserveSeats checks all seats for AVAILABLE before claiming any",
+          "Atomicity: no partial bookings (all-or-nothing)",
+          "Trace through Thread 1 and Thread 2 competing for the same seat"
+        ],
+        "should": [
+          "Show the locking scope: synchronized on Screen or per-Seat?",
+          "Trace: Thread 1 checks seat S1, Thread 2 waits on lock, Thread 1 claims S1, Thread 2 resumes, finds S1 RESERVED, throws exception"
+        ],
+        "avoid": [
+          "Check-then-act without holding the lock (race condition)",
+          "Off-by-one in seat availability checks"
+        ]
+      },
+      "sampleAnswer": "```\nScreen.reserveSeats(seatList: List<Seat>, reservationId: String) -> void:\n  synchronized(this):  // lock the entire Screen\n    // Phase 1: Validate all seats are available\n    for seat in seatList:\n      if seat.state != AVAILABLE:\n        throw ReservationConflictException(\"Seat \" + seat.row + seat.number + \" already reserved\")\n    \n    // Phase 2: Claim all seats (no one else can interfere due to lock)\n    for seat in seatList:\n      seat.state = RESERVED\n      seat.reservedBy = reservationId\n\nTrace Concurrent Scenario:\nShowtime: Movie X, 2pm, Screen 1\nSeats to book: [A1, A2]\n\nTime    Thread 1                          Thread 2\n-----   ---------                         ---------\nT0      reserveSeats([A1,A2])            reserveSeats([A1,A3])\nT1      acquire lock on Screen 1         waiting for lock\nT2      check A1: AVAILABLE ✓            \nT3      check A2: AVAILABLE ✓            \nT4      claim A1 → RESERVED              \nT5      claim A2 → RESERVED              \nT6      release lock                     acquire lock\nT7                                       check A1: RESERVED ✗\nT8                                       throw ReservationConflictException(\"A1 reserved\")\nT9                                       release lock\n\nResult: Thread 1 succeeds with [A1, A2]. Thread 2 fails with exception. No lost bookings.\n```",
+      "hints": [
+        "The critical section must include both validation and claiming. What happens if you release the lock between the two phases?",
+        "Synchronize on what object? The entire Screen, or individual Seats? Why?",
+        "Trace the scenario where two threads pick overlapping seat lists. Where does the exception surface?"
+      ]
+    },
+    {
+      "slug": "extensibility",
+      "title": "Extensibility",
+      "questionPrompt": "How would you extend the design for: (a) seat holds with automatic expiry (TTL), (b) variable seat pricing by type, (c) group reservations with discounts?",
+      "howToAnswer": "Stay high-level. Point at the seams where each change fits cleanly.",
+      "exampleHints": {
+        "headline": "Example (Tic Tac Toe):",
+        "bullets": [
+          "AI opponent: Player becomes an interface; HumanPlayer / AIPlayer impls",
+          "N-in-a-row: Board constructor already takes winLength param",
+          "Networked play: introduce MoveSource abstraction (local vs websocket)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "(a) TTL: Reservation gains expiresAt timestamp; background thread or scheduled task checks and releases seats",
+          "(b) Pricing: Seat gains a type (STANDARD | PREMIUM | ACCESSIBLE); Reservation tracks price per seat"
+        ],
+        "should": [
+          "(c) Group discounts: Reservation gains a discountCode field; BookingSystem.applyDiscount during confirm"
+        ],
+        "avoid": [
+          "Redesigning the entire Seat/Reservation model for each feature"
+        ]
+      },
+      "sampleAnswer": "(a) Seat holds with TTL: Reservation gains expiresAt: DateTime and a status PENDING → auto-release after expiry. Introduce ReservationExpirer (scheduled task) that polls Reservations where status == PENDING and createdAt + TTL < now, then calls cancelReservation(id). Seat state transitions: AVAILABLE → RESERVED (pending) → AVAILABLE (expired) or CONFIRMED (user paid).\n\n(b) Variable seat pricing: Seat gains a type: enum SeatType { STANDARD, PREMIUM, ACCESSIBLE }. Reservation tracks pricePerSeat: Map<Seat, BigDecimal>. During reserveSeats, calculate total from SeatType → price mapping. BookingSystem.reserveSeats already returns a Reservation; caller can inspect totalPrice before confirm.\n\n(c) Group discounts: Reservation gains a discountCode: String?. During confirm, if discountCode is set, BookingSystem.applyDiscount(reservation) looks up code, applies multiplier to totalPrice, records discount in Reservation. No changes to seat-locking logic.",
+      "hints": [
+        "Seat holds (TTL): which entity decides when to expire a PENDING reservation? A background thread, or the caller at check-out?",
+        "Pricing: Seat's type is static (immutable). Should Seat own pricePerType, or should a separate SeatTypePricer decide the fee?",
+        "Group discounts: at what point in the flow should the discount code be validated? During reserve or during confirm?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-concurrent-seat-locking",
+      "title": "Concurrent seat locking",
+      "questionPrompt": "How do you guarantee exactly one success when two threads try to book the same seat concurrently? Where's the race condition if you forget synchronization?",
+      "sampleAnswer": "The race condition: Thread 1 checks seat S1 state == AVAILABLE (yes), context switch. Thread 2 checks S1 state == AVAILABLE (yes), claims S1, releases lock. Thread 1 resumes, claims S1 (boom — both think they own it). Prevention: wrap the entire check-and-claim in synchronized(screen). Lock scope must cover validation + claiming atomically. No intermediate unlock. Alternatively, use a per-Seat lock or AtomicReference<SeatState> with compareAndSwap, but a single Screen-level lock is simpler and avoids deadlock if a user reserves seats from multiple screens (rare).",
+      "rubric": {
+        "must": [
+          "Identify the check-then-act race condition",
+          "Synchronization mechanism (lock scope and object)"
+        ],
+        "should": [
+          "Explain why synchronized(screen) is simpler than per-Seat locks",
+          "Note the cost: high contention during peak hours (rush to book blockbuster movie)"
+        ],
+        "avoid": [
+          "Sprinkling synchronized everywhere",
+          "Lock-free designs without explaining why"
+        ]
+      },
+      "hints": [
+        "Describe the interleaving of two threads' read-check-write steps without synchronization. Where does the collision happen?",
+        "Synchronization on what object ensures mutual exclusion? A single global lock, per-Screen, or per-Seat?",
+        "What's the trade-off: finer-grained locks (per-Seat) vs coarser-grained (Screen-wide)? Cost/benefit?"
+      ]
+    },
+    {
+      "slug": "dd-reservation-confirmation-idempotency",
+      "title": "Idempotent confirmation",
+      "questionPrompt": "A user reserves seats and gets a reservation ID. Then the network drops. They retry the confirmation request. How do you avoid double-charging or double-locking seats?",
+      "sampleAnswer": "Reservation status transitions: PENDING → CONFIRMED or CANCELLED. On retry, look up the reservation by ID. If status is already CONFIRMED, return success without re-locking. If status is PENDING, proceed to confirm (idempotent: re-confirming an already-confirmed reservation is safe). Seat.reservedBy persists the reservation ID, so even if seats were released and re-locked by another user, the original confirmation ID fails (seats now belong to someone else). In a distributed system, store Reservations in a durable store with the reservation ID as the key; on retry, query first before mutating. This is the classic pattern: check idempotency key (reservation ID) → if already processed, return cached result.",
+      "rubric": {
+        "must": [
+          "Reservation status state machine (PENDING, CONFIRMED, CANCELLED)",
+          "Retry of confirm(reservationId) returns success if already CONFIRMED"
+        ],
+        "should": [
+          "Explain why Seat.reservedBy must persist the reservation ID",
+          "Note the relationship to distributed consensus (idempotent operations)"
+        ],
+        "avoid": [
+          "Ignoring the possibility of a confirmation retry"
+        ]
+      },
+      "hints": [
+        "After reserveSeats, the user is in PENDING state. What state transitions are possible from PENDING?",
+        "If a user calls confirm(reservationId) twice, the second call should return success without re-locking. Why is that safe?",
+        "In a distributed system, who stores the Reservation record: client or server? Who decides idempotency?"
+      ]
+    },
+    {
+      "slug": "dd-seat-availability-under-load",
+      "title": "Seat availability queries under load",
+      "questionPrompt": "Showing available seats to a user is O(seats) and heavy under peak load. How can you optimize getAvailableSeats(showtime) for fast UI rendering without losing consistency?",
+      "sampleAnswer": "Baseline: iterate Seat array, filter AVAILABLE. O(rows × cols) = O(546) per call — expensive at 10k concurrent browsers. Option 1: cache the available-seat list; update on each successful reserve/cancel. Trade-off: slower mutations, faster reads. Option 2: return a bitmap of available seats (one bit per seat) instead of Seat objects — much smaller payload, still consistent. Option 3: if stale data is acceptable (UI shows 5 seats available, user picks one, gets 'sold out' — acceptable friction in a booking system), cache for 2-5 seconds. For consistency during peak, use a read-write lock: readers (getAvailableSeats) acquire read lock; writers (reserve/cancel) acquire write lock. This allows concurrent reads without blocking each other, and ensures writers see a consistent snapshot.",
+      "rubric": {
+        "must": [
+          "Identify the O(seats) cost of iterating the Seat array",
+          "Propose at least one optimization (caching, bitmap, stale-ok, RWLock)"
+        ],
+        "should": [
+          "Discuss the trade-off: consistency vs latency",
+          "Explain how bitmap or caching affects reserve/cancel performance"
+        ],
+        "avoid": [
+          "Ignoring the peak-load problem",
+          "Caching without invalidation logic"
+        ]
+      },
+      "hints": [
+        "What data structure would let you represent '15 of 21 seats available' more compactly than iterating each Seat?",
+        "If you cache the available-seat list, when do you invalidate? Every reserve/cancel? Every 5 seconds?",
+        "A read-write lock lets many readers proceed in parallel. What happens when a writer (reserve) arrives?"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,253 @@
+{
+  "id": "fb-news-feed",
+  "title": "FB News Feed",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design Facebook's news feed system. Users post content; their friends see it ranked and live-updated in their feeds. Target ~1B DAU with ~10M posts per hour. Cover ranking logic, fan-out architecture, and serving a personalized feed at scale.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements. Focus on posting, viewing ranked feeds, and interactions. Skip notifications, groups, or marketplace.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Users can publish a song or album",
+          "Other users see new releases in their feed",
+          "Users can like, comment, or share"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can publish a post (text, photo, etc.)",
+          "Users see a ranked feed of posts from their friends"
+        ],
+        "should": [
+          "Users can like and comment on posts",
+          "Posts appear in real-time for followers"
+        ],
+        "avoid": [
+          "Drifting into notifications, messenger, or groups",
+          "Designing the feed ranking algorithm itself in this stage"
+        ]
+      },
+      "sampleAnswer": "1. Users can create and publish a post.\n2. Users see a personalized feed of posts from people they follow, ranked by relevance.\n3. Users can like, comment, and share posts.\n4. The feed updates in real-time as friends post new content.",
+      "hints": [
+        "Separate the write action from the read action. What can a user do with their own posts vs. what do they see from others?",
+        "Ranking is the headline of news feed, but don't design the ranking formula yet — just acknowledge it exists.",
+        "Stay focused on posts. Skip groups, marketplace, and pages for now."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Cover latency (feed generation, post visibility), scale (DAU, posts/hour, QPS), availability, and read:write skew. Quantify.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Feed generation < 500ms p99",
+          "New release visible within 1 second",
+          "1B daily active users",
+          "99.9% availability"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Feed latency target (< 500ms p99 to render a personalized feed)",
+          "Post visibility latency (< 5 seconds for a post to reach followers' feeds)",
+          "Scale: 1B DAU, ~10M posts/hour",
+          "Availability > consistency (eventual consistency OK)"
+        ],
+        "should": [
+          "Read:write skew (heavily read-dominant)",
+          "Low-latency ranking and serving (near real-time)"
+        ],
+        "avoid": [
+          "Forgetting the two latencies: feed gen vs. post visibility",
+          "Assuming strong consistency on ranking updates"
+        ]
+      },
+      "sampleAnswer": "- Feed latency: < 500ms p99 from request to rendered feed.\n- Post visibility: < 5 seconds from publish to appearing in followers' feeds.\n- Scale: 1B DAU, ~10M posts/hour (≈2.7k posts/sec).\n- Availability > consistency: eventual consistency acceptable.\n- Read:write ≈ 100:1 (feeds are read far more than posted).",
+      "hints": [
+        "Two latencies matter: how fast do I see the feed? How fast do my followers see my post? They're different.",
+        "1B DAU is enormous. What does that imply for caching, replication, and region distribution?",
+        "Ranking changes continually, but must users see the latest ranking? Or can feeds be slightly stale?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "List the nouns: User, Post, Follow, Feed.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Artist",
+          "Track",
+          "Playlist",
+          "Play event"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "User (poster and follower)",
+          "Post (content)"
+        ],
+        "should": [
+          "Follow (relationship)",
+          "FeedEntry (or Feed ranking list)"
+        ],
+        "avoid": [
+          "Inventing entities for features not in scope (e.g., Page, Group, Notification)"
+        ]
+      },
+      "sampleAnswer": "- User: a person on Facebook.\n- Post: a piece of content (status, photo, link, etc.) authored by a User.\n- Follow: a one-way relationship indicating User A follows User B.\n- FeedEntry: a ranked entry in User A's feed, pointing to a Post.",
+      "hints": [
+        "You need at least User, Post, and some representation of 'follows' — what's the fourth entity?",
+        "The feed itself is either a list of Posts or a list of FeedEntry rankings. Which maps to your architecture?"
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "Endpoints for publish post, fetch feed (with pagination), like, comment. Idempotency keys for writes. Mention latency target.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "POST /releases body: { artist, tracks, date }",
+          "GET /feed → Release[]",
+          "POST /play body: { trackId }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST endpoint to publish a post (with optional idempotency key)",
+          "GET endpoint to fetch a personalized feed (paginated)"
+        ],
+        "should": [
+          "POST endpoint to like a post",
+          "POST endpoint to comment",
+          "Cursor-based pagination for the feed"
+        ],
+        "avoid": [
+          "Forgetting idempotency keys on post create",
+          "Returning full post objects when IDs + pointers suffice"
+        ]
+      },
+      "sampleAnswer": "POST /posts\n  body: { content, attachments?, idempotencyKey }\n  → 201 { postId, timestamp }\n\nGET /feed?cursor=...&limit=20\n  → 200 { posts: [Post], nextCursor }\n\nPOST /posts/:id/like\n  body: { idempotencyKey }\n  → 201 {}\n\nPOST /posts/:id/comments\n  body: { text, idempotencyKey }\n  → 201 { commentId }",
+      "hints": [
+        "Create, read, and interact. Map each to one endpoint.",
+        "The feed endpoint is the expensive one. How do you paginate a ranked list? Cursor or offset?",
+        "Idempotency keys protect against double-likes if the response is lost. Where do you store them?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through the post and feed-fetch paths.",
+      "howToAnswer": "Show write path: client → API → DB + cache. Show read path: API → cache or ranking service. Explain fan-out strategy (push vs pull) and how ranking works.",
+      "rubric": {
+        "must": [
+          "Client / Load balancer / API service / Database",
+          "Explanation of fan-out strategy (push, pull, or hybrid)",
+          "Ranking / scoring mechanism that considers recency, engagement, or ML model"
+        ],
+        "should": [
+          "Cache layer (Redis) for hot feeds",
+          "Separate ranking service if using ML",
+          "Handling the friend graph"
+        ],
+        "avoid": [
+          "Skipping fan-out entirely — it's the headline of a news feed",
+          "Treating ranking as magical black-box"
+        ]
+      },
+      "sampleAnswer": "Write Path: API → DB (stores Post, updates Friend's FeedEntry table via fan-out service).\nRanking: Push-based fan-out — when User A posts, a fan-out service pushes PostID to all A's followers' feed queues (Redis or cache). Subscribers see the new post within seconds.\n\nRead Path: Client → API → Redis cache (pre-ranked feed for user, ~1000 most recent). Cache miss → Ranking Service (applies ML model to recent Posts: affinity score from engagement history, content features, recency). Top 20 returned. Cache updated with new ranking.\n\nGraph: Friend graph stored in cache (Redis) for fast lookup. Updates on follow/unfollow.\n\nInvalidation: When a post gets likes/comments, re-rank that entry in all followers' caches.",
+      "hints": [
+        "The headline of news feed is fan-out: when a post is published, how many readers must be notified or have their ranking updated? Push or pull?",
+        "Ranking can be simple (recency + engagement count) or complex (ML). Name your approach and say when it's computed.",
+        "Where is the friend graph, and how fast can you answer 'who follows user X?'"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-fan-out-strategy",
+      "title": "Push vs pull fan-out",
+      "questionPrompt": "Your system must handle 1B users with varying follower counts (some have millions). How does fan-out scale with such skew?",
+      "sampleAnswer": "Hybrid approach: push for users with < 100k followers (majority), pull for celebrities with millions. On push: when User A (< 100k followers) posts, fan-out service writes PostID to each follower's feed queue (Redis) — O(follower_count) work, but each write is fast. On pull: high-follower celebrities' posts are not pushed; instead, followers' feed-fetch queries pull from a timeline service that ranks the celebrity's recent posts. This avoids the fanout explosion.",
+      "rubric": {
+        "must": [
+          "Acknowledge the fanout bottleneck for high-follower accounts",
+          "Propose a concrete mechanism (push, pull, or hybrid) with reasoning"
+        ],
+        "should": [
+          "Note write amplification on push and read amplification on pull",
+          "Discuss the crossover point (100k followers, for example)"
+        ],
+        "avoid": [
+          "Using pure push for all users without addressing celebrities",
+          "Hand-waving 'it just works'"
+        ]
+      },
+      "hints": [
+        "Consider the extremes: a user with 10 followers vs. a celebrity with 50M. How does each fan-out approach scale?",
+        "Push writes to every follower — cheap for readers, expensive for popular posters. Pull reads from a timeline — cheap for posters, reads are a bit more work.",
+        "What's the break-even follower count where you'd switch strategies?"
+      ]
+    },
+    {
+      "slug": "dd-ranking-freshness",
+      "title": "Ranking freshness and consistency",
+      "questionPrompt": "How do you keep feed rankings fresh while serving billions of feeds per day? How stale is acceptable?",
+      "sampleAnswer": "Feeds are ranked on-demand at read time, not precomputed. When User fetches /feed, the API calls a Ranking Service with the set of recent PostIDs from their friends. Ranking Service applies the ML model (affinity, engagement, recency) in < 100ms and returns top 20. This is eventual-consistent (ranking may lag behind new likes by seconds), but users don't notice. Hot users' rankings are cached; cold users' feeds are ranked on-demand (degraded latency OK).",
+      "rubric": {
+        "must": [
+          "Concrete decision on stale vs. fresh: on-demand ranking vs. precomputed",
+          "Latency budget for ranking (e.g., < 100ms)"
+        ],
+        "should": [
+          "Caching for hot users",
+          "Tiered latency (fast cache hit, slow fallback)"
+        ],
+        "avoid": [
+          "Reranking every post on every like (thundering herd)",
+          "Precomputing feeds for all 1B users on every post"
+        ]
+      },
+      "hints": [
+        "Every user's feed changes every second (new posts, new likes). You can't precompute all of them. What do you do instead?",
+        "At what point do you compute the ranking? On write (push), on read (pull), or on a timer?",
+        "What's acceptable staleness? If a post gets 1M likes in the first minute, how long before a user sees the updated ranking?"
+      ]
+    },
+    {
+      "slug": "dd-availability-cache-failure",
+      "title": "Availability under cache loss",
+      "questionPrompt": "Cache cluster goes down. How does the system stay available?",
+      "sampleAnswer": "Cache is a write-through layer — source of truth is the DB (Post table + Feed rankings from the Ranking Service). On cache miss, API queries the Ranking Service directly (or hits a read replica DB). Latency degrades to ~500ms but requests complete. Cache is rebuilt from the DB in the background. Multi-region replication ensures a region failure doesn't take down the whole feed — DNS failover to another region in < 10 seconds.",
+      "rubric": {
+        "must": [
+          "Identify DB as the source of truth (not cache)",
+          "Concrete fallback path (DB read or secondary service)"
+        ],
+        "should": [
+          "Multi-region replication",
+          "Latency degradation rather than outage"
+        ],
+        "avoid": [
+          "Cache as the source of truth — lose cache, lose data",
+          "Synchronous rebuilding that blocks the read path"
+        ]
+      },
+      "hints": [
+        "If the cache goes dark, what's your next-best source? Is it fast enough?",
+        "Rebuilding the cache on-demand per user request is slow. How do you parallelize recovery?",
+        "At 1B DAU, a single region is a risk. What's the failover story?"
+      ]
+    }
+  ]
+}

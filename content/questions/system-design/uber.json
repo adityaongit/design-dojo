@@ -1,0 +1,271 @@
+{
+  "id": "uber",
+  "title": "Uber",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design Uber's core platform: a rider-driver matching service with real-time location tracking and dispatch. Candidates request a ride; the system finds nearby available drivers, matches based on ETA and acceptance probability, and maintains live location streams. Target 10M riders and 3M drivers globally, with peak load of 1M matching requests per minute in major cities.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering the must-have behavior. Skip nice-to-haves and admin features unless explicitly asked.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Users can request delivery to a location",
+          "Users can see estimated arrival time",
+          "Users see real-time order status updates"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Riders can request a ride with pickup and dropoff locations",
+          "Drivers can accept or decline ride requests",
+          "Riders see available drivers and pickup ETA in real-time"
+        ],
+        "should": [
+          "Drivers see pending ride requests in their area",
+          "Riders can cancel a ride before pickup",
+          "Drivers can update their availability status"
+        ],
+        "avoid": [
+          "Payment processing or billing logic",
+          "Ratings and reviews (separate subsystem)",
+          "Advanced features like scheduled rides or shared rides"
+        ]
+      },
+      "sampleAnswer": "1. Riders can request a ride by specifying pickup and dropoff locations.\n2. The system matches available drivers and shows the rider the matched driver's ETA.\n3. Drivers receive a request notification and can accept or decline.\n4. Both riders and drivers see real-time location updates during the trip.",
+      "hints": [
+        "Start with what a rider does to get a ride, then think about what the driver sees and does. Two distinct workflows.",
+        "Matching happens first — the system must find and assign a driver. What does each party see before and after that moment?",
+        "Focus on the core loop: request, match, accept, track. Leave billing and ratings out unless asked."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover availability vs consistency, latency targets with concrete numbers, scale (DAU/QPS/storage), durability. Tie each requirement to a real product concern.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "High availability for the matching service",
+          "Sub-second pickup ETA updates",
+          "Handle 100k+ concurrent orders",
+          "Eventual consistency OK for driver location — brief stale reads acceptable"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Single-writer guarantee — no double-dispatch: each ride assigned to exactly one driver",
+          "Low-latency matching: <500ms p99 to return matched driver to rider",
+          "Real-time location stream: driver location updates broadcast to rider <2s latency",
+          "Scale: 1M matching requests/min peak, 10M riders, 3M drivers"
+        ],
+        "should": [
+          "Availability > consistency (eventual consistency on driver status OK)",
+          "ETA accuracy within 10% (depends on ML models, not system design)",
+          "99.99% availability for matching service"
+        ],
+        "avoid": [
+          "Trying to guarantee exact matching with distributed locks (causes cascade failures)",
+          "Syncing all driver locations to all riders in real-time (fan-out explosion)"
+        ]
+      },
+      "sampleAnswer": "- Single-writer guarantee: a ride can only be assigned to one driver at a time (critical for payment and trust).\n- Matching latency: <500ms p99 from request to matched driver shown to rider.\n- Location update latency: driver location streamed to rider with <2s delay.\n- Peak load: 1M matching requests/min, 10M DAU riders, 3M drivers.\n- Availability: 99.99% for matching and trip services.",
+      "hints": [
+        "What's the one thing that can never happen? (Hint: a rider's ride can't be assigned to two drivers.) That pins your consistency model.",
+        "Matching is a write operation with strong consistency, but location updates are a stream with weak consistency. How does that shape your architecture?",
+        "1M requests/min is ~17k RPS. How many matching service instances do you need, and where's the bottleneck — compute or I/O?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Order",
+          "Restaurant",
+          "Dasher (driver)",
+          "Location"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Rider: customer requesting a ride",
+          "Driver: available driver who can fulfill requests",
+          "Trip (or Ride): the match between a rider and driver for a specific request"
+        ],
+        "should": [
+          "Location: current position of rider/driver (mutable, frequently updated)",
+          "MatchRequest: transient record of a matching attempt"
+        ],
+        "avoid": [
+          "Payment (separate bounded domain)",
+          "Rating (separate feedback system)"
+        ]
+      },
+      "sampleAnswer": "- Rider: user requesting a ride, with userId, phone, payment method.\n- Driver: available driver, with driverId, vehicleType, current lat/lng, status (available/on-trip/offline).\n- Trip: the assignment, with tripId, riderId, driverId, pickupLocation, dropoffLocation, status (matched/en-route/in-trip/completed).\n- Location: mutable current position, updated frequently via GPS stream.",
+      "hints": [
+        "Three entities at minimum: the two parties and the transaction between them.",
+        "Location is interesting because it's mutable and real-time. Where does it live — in the rider/driver record, or separate?",
+        "Focus on what's needed for matching and dispatch. Billing and ratings are separate systems."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement. REST is the default — show method, path, request body shape, and response.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "POST /orders body: { restaurantId, items[] } → { orderId, estimatedTime }",
+          "GET /orders/:orderId → Order with status and dasher location",
+          "POST /orders/:orderId/cancel → 200 OK"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST /trips: create a ride request (body: pickupLat, pickupLng, dropoffLat, dropoffLng) → tripId + matched driver + ETA",
+          "GET /trips/:tripId: fetch trip status and driver location (for rider)",
+          "POST /trips/:tripId/accept: driver accepts the ride request"
+        ],
+        "should": [
+          "POST /drivers/:driverId/location: driver stream updates location",
+          "WebSocket or gRPC for real-time location stream to rider",
+          "POST /trips/:tripId/cancel: rider cancels before pickup"
+        ],
+        "avoid": [
+          "GET /drivers without location — needs to be bulk or streamed",
+          "Synchronous payment in the request path"
+        ]
+      },
+      "sampleAnswer": "POST /trips\n  body: { pickupLat, pickupLng, dropoffLat, dropoffLng, userId }\n  → 200 { tripId, driverId, driverName, driverLat, driverLng, estimatedPickupEta }\n\nGET /trips/:tripId\n  → Trip { status, driverId, driverLat, driverLng, pickupEta }\n\nPOST /trips/:tripId/accept\n  header: { Authorization: driverId }\n  → 200 { tripId, status: 'accepted' }\n\nWebSocket /trips/:tripId/stream-location\n  → realtime driver location updates { lat, lng, timestamp }",
+      "hints": [
+        "One endpoint to request a ride, one to get status. The create endpoint is where matching happens — what does it return?",
+        "How does the rider get live driver location? A polling loop will kill your infrastructure. What async mechanism works?",
+        "Driver needs to accept or decline. That's a separate write from the initial match — why?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through each endpoint.",
+      "howToAnswer": "Boxes and arrows: client → load balancer → API service → database. Note schema fields next to the database. Walk through each endpoint end-to-end.",
+      "rubric": {
+        "must": [
+          "H3 hex-cell geo-index for O(1) nearby driver lookup by location",
+          "Matching service that picks driver from candidate set via scoring (distance, ETA, acceptance probability)",
+          "Single-writer per trip to prevent double-dispatch (e.g., Redis lock or lease)",
+          "Kafka topic for driver location stream, partitioned by H3 cell"
+        ],
+        "should": [
+          "Trip state machine: requested → matched → accepted → en-route → completed",
+          "Redis for hot driver availability cache (ZSET by H3 cell for range queries)",
+          "Database write-through for Trip record durability"
+        ],
+        "avoid": [
+          "Full-table scans for nearby drivers — must use geo-index",
+          "Optimistic locking on the trip (causes race on second writer)",
+          "Polling for location updates instead of streams"
+        ]
+      },
+      "sampleAnswer": "Clients (Rider, Driver) → ALB → Matching Service (stateless, 50+ instances). Matching Service queries Redis H3 index for nearby available drivers (~100 candidates in a major city cell). Lua script scores candidates on distance, ETA, and acceptance probability, picks the best match, and CAS-locks the Trip record (Redis or DB). On lock success, Trip moves to 'matched' state and driver is notified via push notification. Driver ACKs via POST /trips/:tripId/accept. Trip state persists in Postgres. Location stream: drivers push to Kafka topic (partitioned by H3 cell). Kafka consumers fan out to a WebSocket gateway; the gateway streams location to the rider's client. Geo-index populated by a continuous sweeper that reads driver availability from Postgres and maintains Redis ZSET per H3 cell. On driver offline or job complete, sweeper removes from index.",
+      "hints": [
+        "Start with the obvious skeleton, then ask: how do I find nearby drivers in O(1)? That's the headline trick — a spatial index.",
+        "Matching happens in-memory (Redis) for speed, but Trip state lives in the DB for durability. Walk through what gets written where and when.",
+        "Location is a stream, not a request-response. Kafka ingests driver updates; a fan-out service broadcasts to riders. Why not just have drivers push to the rider's WebSocket directly?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-prevent-double-dispatch",
+      "title": "Prevent double-dispatching the same driver",
+      "questionPrompt": "Under match contention, how do you guarantee a driver is offered to at most one rider concurrently?",
+      "sampleAnswer": "Per-driver lease in Redis using SETNX with TTL (e.g., lease key = driver:{driverId}:offered, TTL = 30s). Matching service attempts atomic lease acquire before offering. If CAS succeeds, dispatch the offer and set Trip state to 'matched'. Driver decline or lease expiry releases the lease. Use a state machine: offered → accepted (lease held) → en-route → completed. On lease expiry, driver auto-released back to pool. Dispatcher is idempotent: retry a failed offer doesn't double-book because the second attempt fails the lease check.",
+      "rubric": {
+        "must": [
+          "Lease mechanism (Redis SETNX or DB row lock with state) with TTL semantics",
+          "State machine: offered → accepted/declined → released, with explicit lease release on decline",
+          "Dispatcher idempotency: same rider request retried doesn't double-dispatch"
+        ],
+        "should": [
+          "Lease TTL chosen to absorb driver acceptance delay (e.g., 30-60s)",
+          "Automatic lease recovery on expiry to avoid driver stranding"
+        ],
+        "avoid": [
+          "Distributed locks without TTL (deadlock risk)",
+          "Optimistic versioning on the Trip (causes lost-update race)",
+          "Soft deletes or flag-based 'draft' states without strong atomicity"
+        ]
+      },
+      "hints": [
+        "The core problem: two matching instances race to assign the same driver. What synchronization primitive locks a driver to a single offer at a time?",
+        "Think of it like a lease. The driver 'holds' the lease while evaluating the offer. What happens to the lease if the driver declines or goes silent?",
+        "The lease must have an expiration. If a driver accepts, you move to the next state (en-route). If the lease expires without acceptance, the driver goes back to the pool. How does the state machine track this?"
+      ]
+    },
+    {
+      "slug": "dd-scale-location-stream",
+      "title": "Ingest 100k driver locations/sec without losing recency",
+      "questionPrompt": "How do you handle a write-hot location stream at scale without becoming a bottleneck?",
+      "sampleAnswer": "Drivers POST location updates every ~4 seconds. API gateway routes to a Kafka topic partitioned by H3 cell (resolution 8 — each cell ~1km²). Partition key ensures all drivers in a cell route to the same consumer. Each consumer maintains a Redis ZSET per H3 cell, keyed as h3:{cellId}, with members = {driverId}:{lat}:{lng}:{timestamp}. Reads query candidate cells (Haversine + H3 ring query in <10ms) and scan ZSET range, filtering by distance and timestamp freshness (e.g., discard if ts < now - 10s). Write throughput: 3M drivers / 4s = 750k updates/sec; partitioned across ~7 cells per city = ~100k writes/sec per partition — comfortably within Kafka partition limits. Staleness budget: 4s publish latency + 2s consumer lag + 2s network = 8s p99, acceptable for ETA.",
+      "rubric": {
+        "must": [
+          "Partition key = H3 cell to co-locate nearby drivers and enable range queries",
+          "Redis ZSET structure (h3:{cellId} with lat:lng:ts members) for efficient spatial queries",
+          "Write rate math: 750k total updates/sec, partitioned per cell, with calculation of updates/sec per partition",
+          "Staleness budget tied to ETA accuracy (e.g., <8s acceptable for route recalc)"
+        ],
+        "should": [
+          "H3 resolution chosen to balance cell size and partition evenly",
+          "Consumer lag monitoring and alerting on stale location data",
+          "Fallback to coarser H3 rings if a cell is unavailable"
+        ],
+        "avoid": [
+          "Sending all locations to a single Redis node (bottleneck)",
+          "Updating a global spatial index in-place (O(n) scan per match query)",
+          "No TTL on location entries (memory bloat with stale drivers)"
+        ]
+      },
+      "hints": [
+        "750k writes/sec to a single system will melt. How do you shard the stream so each shard handles a manageable slice?",
+        "Spatial locality is your friend. Drivers in the same neighborhood update the same shard. What's a partition key that naturally clusters drivers by location?",
+        "Once partitioned, each consumer updates a data structure that enables fast 'give me drivers within radius'. What structure supports range queries on 2D points?"
+      ]
+    },
+    {
+      "slug": "dd-availability-when-redis-down",
+      "title": "What happens when the Redis location index goes down",
+      "questionPrompt": "If the Redis location index fails, what's the blast radius, and how do you recover without losing rides?",
+      "sampleAnswer": "Failover: Redis Sentinel (or AWS ElastiCache Multi-AZ) automatically promotes a replica in <10s. During failover, the dispatcher falls back to Postgres lat/lng table with a widened search radius (e.g., 10km instead of 2km) and degraded ETA accuracy. Rebuild path: after failover, the location consumer replays Kafka topic from the last checkpoint (e.g., 10 minutes of history, ~450M messages). Consumer rebuilds ZSET from the replay — this takes ~2-3 min for a city. During rebuild, fallback to Postgres remains active. Once ZSET is hot, matchmaker switches back to Redis queries. Explicit degradation contract: 'During index recovery, match latency increases 5x and ETA accuracy drops to +/- 15%; matches still happen.' Client SLA adjusted or users told 'Surge pricing active, longer wait times.'",
+      "rubric": {
+        "must": [
+          "Replica failover strategy (Sentinel, Multi-AZ) with failover latency and RPO/RTO",
+          "Replay-from-log rebuild: Kafka retention sufficient to replay N minutes of history",
+          "Fallback path: Postgres lat/lng query with widened radius and explicit degradation contract"
+        ],
+        "should": [
+          "Monitoring and alerting on Redis recovery progress (bytes replayed, ETA)",
+          "Client-facing messaging about degradation (surge pricing, longer ETAs)"
+        ],
+        "avoid": [
+          "Losing in-flight offer state (trips must be durable in DB, not Redis-only)",
+          "Unbounded recovery time (if replay takes >30min, assume steady-state degradation)",
+          "Panic fallback that crashes the system (design explicit fallback path)"
+        ]
+      },
+      "hints": [
+        "Redis is in-memory and ephemeral. If it fails, where else can you get driver locations? What's the trade-off in accuracy or latency?",
+        "Kafka has a record of every location update. Instead of rebuilding from scratch, could you replay the topic to re-hydrate Redis?",
+        "During replay, matching is still happening but slower. What's the degradation contract — will you match riders on a wider radius or tell them to wait?"
+      ]
+    }
+  ]
+}

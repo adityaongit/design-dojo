@@ -1,0 +1,255 @@
+{
+  "id": "amazon-locker",
+  "title": "Amazon Locker",
+  "difficulty": "easy",
+  "type": "low-level-design",
+  "prompt": "Design a locker system for Amazon package pickup. A customer orders a package and chooses locker delivery at checkout. The system must assign the package to an available compartment (small/medium/large) based on package dimensions. When delivery arrives, an agent scans the barcode and places the package in the assigned slot. The customer receives an OTP and retrieves the package by entering the code at the locker. Packages expire after 3 days if not picked up.",
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "questionPrompt": "Clarify the requirements. What's in scope and what isn't?",
+      "howToAnswer": "Capture the rules tightly. Decide whether to scope: multi-locker networks, persistent storage, customer notifications. State assumptions out loud.",
+      "exampleHints": {
+        "headline": "Example (Movie Theater Booking):",
+        "bullets": [
+          "Assign available seats by size / section",
+          "Validate availability before booking",
+          "Out of Scope: pricing, refunds, network scale"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Package has dimensions (length, width, height) and must fit in a slot",
+          "Locker has multiple compartments with size classes (small/medium/large)",
+          "Assign package to best-fit compartment (avoid oversizing)",
+          "OTP generation and validation for pickup",
+          "Package expiration after 3 days"
+        ],
+        "should": [
+          "Delivery agent assignment to locker by zip code",
+          "Locker availability (open/closed/maintenance)",
+          "Notification on assignment / pickup ready"
+        ],
+        "avoid": [
+          "Designing customer notification system in detail",
+          "Building a UI or network protocol",
+          "Pricing or payment logic"
+        ]
+      },
+      "sampleAnswer": "Scope:\n- Package dimensions, slot sizes, best-fit assignment\n- OTP-based pickup validation\n- Package state machine: assigned → stored → picked-up OR expired\n- Single locker or static set of lockers at a location\n- Delivery agent delivery to locker\n\nOut of scope:\n- Multi-locker network load-balancing\n- Persistent database schema\n- Email/SMS notifications\n- Real-time tracking across the supply chain",
+      "hints": [
+        "What does a package look like? What properties matter for fitting into a slot?",
+        "How do you find an available compartment that fits the package without wasting space?",
+        "What events happen to a package from assignment to pickup or expiry? Draw the state machine."
+      ]
+    },
+    {
+      "slug": "entities-relationships",
+      "title": "Entities & Relationships",
+      "questionPrompt": "What are the core entities and how do they relate?",
+      "howToAnswer": "Pick the orchestrator. Decide what owns each piece of state: locker inventory, package state, OTP. Avoid mixing responsibilities.",
+      "exampleHints": {
+        "headline": "Example (Movie Theater):",
+        "bullets": [
+          "Theater (orchestrator)",
+          "Theater has Screens; Screen has Seats",
+          "Booking owns the assignment of customer to seat"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "AmazonLocker (orchestrator): owns slots, packages, OTP state",
+          "Slot: compartment with fixed size and availability flag",
+          "Package: tracks parcel with dimensions, state, assigned slot",
+          "PackageState enum: ASSIGNED, STORED, PICKED_UP, EXPIRED",
+          "OTP: security code tied to slot and expiry time"
+        ],
+        "should": [
+          "Size enum: SMALL, MEDIUM, LARGE or dimension-based",
+          "DeliveryAgent: for agent-to-locker dispatch",
+          "Timestamp tracking: assignment, storage, pickup, expiry"
+        ],
+        "avoid": [
+          "God class that mixes slot management, package tracking, and OTP",
+          "Storing package dimensions inside slots — dimensions belong on Package"
+        ]
+      },
+      "sampleAnswer": "- AmazonLocker (orchestrator): orchestrates assignment, storage, and pickup. Owns collection of Slots and pending Packages. Generates OTPs.\n- Slot: has size (SMALL/MEDIUM/LARGE), available (bool), assignedPackageId (optional).\n- Package: has id, dimensions (length, width, height), state (enum), assignedSlot (reference), expiryTime (timestamp).\n- OTP: has code (string), slotId, expiryTime.\n- DeliveryAgent: has id, assignedZipCode, available (bool).\n- Size enum: SMALL, MEDIUM, LARGE with corresponding dimension ranges.\n- PackageState enum: ASSIGNED (awaiting delivery), STORED (in locker), PICKED_UP (removed), EXPIRED (not picked in 3 days).",
+      "hints": [
+        "What's the main entry point? Who drives the workflow (locker machine, system service, or agent)?",
+        "Where does the assignment logic live? On the Locker, on a separate strategy, or on Package?",
+        "What state must survive between operations? Package state, slot occupancy, OTP validity — who owns each?"
+      ]
+    },
+    {
+      "slug": "class-design",
+      "title": "Class Design",
+      "questionPrompt": "Define the classes — fields and methods. Keep rules with the entity that owns the state.",
+      "howToAnswer": "Sketch each class with explicit method signatures and what they return / throw. Use enums for size, state, and status.",
+      "exampleHints": {
+        "headline": "Example (Movie Theater):",
+        "bullets": [
+          "class Theater: + bookSeat(seatId, customer) -> Booking",
+          "class Seat: + isAvailable() -> bool; + reserve(booking)",
+          "enum SeatStatus { AVAILABLE, BOOKED, BLOCKED }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "AmazonLocker.assignPackage(pkg) -> (Slot, OTP) or throws",
+          "AmazonLocker.storePackage(barcode, slotId) -> bool / Result",
+          "AmazonLocker.pickupPackage(slotId, otp) -> Package or throws InvalidOTP",
+          "Slot: size, available, assignedPackageId",
+          "Size enum (SMALL/MEDIUM/LARGE) or Dimension class"
+        ],
+        "should": [
+          "Best-fit slot selection: prefer smallest slot that fits",
+          "Package state transitions (enum: ASSIGNED, STORED, PICKED_UP, EXPIRED)",
+          "OTP generation and expiry validation",
+          "Configurable locker dimensions and size ranges via constructor"
+        ],
+        "avoid": [
+          "Returning bool from assignPackage — return the slot and OTP",
+          "Hard-coded size thresholds in multiple places"
+        ]
+      },
+      "sampleAnswer": "```\nenum Size { SMALL, MEDIUM, LARGE }\nenum PackageState { ASSIGNED, STORED, PICKED_UP, EXPIRED }\n\nclass Dimension:\n  length: int\n  width: int\n  height: int\n  fitsInSize(size: Size) -> bool:\n    (length, width, height) <= size's bounds\n\nclass Slot:\n  slotId: str\n  size: Size\n  available: bool\n  assignedPackageId: str?\n\nclass Package:\n  packageId: str\n  dimension: Dimension\n  state: PackageState\n  assignedSlotId: str?\n  createdTime: timestamp\n  expiryTime: timestamp (now + 3 days)\n\nclass OTP:\n  code: str (6-digit random)\n  slotId: str\n  expiryTime: timestamp (now + 1 hour)\n  isValid(code: str, now: timestamp) -> bool\n\nclass AmazonLocker:\n  slots: Map<slotId, Slot>\n  packages: Map<packageId, Package>\n  otpMap: Map<slotId, OTP>\n  sizeStrategy: SlotAssignmentStrategy\n  \n  assignPackage(pkg: Package) -> (slot: Slot, otp: OTP) throws NoAvailableSlot:\n    matching = [s for s in slots if s.available and dimension.fitsInSize(s.size)]\n    slot = sizeStrategy.selectSlot(matching)  // best-fit\n    if not slot: throw NoAvailableSlot\n    pkg.state = ASSIGNED\n    pkg.assignedSlotId = slot.slotId\n    pkg.expiryTime = now + 3 days\n    slot.available = false\n    slot.assignedPackageId = pkg.packageId\n    otp = generateOTP(slot.slotId)\n    return (slot, otp)\n  \n  storePackage(barcode: str, slotId: str) -> void:\n    pkg = packages[barcode]\n    if pkg.assignedSlotId != slotId: throw MismatchError\n    pkg.state = STORED\n    slot = slots[slotId]\n    slot.assignedPackageId = pkg.packageId\n  \n  pickupPackage(slotId: str, otp: str) -> Package throws InvalidOTP:\n    if not isValidOTP(slotId, otp): throw InvalidOTP\n    slot = slots[slotId]\n    pkg = packages[slot.assignedPackageId]\n    pkg.state = PICKED_UP\n    slot.available = true\n    slot.assignedPackageId = null\n    return pkg\n  \n  generateOTP(slotId: str) -> OTP:\n    code = randomSixDigits()\n    otp = OTP(code, slotId, now + 1 hour)\n    otpMap[slotId] = otp\n    return otp\n  \n  isValidOTP(slotId: str, code: str) -> bool:\n    otp = otpMap[slotId]\n    return otp and otp.code == code and otp.expiryTime > now\n```",
+      "hints": [
+        "Assignable package means mapping dimensions to size classes. Is Dimension a class or just three fields on Package?",
+        "Methods that mutate state should return rich results, not bare bool. assignPackage needs to return both the slot and the OTP.",
+        "State transitions are key — use an enum. When does a Package become EXPIRED? On a timer, or lazily on access?"
+      ]
+    },
+    {
+      "slug": "implementation",
+      "title": "Implementation",
+      "questionPrompt": "Pseudo-code the assignment and pickup flows. Trace one end-to-end scenario.",
+      "howToAnswer": "The assignment (best-fit matching) and pickup (OTP validation + state transition) are the meaty parts. Trace a concrete sequence: package arrives → assigned to slot → stored → picked up.",
+      "rubric": {
+        "must": [
+          "assignPackage finds a fitting slot and returns it with OTP",
+          "Slot selection avoids oversizing (best-fit, not first-fit)",
+          "pickupPackage validates OTP and time before unlocking",
+          "Trace through one complete scenario end-to-end"
+        ],
+        "should": [
+          "Handle expiry: check and transition EXPIRED packages on access or via background job",
+          "Error cases: no available slot, invalid OTP, slot mismatch"
+        ],
+        "avoid": [
+          "O(n²) slot scanning per assignment",
+          "Silent failure on invalid OTP"
+        ]
+      },
+      "sampleAnswer": "```\nassignPackage(pkg: Package) -> (Slot, OTP):\n  // Find slots that fit the package dimension\n  candidates = []\n  for each slot in slots:\n    if slot.available and pkg.dimension.fitsInSize(slot.size):\n      candidates.append(slot)\n  \n  if candidates.empty(): throw NoAvailableSlot\n  \n  // Best-fit: prefer smallest slot that fits\n  bestSlot = min(candidates, key=lambda s: s.size.volume())\n  \n  // Assign package to slot\n  pkg.state = ASSIGNED\n  pkg.assignedSlotId = bestSlot.slotId\n  pkg.expiryTime = now + 3 days\n  bestSlot.available = false\n  bestSlot.assignedPackageId = pkg.packageId\n  \n  // Generate OTP\n  otp = OTP(\n    code = random6Digits(),\n    slotId = bestSlot.slotId,\n    expiryTime = now + 1 hour\n  )\n  otpMap[bestSlot.slotId] = otp\n  \n  return (bestSlot, otp)\n\npickupPackage(slotId: str, otpCode: str) -> Package:\n  // Validate OTP\n  otp = otpMap[slotId]\n  if otp == null or otp.code != otpCode or otp.expiryTime < now:\n    throw InvalidOTPException(\"OTP invalid or expired\")\n  \n  // Unlock and release\n  slot = slots[slotId]\n  pkg = packages[slot.assignedPackageId]\n  \n  if pkg.state == EXPIRED:\n    throw PackageExpiredException()\n  \n  pkg.state = PICKED_UP\n  slot.available = true\n  slot.assignedPackageId = null\n  delete otpMap[slotId]\n  \n  return pkg\n\nstorePackage(barcode: str, slotId: str) -> void:\n  pkg = packages[barcode]\n  if pkg == null: throw PackageNotFound\n  if pkg.assignedSlotId != slotId: throw SlotMismatchException\n  \n  pkg.state = STORED\n  slot = slots[slotId]\n  // Slot remains unavailable until pickup\n```\n\nTrace (end-to-end):\n1. Package P1: 10×8×6 arrives. Locker has SMALL (12×10×8), MEDIUM (20×15×12), LARGE (30×20×15).\n2. assignPackage(P1):\n   - candidates = [SMALL, MEDIUM, LARGE] (all fit)\n   - bestSlot = SMALL (smallest that fits)\n   - P1.state = ASSIGNED, P1.expiryTime = now + 3 days\n   - SMALL.available = false, SMALL.assignedPackageId = P1\n   - otp = OTP('123456', 'SMALL', now + 1 hour)\n   - return (SMALL, otp) → Customer gets code '123456'\n3. Delivery agent scans barcode P1, calls storePackage('P1', 'SMALL'):\n   - P1.state = STORED\n4. Customer arrives at locker, enters OTP '123456':\n   - pickupPackage('SMALL', '123456'):\n     - otp valid? yes\n     - P1.state == EXPIRED? no\n     - P1.state = PICKED_UP\n     - SMALL.available = true\n     - return P1\n5. Locker dispenses P1.",
+      "hints": [
+        "Pseudocode the candidate-finding loop first. Which fields make a slot a candidate?",
+        "Best-fit isn't just 'first available' — how do you minimize wasted space without over-engineering?",
+        "Trace one full scenario: arrival, assignment, storage, OTP validation, pickup. Does state flow correctly?"
+      ]
+    },
+    {
+      "slug": "extensibility",
+      "title": "Extensibility",
+      "questionPrompt": "How would you extend this for: different size strategies, multi-location networks, or priority packages?",
+      "howToAnswer": "Stay high-level. Point at the seams in the design that make the change clean.",
+      "rubric": {
+        "must": [
+          "Different slot-selection strategies: best-fit, first-fit, load-balanced"
+        ],
+        "should": [
+          "Multi-location: network of lockers with inter-locker transfers",
+          "Priority packages: skip the queue, prefer larger slots"
+        ],
+        "avoid": [
+          "Rewriting assignPackage logic for each strategy"
+        ]
+      },
+      "sampleAnswer": "Different slot strategies: SlotAssignmentStrategy interface with BestFitStrategy, FirstFitStrategy, LoadBalancedStrategy impls. AmazonLocker.sizeStrategy swaps at runtime — no change to assignPackage.\n\nMulti-location network: introduce LockerNetwork service. Each Locker stays unchanged. Network.findLocker(pkg, location) searches nearby lockers, spilling to secondary locations. Network coordinates inter-locker transfers.\n\nPriority packages: add priority field to Package. slotCandidates sorted by (size, then priority) — premium customers get medium slots even if large is available. No change to core Locker.",
+      "hints": [
+        "What's the smallest abstraction that lets you swap slot-selection algorithms?",
+        "Multi-location: is each Locker independent, or does the Network own them? Who routes the package?",
+        "Priority: where does it affect the sort order? In assignPackage, or before entering the locker?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-best-fit-algorithm",
+      "title": "Best-fit slot selection",
+      "questionPrompt": "Why is best-fit assignment better than first-fit? How would you implement it efficiently?",
+      "sampleAnswer": "First-fit assigns to the earliest available slot that fits, which leads to fragmentation — all SMALL slots fill up while LARGE remain empty, wasting space. Best-fit picks the smallest slot that fits the package, preserving larger slots for larger packages later. Efficiency: sort candidate slots by size, then pick the first. If slots are static (small number), O(n log n) upfront or O(log n) per query with a balanced tree. For a locker with 30 slots, O(30) per assignment is negligible.",
+      "rubric": {
+        "must": [
+          "Explain why first-fit causes fragmentation",
+          "Best-fit minimizes wasted compartment capacity"
+        ],
+        "should": [
+          "Discuss O(n log n) or O(log n) complexity depending on data structure",
+          "Note that static locker size makes optimization less critical"
+        ],
+        "avoid": [
+          "Claiming best-fit is always optimal (worst case is still NP for bin packing)"
+        ]
+      },
+      "hints": [
+        "Imagine you have SMALL, MEDIUM, LARGE slots. A package fits in all three. Why does assigning to SMALL help future packages?",
+        "What data structure lets you find the minimum slot quickly? Sorted array? Priority queue?",
+        "Is the optimization worth the complexity for a locker with ~30 compartments?"
+      ]
+    },
+    {
+      "slug": "dd-otp-security",
+      "title": "OTP security and expiry",
+      "questionPrompt": "How do you prevent OTP reuse, brute-force attacks, and ensure expiry without constant polling?",
+      "sampleAnswer": "OTP is single-use: after pickupPackage consumes an OTP, delete it from otpMap. Brute-force mitigation: rate-limit locker unlock attempts (e.g., max 3 attempts per minute) — wrong entry locks the slot briefly. Expiry: store expiryTime on OTP. Check on access (lazy). For large-scale: background job scans and invalidates expired OTPs hourly. OTP code itself: 6 digits gives 1M possibilities; for 1000 lockers with concurrent pickups, collision risk is low. If needed, use 8-digit codes or alphanumeric.",
+      "rubric": {
+        "must": [
+          "OTP is single-use (deleted after valid pickup)",
+          "Expiry checked on every pickup attempt",
+          "Rate-limiting on invalid attempts"
+        ],
+        "should": [
+          "Background job to clean expired OTPs",
+          "Configurable OTP length and validity window"
+        ],
+        "avoid": [
+          "Reusing OTPs across multiple pickups",
+          "Lazy cleanup leading to unbounded otpMap growth"
+        ]
+      },
+      "hints": [
+        "What happens if a customer enters the OTP twice? Once to open the locker, then again? Should it work the second time?",
+        "After 10 failed OTP attempts, should the locker lock down? Who resets it?",
+        "If otpMap grows unbounded, what's the worst-case memory impact?"
+      ]
+    },
+    {
+      "slug": "dd-expiry-and-cleanup",
+      "title": "Package expiry handling",
+      "questionPrompt": "How do you handle packages that expire after 3 days? When and how do you clean them up?",
+      "sampleAnswer": "Mark packages EXPIRED lazily: on pickupPackage attempt, check expiryTime < now; if so, transition state to EXPIRED and throw PackageExpiredException. Separately, a background cleanup job runs daily: iterate all STORED packages, find those past expiryTime, mark EXPIRED, notify admin, and free the slot (set available=true). For a production system, EXPIRED packages stay in the database for audit/analytics (don't delete), but the slot is immediately reusable. OTP is also deleted (or marked invalid) when a package expires.",
+      "rubric": {
+        "must": [
+          "Check expiry on pickup attempt",
+          "Transition package to EXPIRED state",
+          "Free the slot for reuse"
+        ],
+        "should": [
+          "Background cleanup job to surface expired packages",
+          "Log/notify admin on expiry (refund, return logistics)"
+        ],
+        "avoid": [
+          "Silently discarding expired packages",
+          "Blocking slots forever for expired packages"
+        ]
+      },
+      "hints": [
+        "When does a package transition from STORED to EXPIRED? On a timer, or when someone tries to pick it up?",
+        "If you check expiry lazily (on access), expired packages may sit in slots for days if no one tries to pick them up. How do you surface them?",
+        "Should an expired package's slot be available for new assignments? Or reserved for admin handling?"
+      ]
+    }
+  ]
+}

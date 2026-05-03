@@ -1,0 +1,259 @@
+{
+  "id": "fb-live-comments",
+  "title": "FB Live Comments",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design a real-time commenting system for live video streams, like Facebook Live. Viewers should see new comments appear instantly as others post them. Target 100M daily active users, 1M concurrent livestreams, and 1.2M comments/sec (read) with 12k comments/sec (write).",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering the must-have behavior. Focus on commenting and viewing, not analytics or moderation.",
+      "exampleHints": {
+        "headline": "Example (Spotify Live Sessions):",
+        "bullets": [
+          "Users can post a comment on an active session",
+          "Listeners see new comments stream in real-time",
+          "Users can view a feed of recent comments"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can post a comment to a live stream",
+          "Users watching can see new comments appear in real-time",
+          "Users can view a recent history of comments"
+        ],
+        "should": [
+          "Comment deletion / editing by the author",
+          "Display user info (name, profile picture) with each comment"
+        ],
+        "avoid": [
+          "Drifting into moderation, filtering, or recommendation algorithms",
+          "Building a global comment search index across all videos",
+          "Reactions/likes on comments (separate feature)"
+        ]
+      },
+      "sampleAnswer": "1. Users should be able to post a text comment to a live stream.\n2. Users watching the live stream should see new comments appear instantly without refreshing.\n3. Users should be able to view the comment history (e.g., last 1000 comments).\n4. Comments should include the poster's name and profile picture.",
+      "hints": [
+        "Split the requirement into two sides: writing and reading. Writing happens from comment posters; reading happens from viewers watching the stream.",
+        "Real-time is the headline constraint. What mechanism lets one user's comment appear on thousands of other users' screens with sub-second latency?",
+        "You can show a limited history (e.g., last 1000 comments), not the entire comment thread. Why?"
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover availability vs consistency, latency targets, scale (DAU, concurrent viewers, QPS), and durability. Quantify each.",
+      "exampleHints": {
+        "headline": "Example (Spotify Live Sessions):",
+        "bullets": [
+          "Low latency comment delivery (<200ms p99)",
+          "High availability for broadcast during peak hours",
+          "100M DAU, 50k concurrent sessions, 10k writes/sec",
+          "Eventually consistent across regions is acceptable"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Comment delivery latency target (<200ms p99)",
+          "Quantified scale: 100M DAU, 1M concurrent livestreams, 1.2M reads/sec, 12k writes/sec",
+          "Availability during flash traffic spikes (e.g., celebrity streams)",
+          "Comment durability — comments must be persisted once written"
+        ],
+        "should": [
+          "Read-heavy workload ratio (~100:1 read:write)",
+          "Availability > consistency (viewers can see slightly stale comments)",
+          "Multi-region broadcast capability"
+        ],
+        "avoid": [
+          "Prioritizing consistency over availability during peak traffic",
+          "Assuming a single database can handle 1.2M reads/sec"
+        ]
+      },
+      "sampleAnswer": "- Latency: <200ms p99 from comment post to viewer's screen.\n- Scale: 100M DAU, 1M concurrent livestreams, ~12k comment writes/sec, ~1.2M comment reads/sec.\n- Durability: comments persisted to durable storage within 5 seconds of creation.\n- Availability > Consistency: viewers may see comments 1-2 seconds out of order, but the system stays online under overload.\n- Concurrent viewers per livestream: up to 1M, with peak traffic during celebrity/event streams.",
+      "hints": [
+        "1M concurrent livestreams means you can't store all of them in a single database. How do you partition the comment stream?",
+        "The write path is critical but small — 12k writes/sec is manageable. The read path explodes with fan-out — how do you deliver one comment to 1M+ viewers?",
+        "Sub-200ms latency at 1.2M reads/sec requires a real-time push mechanism, not polling. What technology supports this?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (Spotify Live Sessions):",
+        "bullets": [
+          "LiveSession",
+          "Comment",
+          "User"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Comment: the posted text, author, timestamp, and video ID",
+          "LiveStream (or Video): the video being watched"
+        ],
+        "should": [
+          "User: author identity and profile",
+          "Viewer: subscription/connection state for push delivery"
+        ],
+        "avoid": [
+          "Inventing separate entities for moderation or reactions without requirement"
+        ]
+      },
+      "sampleAnswer": "- Comment: { id, videoId, userId, content, createdAt }.\n- LiveStream: { id, title, creatorId, startedAt, endedAt? }.\n- User: { id, name, profilePicture }.\n- Viewer: { connectionId, videoId, userId } — tracks which user is watching which stream for push delivery.",
+      "hints": [
+        "What's the smallest set of nouns that satisfies your functional requirements?",
+        "Viewers aren't permanent entities — they're ephemeral connections. How do you track them without bloating your schema?",
+        "You need to know who posted the comment and who is watching it. Do you need a separate entity for watchers, or can you infer it from connection state?"
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "REST for writes (comment creation, history fetch); WebSocket or Server-Sent Events for real-time push. Show the endpoint signatures.",
+      "exampleHints": {
+        "headline": "Example (Spotify Live Sessions):",
+        "bullets": [
+          "POST /sessions/:id/comments  body: { content: string }",
+          "GET /sessions/:id/comments  → Comment[]",
+          "WS /sessions/:id/comments/stream  → {type: 'comment', data: Comment}"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST endpoint to create a comment",
+          "GET endpoint to fetch recent comment history",
+          "Real-time push mechanism (WebSocket or SSE) with subscription to a stream"
+        ],
+        "should": [
+          "Idempotency on POST (idempotency-key header or built-in)",
+          "Proper status codes (201 for create, 200 for GET)"
+        ],
+        "avoid": [
+          "Polling for new comments instead of push",
+          "Forgetting how clients subscribe to the real-time stream"
+        ]
+      },
+      "sampleAnswer": "POST /streams/:streamId/comments\n  body: { content: string, userId: string }\n  → 201 { id, videoId, userId, content, createdAt }\n\nGET /streams/:streamId/comments?limit=1000\n  → 200 Comment[]\n\nWS /streams/:streamId/comments/live\n  → on new comment: { type: 'comment', data: { id, userId, content, createdAt } }",
+      "hints": [
+        "Write path is synchronous — user posts, system returns the comment ID. Read history is also sync, but limited to recent comments.",
+        "Real-time delivery is asynchronous — the client opens a long-lived WebSocket or SSE connection and receives events as they arrive.",
+        "What does the client send to join the real-time stream, and what credentials/auth do they need?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through comment write and read paths.",
+      "howToAnswer": "Boxes and arrows: client → load balancer → API service → broker (Kafka/Redis) → WebSocket gateway servers. Show how comments fan out to viewers. Include cache for recent comments.",
+      "rubric": {
+        "must": [
+          "Client-facing API service for POST /comments and GET /comments",
+          "Pub/sub broker (Kafka, Redis Streams) to distribute comments",
+          "WebSocket (or SSE) gateway servers holding persistent connections to viewers",
+          "Persistent storage for comment durability",
+          "Fan-out strategy: how one comment reaches all viewers of that stream"
+        ],
+        "should": [
+          "Cache (Redis) for the last 1000 comments per stream",
+          "Load balancing to co-locate viewers of the same stream on nearby gateway servers",
+          "Sampling/throttling for extremely popular streams (millions of viewers)",
+          "Schema details: Comment table keyed by (streamId, createdAt), indexed for recent queries"
+        ],
+        "avoid": [
+          "Trying to store all comments for all streams in one database",
+          "Sending each comment directly to each viewer (no broker) — doesn't scale beyond thousands",
+          "Skipping the headline trick: tree fan-out via pub/sub + WebSocket gateway co-location"
+        ]
+      },
+      "sampleAnswer": "Write path:\n  Client → ALB → Comment Service (stateless) → Cassandra (durable write) + Cache (Redis) → publish to Kafka topic keyed by streamId.\n\nRead path:\n  Client → ALB → Comment Service → Redis cache for last 1000 comments → Cassandra on cache miss.\n\nFan-out:\n  Kafka topic (partitioned by streamId) → WebSocket Gateway Servers (subscribe to partitions for streams they serve). Each gateway holds persistent connections to viewers. On new comment from Kafka, gateway broadcasts to local clients via WebSocket push.\n\nScaling for millions of viewers:\n  Append numeric suffixes (e.g., streamId-00, streamId-01, ..., streamId-04) to distribute viewers and comments across multiple comment services and gateway servers, avoiding a single bottleneck.\n  For extremely hot streams, apply comment sampling on the client or gateway side: show 1 in 10 comments, or aggregate into 'N more comments' batches.",
+      "hints": [
+        "The headline trick is tree fan-out. Comments are published to a broker (one write); the broker distributes to multiple gateway servers (tree); each gateway pushes to its local viewers (fan-out at the edge). Why does this beat a star topology (comment service → each viewer)?",
+        "Partitioning: Kafka partitions by streamId ensure that all comments for a stream go to the same broker partition, and all gateway servers serving that stream subscribe to it. What does this buy you?",
+        "For 1M concurrent viewers on a single livestream, even tree fan-out hits limits. What's the next trick? (Hint: numeric suffixes on the stream ID.)"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-fan-out-scale",
+      "title": "Fan-out at extreme scale",
+      "questionPrompt": "How do you fan out one comment to 1M+ concurrent viewers of a single livestream?",
+      "sampleAnswer": "Tree fan-out via pub/sub: the comment service publishes once to a Kafka topic (keyed by streamId); 100s of WebSocket gateway servers subscribe to that topic. Each gateway holds persistent connections (1000s per server), so one publish reaches all gateway servers, which then broadcast locally to their viewers. This avoids 1M direct writes from the comment service.\n\nFor ultra-hot streams (10M+ viewers), further partition by appending numeric suffixes to the stream ID (streamId-00, streamId-01, ..., streamId-99). Route viewers and posts to a suffix using hash(viewerId) mod 100 or round-robin. This spreads the 1M viewers across 100 logical streams, each with 10k viewers. The comment service publishes to all 100 Kafka partitions; the system broadcasts in parallel.",
+      "rubric": {
+        "must": [
+          "Identify the bottleneck: comment service can't push to 1M clients directly",
+          "Name the tree fan-out mechanism (broker + subscribers)",
+          "Explain how partitioning scales beyond a single stream's limits"
+        ],
+        "should": [
+          "Numeric suffix sharding for ultra-hot streams",
+          "Client-side or gateway-side sampling to reduce message volume"
+        ],
+        "avoid": [
+          "Direct-to-all-viewers broadcasts without a broker",
+          "Single Kafka partition per stream at extreme scale (becomes the bottleneck)"
+        ]
+      },
+      "hints": [
+        "At 1M viewers, even a fast broker struggles if every viewer is a subscriber. How do you reduce the fan-out fan-in? (Hint: gateway servers are subscribers, not individual viewers.)",
+        "Numeric suffix sharding means your comment service publishes to multiple 'logical' streams. What determines which suffix a new comment goes to, and how does the viewer client know where to subscribe?"
+      ]
+    },
+    {
+      "slug": "dd-real-time-delivery",
+      "title": "Real-time delivery under load",
+      "questionPrompt": "How do you keep comment delivery latency <200ms p99 when the system is saturated with 1.2M reads/sec?",
+      "sampleAnswer": "Comments flow through a pipeline: post → Cassandra (write) + Redis (cache) → Kafka publish → gateway servers → WebSocket push. Latency bottlenecks:\n  1. Cassandra write: ~5-10ms (acceptable, async fallback to cache-only if needed).\n  2. Kafka push: ~10-20ms (single-digit partition count, compact log, fast brokers).\n  3. WebSocket push: ~50-100ms (depends on client's network and browser event loop).\n  4. Client receive + render: ~50ms.\n  Total: ~150ms, well under 200ms p99.\n\nOptimizations: batch-compress comments (10 comments per frame at 30fps), use BBR congestion control on egress, add client-side jitter on reconnect (avoids thundering herd), and separate \"write\" and \"read\" gateways so writes never block fan-out.",
+      "rubric": {
+        "must": [
+          "Identify the latency sources (write, broker, push, client)",
+          "Concrete target for each stage (e.g., <10ms Cassandra, <20ms Kafka)"
+        ],
+        "should": [
+          "Batching or frame-rate limiting for extremely hot streams",
+          "Jitter on client reconnect"
+        ],
+        "avoid": [
+          "Assuming all 1.2M reads are individual comment fetches (they're mostly push deliveries)",
+          "Forgetting client-side rendering latency"
+        ]
+      },
+      "hints": [
+        "Break down the 200ms budget. Which layer is the fastest, and which is the slowest? Where can you trade throughput for latency?",
+        "At 1.2M reads/sec, even small per-comment overheads add up. How do you batch or compress delivery without increasing latency?"
+      ]
+    },
+    {
+      "slug": "dd-failure-recovery",
+      "title": "Failure modes and recovery",
+      "questionPrompt": "What happens when a WebSocket gateway server fails mid-stream? How do viewers reconnect without losing comments or causing a thundering herd?",
+      "sampleAnswer": "Gateway failure detection: clients receive connection close. Retry backoff:\n  1. Immediate retry (10ms jitter).\n  2. Exponential backoff with full jitter: wait = random(0, min(cap, base * 2^attempt)).\n  3. Soft fallback: poll the comment service every 30 seconds for missed comments.\n\nHeartbeat: gateway sends a ping every 30s; clients must pong. On timeout, client re-initiates backoff.\n\nComment durability: all comments are written to Cassandra before Kafka publish, so even if the gateway dies, comments are safe and new viewers see them via the GET history endpoint.\n\nRecovery: the comment service publishes a 'catch-up' event with recent comment IDs when a viewer reconnects, allowing the client to fetch any missed comments from the cache.",
+      "rubric": {
+        "must": [
+          "Detection mechanism (connection close or timeout)",
+          "Exponential backoff with full jitter to avoid thundering herd",
+          "Comment durability: persisted before fan-out begins"
+        ],
+        "should": [
+          "Soft fallback (polling as a last resort)",
+          "Catch-up mechanism for missed comments"
+        ],
+        "avoid": [
+          "Immediate reconnect retry for all clients (thundering herd)",
+          "Assuming Kafka durability is enough (must also persist to durable DB)"
+        ]
+      },
+      "hints": [
+        "When a gateway dies, 1000s of clients try to reconnect at the same time. What's the probability of a second failure? What algorithm prevents it?",
+        "Durability and availability are in tension: write to disk (slow) or rely on Kafka (risk of data loss if broker fails). How do you balance them?"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,273 @@
+{
+  "id": "instagram",
+  "title": "Instagram",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design Instagram at scale: users post photos, view personalized feeds, publish disappearing stories, and send direct messages. Target 2B users globally, 5M posts per day, photo storage in the petabyte range, and real-time delivery of stories and messages.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering post creation, feed viewing, stories, and DMs. Skip recommendations, ads, and explore features.",
+      "exampleHints": {
+        "headline": "Example (Snapchat):",
+        "bullets": [
+          "Users can capture and upload a photo or video",
+          "Users can view their contacts' recent content",
+          "Users can send direct messages to contacts",
+          "Content expires automatically after a set time"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can upload a photo or video post",
+          "Users can view a personalized feed of posts from accounts they follow",
+          "Users can publish ephemeral stories (disappear after 24 hours)",
+          "Users can send and receive direct messages"
+        ],
+        "should": [
+          "Like, comment, or repost other posts",
+          "See who viewed their story"
+        ],
+        "avoid": [
+          "Designing the Explore / Discover feed (separate algorithmic product)",
+          "Ads and monetization features",
+          "Reels recommendation engine",
+          "Profile customization or account features"
+        ]
+      },
+      "sampleAnswer": "1. Users should be able to upload photos/videos as posts.\n2. Users should be able to view a personalized feed of posts from accounts they follow.\n3. Users should be able to upload ephemeral stories that disappear after 24 hours.\n4. Users should be able to send and receive direct messages with other users.",
+      "hints": [
+        "Instagram has distinct products: the feed, stories, messaging, and explore. Pick the three core actions — what does a user do on opening the app?",
+        "Stories and posts are related but different — what makes them distinct? How long do they live?",
+        "Feed, messages, and stories all have different latency and persistence requirements. Don't lump them into one requirement."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover photo durability and scale (petabyte-range storage), feed latency, story TTL, message delivery guarantees, and availability. Quantify each.",
+      "exampleHints": {
+        "headline": "Example (TikTok):",
+        "bullets": [
+          "Massive storage for video (multi-exabyte scale)",
+          "Ultra-low latency video delivery via CDN",
+          "Real-time feed personalization <200ms p99",
+          "Availability > consistency for feed reads"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Durability: photos/videos must not be lost once posted",
+          "Scale: 2B users, 5M posts/day, photos stored at petabyte scale",
+          "Feed latency: <500ms p99 to return personalized feed",
+          "Story TTL: exactly 24 hours from publication before deletion"
+        ],
+        "should": [
+          "Message delivery: at-least-once semantics within seconds",
+          "Availability: 99.9% for feed and messaging",
+          "Bandwidth efficiency for CDN serving photos globally"
+        ],
+        "avoid": [
+          "Forgetting the petabyte-scale storage constraint",
+          "Saying 'eventually consistent' for story expiration",
+          "Conflating feed latency with post-creation latency"
+        ]
+      },
+      "sampleAnswer": "- Durability: posts, photos, and messages must be replicated; no data loss.\n- Scale: 2B users, 5M posts/day, ~500PB total storage (assuming 100KB avg photo × 5B lifetime photos).\n- Feed latency: <500ms p99 from request to fully rendered feed.\n- Story TTL: 24 hours ±1 min; auto-deleted thereafter.\n- Message delivery: at-least-once, usually within 5s.\n- Availability: 99.9% SLA.",
+      "hints": [
+        "Petabyte-scale storage is the headline — how do you replicate, distribute, and serve media across the globe?",
+        "Story expiration is not lazy — it's a hard deadline. Stories must vanish within a time window, not drift weeks later.",
+        "Feed and messaging are on different timelines: feed can have eventual consistency, but messages need stricter delivery guarantees."
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (Twitter):",
+        "bullets": [
+          "User",
+          "Tweet",
+          "Follow",
+          "Like"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "User",
+          "Post (with photo/video metadata)",
+          "Story (ephemeral, 24-hour TTL)",
+          "Message (DM between users)"
+        ],
+        "should": [
+          "Like (post engagement)",
+          "Comment",
+          "Follow relationship"
+        ],
+        "avoid": [
+          "Adding Feed entity — it's derived from follows + posts, not a primary entity",
+          "Including Notification, Explore, or Recommendations unless explicitly asked"
+        ]
+      },
+      "sampleAnswer": "- User: account owner.\n- Post: photo/video + caption + metadata (created_at, likes count).\n- Story: ephemeral post with TTL of 24 hours.\n- Message: 1:1 text message between two users.\n- Like: engagement action on a post.\n- Follow: directed edge between two users.",
+      "hints": [
+        "Distinguish Post (permanent) from Story (24-hour TTL) — they have completely different lifespans and storage strategies.",
+        "Message is transient text; Post is durable media. Don't conflate them.",
+        "Feed is derived — it's not an entity, it's a view over posts + follows."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement: post creation, feed read, story upload, message send/receive. Show body shape and response.",
+      "exampleHints": {
+        "headline": "Example (Twitter):",
+        "bullets": [
+          "POST /tweets body: { content: string, media?: file }",
+          "GET /timeline → Tweet[]",
+          "POST /messages body: { userId, content }",
+          "GET /messages/:conversationId → Message[]"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST endpoint to upload a post (photo + caption)",
+          "GET endpoint to fetch personalized feed",
+          "POST endpoint to upload a story",
+          "POST endpoint to send a message",
+          "GET endpoint to fetch messages in a conversation"
+        ],
+        "should": [
+          "POST endpoint to like a post",
+          "Photo upload uses pre-signed URLs or chunked upload",
+          "Story returns with `expiresAt` timestamp"
+        ],
+        "avoid": [
+          "Posting the entire photo binary in the request body",
+          "Forgetting status codes (201 for creation, 304 for cached feed)",
+          "Missing the story expiration timestamp in the response"
+        ]
+      },
+      "sampleAnswer": "POST /posts\n  body: { caption: string, mediaUrl: string }\n  → 201 { postId, createdAt }\n\nGET /feed\n  → 200 { posts: Post[], nextCursor: string }\n\nPOST /stories\n  body: { mediaUrl: string }\n  → 201 { storyId, expiresAt }\n\nPOST /messages\n  body: { recipientId: string, content: string }\n  → 201 { messageId, sentAt }\n\nGET /messages/:conversationId\n  → 200 { messages: Message[] }",
+      "hints": [
+        "Photos are too big for the request body — use pre-signed URLs or a dedicated upload endpoint.",
+        "Story response must include the expiration timestamp so the client knows when to remove it.",
+        "Feed returns a cursor for pagination; messages are fetched per conversation. Design both to scale."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through the post creation, feed retrieval, story publishing, and message send paths.",
+      "howToAnswer": "Boxes and arrows: client → load balancer → API services → specialized backends. Show storage tiers for posts (permanent), stories (24-hour TTL), and messages (transient). Explain how feed fan-out works (hybrid push-pull).",
+      "rubric": {
+        "must": [
+          "API tier behind load balancer",
+          "Separate data paths for posts, stories, and messages (no one-size-fits-all)",
+          "Photo storage strategy (S3 + CDN for multi-PB scale)",
+          "Headline mechanism: hybrid feed fan-out (push for normal users, pull for celebrities)"
+        ],
+        "should": [
+          "Redis for story hot cache with TTL expiration",
+          "Message queue (Kafka) for async message delivery",
+          "Story expiration service (scheduled cleanup)",
+          "Database schema hints (PostTable, StoryTable, MessageTable)"
+        ],
+        "avoid": [
+          "Single database for posts, stories, and messages (storage/TTL mismatch)",
+          "Skipping the hybrid fan-out explanation",
+          "Forgetting how to serve photos at scale globally"
+        ]
+      },
+      "sampleAnswer": "Client → ALB → Post Service, Story Service, Message Service (stateless, auto-scale)\n\nPosts: Write → metadata to DB (Postgres/Cassandra keyed by postId) + photo to S3 (keyed by photoId). Read path: fetch post metadata from cache (Redis), photo served via CloudFront CDN.\n\nFeed: Use hybrid fan-out: for users with <100k followers, push posts into follower feed tables on write (Redis sorted sets or DB materialized feed). For celebrities, use pull at read-time — fetch recent posts from followees and rank. Merge both writes and reads.\n\nStories: Separate hot tier (Redis with 24-hour TTL per story). Expiration Service runs hourly, deletes expired stories from Redis + moves to cold archive (S3). Story metadata in DB.\n\nMessages: Message Queue (Kafka) → Message Service → Message DB (indexed by (senderId, recipientId, timestamp)). Real-time delivery via WebSocket or polling. Message index allows fast 1:1 conversation fetch.",
+      "hints": [
+        "Start with the obvious skeleton: client → LB → API services. The interesting work is splitting paths for posts vs stories vs messages.",
+        "Photos at petabyte scale demand S3 + CDN — but what about stories that only live 24 hours? Do you store them the same way?",
+        "Feed fan-out is the headline: regular users get push (fast read, expensive write), celebrities get pull (cheap write, heavier read). How do you decide the threshold?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-feed-scale",
+      "title": "Scale feed to 1M concurrent",
+      "questionPrompt": "Your feed service handles 100k reads/sec, but you're seeing spikes to 1M concurrent users. How do you keep feed latency under 500ms p99?",
+      "sampleAnswer": "Layer-wise capacity: ALB auto-scales API tier to ~100 instances at 10k RPS each. Feed Service is stateless. For the feed data, use read-through cache (Redis cluster, 10 shards × 3 replicas) to cache hot timelines (~99% hit rate for active users). Cache invalidation: on-write, fan-out only to online users (use user presence service). For users fetching cold timelines, pull from DB (Postgres with read replicas) — acceptable at p99 since only tail users. Quantify: 1M concurrent → ~100k active feeds in cache at any moment (1 MB each = 100 GB, well under Redis capacity). Spikes handled by circuit-breaker: if cache is full, degrade to stale feed (max-age=30s) rather than timeout.",
+      "rubric": {
+        "must": [
+          "Identify the bottleneck (hot feed cache miss or API tier saturation)",
+          "Scaling mechanism with concrete placement and numbers (e.g., '100 API instances, Redis sharded 10 ways')"
+        ],
+        "should": [
+          "Discuss cache invalidation strategy (on-write vs lazy)",
+          "Mention degradation under overload (return stale data, not 503)"
+        ],
+        "avoid": [
+          "'Just add more servers' without layer-by-layer analysis",
+          "Designing infinite cache without hit-rate math"
+        ]
+      },
+      "hints": [
+        "Go layer-by-layer: API tier, cache tier, DB tier. Which is the bottleneck when the others scale freely?",
+        "A typical user's feed is 100-1000 posts; how many users' hot feeds fit in Redis? Estimate cache hit rate.",
+        "What happens on a cache miss? Is that failure mode acceptable in the SLA?"
+      ]
+    },
+    {
+      "slug": "dd-story-expiration",
+      "title": "Story expiration & cleanup",
+      "questionPrompt": "Stories must expire in exactly 24 hours. How do you guarantee that 10M stories per day are deleted on time without orphaning data in downstream systems?",
+      "sampleAnswer": "Use Redis TTL on story metadata keys: 24-hour expiration is automatic. Expiration Service (scheduled Spark/Flink job, runs hourly) scans for stories past their 24h window. On expiration: (1) delete from Redis (TTL handles this), (2) mark as DELETED in Story DB with soft delete to preserve audit trail, (3) async delete photo from S3 only after 7-day retention (for abuse investigation), (4) publish StoryExpired event to Kafka so downstream viewers/analytics systems prune their caches. Replication: cross-region story deletes propagate via eventual consistency — acceptable since stories are immutable once posted.",
+      "rubric": {
+        "must": [
+          "Name the expiration mechanism (Redis TTL + scheduled cleanup job)",
+          "Guarantee no orphans across multiple systems (DB, cache, S3, analytics)"
+        ],
+        "should": [
+          "Address soft deletes for audit/abuse investigation",
+          "Mention replication lag — is eventual consistency acceptable for a 24-hour deadline?"
+        ],
+        "avoid": [
+          "Relying only on Redis TTL without a cleanup job (leads to stale entries elsewhere)",
+          "Hard-deleting immediately (no time for abuse review)"
+        ]
+      },
+      "hints": [
+        "Story expiration is a hard deadline — no story should linger past 24h. How do you enforce that across 5+ systems?",
+        "Redis TTL is one layer; what about the DB, the photo archive, and the viewer counts? Do they all need cleanup?",
+        "What if a user is viewing a story at exactly the 24-hour mark? Is the race acceptable?"
+      ]
+    },
+    {
+      "slug": "dd-message-delivery",
+      "title": "Message delivery guarantees",
+      "questionPrompt": "A user sends a message to a friend. The message must be delivered and stored exactly once, in order, within 5s. How do you guarantee this under network partitions and service failures?",
+      "sampleAnswer": "Use Kafka (ordered, durable queue) for message ingestion: client POST /messages → API service → Kafka (single partition per conversation for ordering). Consumer group reads Kafka, writes to Message DB (Postgres or DynamoDB keyed by (senderId, recipientId, timestamp)) with idempotency key (messageId). DB write includes recipient status (seen/unseen). On success, publish MessageDelivered event → WebSocket server → push to recipient in real-time if online. If recipient is offline, store in a 'pending inbox' (Redis TTL 30 days). Message is durably stored by Kafka (replication factor 3) and DB (multi-AZ), so surviving both is sufficient. Retries are idempotent via unique messageId; duplicate delivery is absorbed at the consumer.",
+      "rubric": {
+        "must": [
+          "Identify the durable queue for ordering (Kafka or equivalent)",
+          "Explain idempotent writes to DB with a unique key (messageId)"
+        ],
+        "should": [
+          "Discuss ordering per conversation (single Kafka partition or equivalent)",
+          "Mention at-least-once delivery semantics and why duplicates are OK if deduplicated"
+        ],
+        "avoid": [
+          "Relying on 'the database handles it' for ordering or exactly-once",
+          "Losing messages on service restart (queue must be durable and replicated)"
+        ]
+      },
+      "hints": [
+        "Ordering is critical: messages in a conversation must arrive in the order sent. What guarantees that?",
+        "Exactly-once is hard; at-least-once + idempotence is easier. Show how you deduplicate at the consumer.",
+        "What happens if Kafka is down? Is the database still available? What's the failure mode?"
+      ]
+    }
+  ]
+}

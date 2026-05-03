@@ -1,0 +1,261 @@
+{
+  "id": "ad-click-aggregator",
+  "title": "Ad Click Aggregator",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design a real-time ad click tracking and aggregation system. Ads are displayed across web, mobile, and video properties. Each click event must be tracked, deduplicated, and aggregated into near-real-time dashboards for campaign managers, while also feeding a billing pipeline that advertisers trust. Target ~100M clicks/day, <5 second aggregation window, and exactly-once semantics for billing accuracy.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List the primary user actions: ingesting clicks, querying aggregated metrics, and supporting reconciliation. Don't drift into fraud detection or ML-based optimization unless asked.",
+      "exampleHints": {
+        "headline": "Example (Stock ticker / price aggregator):",
+        "bullets": [
+          "Users can stream in individual price updates",
+          "Users can query aggregated prices by time bucket and security",
+          "System tracks the raw event history for audits"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Ingest a click event (with timestamp, ad_id, user_id, campaign_id, geo, device_type)",
+          "Aggregate clicks by configurable dimensions (campaign, ad, geo, device) over time windows",
+          "Query real-time aggregated metrics (impression count, click count, cost)"
+        ],
+        "should": [
+          "Support custom time windows (1-min, 5-min, hourly)",
+          "Deduplicate duplicate click events (idempotency via event IDs)",
+          "Reconciliation / recompute path for billing accuracy"
+        ],
+        "avoid": [
+          "Drifting into fraud detection, ML-based bid optimization, or targeting",
+          "Inventing unnecessary entities like user profiles or accounts"
+        ]
+      },
+      "sampleAnswer": "1. System should ingest click events (ad_id, campaign_id, timestamp, user_id, geo, device_type).\n2. System should aggregate clicks by dimensions (campaign, ad, geo, device) over configurable time windows (1-min, 5-min, 1-hour).\n3. Campaign managers should query real-time dashboard metrics: click count, unique users, spend, CTR by dimension.\n4. System should deduplicate click events using event IDs to avoid double-counting.\n5. System should expose a recompute path for billing reconciliation (e.g., daily batch recount).",
+      "hints": [
+        "Two human actors: the system ingesting raw events, and the campaign manager querying aggregate dashboards. What's the contract between them?",
+        "Real-time aggregation needs a time dimension. What windows matter (seconds? minutes? hours?), and how does the system handle late-arriving data?",
+        "Billing is the hard constraint. How does the system prove it counted each click exactly once, even on retries?"
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Quantify throughput (clicks/sec), latency targets for dashboards, durability for billing, and consistency guarantees. Tie each to product impact.",
+      "exampleHints": {
+        "headline": "Example (Twitter / real-time metrics):",
+        "bullets": [
+          "Throughput: 100k tweets/sec",
+          "Dashboard latency: <5 seconds",
+          "Durability: no click loss once acknowledged",
+          "Consistency: eventual (brief stale reads OK on dashboards)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Throughput: ~100M clicks/day = ~1.2k clicks/sec peak (~10k with spikes)",
+          "Latency: dashboard data available within 5 seconds of click",
+          "Durability: no loss of billing events",
+          "Exactly-once semantics for billing (no duplicate charges)"
+        ],
+        "should": [
+          "Availability > consistency (stale dashboard reads tolerable)",
+          "Out-of-order and late event handling (configurable watermark)"
+        ],
+        "avoid": [
+          "Listing NFRs without concrete numbers",
+          "Mixing consistency (ACID) with eventual-consistency without clarity"
+        ]
+      },
+      "sampleAnswer": "- Throughput: ~100M clicks/day = ~1.2k clicks/sec sustained, ~10k peak.\n- Dashboard latency: aggregated metrics within 5 seconds (event-time).\n- Durability: no click event loss once ingestion is acknowledged.\n- Consistency: exactly-once into billing store (idempotent writes). Dashboard reads are eventually consistent (acceptable lag <5 sec).\n- Late-arrival handling: 10-minute watermark allows delayed clicks from slow clients.\n- Scalability: horizontal scaling of ingest and compute tiers.",
+      "hints": [
+        "100M clicks/day is manageable at 1.2k clicks/sec, but peak hours may spike 10x. What does your architecture do on 10k/sec?",
+        "Billing requires exactly-once semantics — name the cost. Why not just 'best-effort'?",
+        "Dashboards tolerate stale reads (5-second lag), but billing does not. How do you split the paths?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "Name the nouns: ClickEvent, Aggregate, Campaign, Ad. Don't build full schemas yet.",
+      "exampleHints": {
+        "headline": "Example (Metrics pipeline / Prometheus):",
+        "bullets": [
+          "MetricPoint: { timestamp, name, value }",
+          "TimeSeries: { metric_name, labels }",
+          "Alert: triggered when metric crosses threshold"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "ClickEvent: raw click data (ad_id, campaign_id, timestamp, user_id, geo, device_type, event_id for dedup)"
+        ],
+        "should": [
+          "Aggregate: grouped metrics (campaign_id, time_window, click_count, unique_users)",
+          "Campaign / Ad: metadata linked from click"
+        ],
+        "avoid": [
+          "Inventing entities not required by the functional spec (fraud labels, ML scores)"
+        ]
+      },
+      "sampleAnswer": "- ClickEvent: { event_id, ad_id, campaign_id, timestamp, user_id, geo, device_type, metadata }. The raw fact table.\n- Aggregate: { campaign_id, ad_id, geo, device_type, time_bucket, click_count, unique_user_count, spend_usd }. Materialized view over ClickEvent.\n- Campaign: { id, name, budget, start_time, end_time }. Metadata, may be a reference or separate service.\n- Ad: { id, campaign_id, name, bid_amount }.",
+      "hints": [
+        "The smallest set of nouns: one raw event type, one aggregate type. What properties does each carry?",
+        "Deduplication requires a key. Is that the event_id or a combination of (ad_id, user_id, timestamp)?",
+        "Aggregates are derived, not stored in the event log — they're materialized via the streaming process."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "Ingest endpoint (fire-and-forget or acknowledged), query endpoint for dashboards, optional reconciliation endpoint. Show method, request/response shape.",
+      "exampleHints": {
+        "headline": "Example (Analytics event collection / Segment):",
+        "bullets": [
+          "POST /events  body: { userId, event, properties, timestamp }  → 202 Accepted",
+          "GET /metrics?campaign=X&window=5m  → { click_count, ctr, ... }",
+          "POST /recompute  body: { start_time, end_time }  → { job_id }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST /events (or similar) to ingest click events, with all required fields",
+          "GET /metrics (or dashboards endpoint) to query aggregated data by campaign/ad/geo/device",
+          "Returns time-series data with aggregation keys"
+        ],
+        "should": [
+          "POST /reconcile or /recompute for billing reconciliation",
+          "Request includes time window / bucket size",
+          "Response includes timestamp and metric values"
+        ],
+        "avoid": [
+          "Blocking on write (ingest should be fire-and-forget or fast-acked)",
+          "Mixing raw events and aggregates in the same response"
+        ]
+      },
+      "sampleAnswer": "POST /events\n  body: { event_id, ad_id, campaign_id, timestamp, user_id, geo, device_type, additional_metadata }\n  → 202 Accepted { event_id } (or 200 OK if committed)\n\nGET /metrics\n  query: { campaign_id, ad_id, geo?, device_type?, start_time, end_time, bucket_size_sec? }\n  → 200 { metrics: [ { time_bucket, click_count, unique_users, spend } ] }\n\nPOST /reconcile\n  body: { campaign_id, start_time, end_time }\n  → 202 { job_id, status }",
+      "hints": [
+        "Ingest should be asynchronous or very fast. Why is that important at 10k clicks/sec?",
+        "Queries group by dimensions. What query patterns (campaign only, campaign + geo, ad + device) are most common?",
+        "Reconciliation is internal infrastructure — operators trigger it, not customers. Show the endpoint shape anyway."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through the ingest and query paths.",
+      "howToAnswer": "Boxes and arrows: click client → load balancer → ingest service → message queue (Kafka) → stream processor (Flink) → OLAP store (Druid/Pinot). Show dedupe, windowing, and dual-pipeline (speed + batch).",
+      "rubric": {
+        "must": [
+          "Ingest service (stateless, behind load balancer) that validates and acks clicks",
+          "Message queue (Kafka) as the event log and decoupling buffer",
+          "Stream processor (Flink or Kafka Streams) with event-time windowing and watermarks",
+          "OLAP store (Druid, Pinot, ClickHouse) for fast aggregation queries",
+          "Exactly-once semantics via idempotent writes or event deduplication"
+        ],
+        "should": [
+          "Separate speed path (streaming) and batch path (recompute) for correctness",
+          "Bloom filter or event ID cache for dedupe in stream processor",
+          "Handling of late-arriving data (watermark configuration)",
+          "Schema showing ClickEvent and Aggregate fields"
+        ],
+        "avoid": [
+          "Single pipeline without a reconciliation / batch recompute path",
+          "Ignoring exactly-once semantics (causing duplicate billing charges)",
+          "Not addressing hot key problem (single campaign drowning the system)"
+        ]
+      },
+      "sampleAnswer": "Architecture:\n\n1. Ingest Service (stateless, horizontally scaled):\n   - Receives click events from web/mobile/server SDKs\n   - Validates (non-null ad_id, campaign_id, timestamp)\n   - Assigns or verifies event_id for idempotency\n   - Publishes to Kafka 'raw_clicks' topic (partitioned by ad_id to ensure ordering per ad)\n   - Returns 202 Accepted immediately\n\n2. Message Queue (Kafka):\n   - Topic: raw_clicks, partitioned by ad_id (or campaign_id)\n   - Retention: 7 days (allows reprocessing / reconciliation)\n   - Replication factor: 3 (durability)\n\n3. Stream Processor (Flink):\n   - Consumes raw_clicks, deduplicates by event_id (via state store or Redis-backed state)\n   - Applies event-time windowing (1-min, 5-min, 1-hour tumbling windows)\n   - Configurable watermark: 10-minute late-arrival grace period\n   - Hot-key mitigation: if a single campaign gets >100k clicks/sec, apply key salting or use hierarchical aggregation\n   - Stateful aggregation: count clicks, count unique users (via HyperLogLog), sum spend\n   - Emits aggregates to Kafka 'aggregates' topic (keyed by campaign_id)\n   - Checkpointing: every 10 seconds for exactly-once recovery\n\n4. OLAP Store (Druid or Pinot):\n   - Ingests aggregates from Kafka (via connectors, ensuring exactly-once via idempotent insert)\n   - Schema: { campaign_id, ad_id, geo, device_type, time_bucket, click_count, unique_user_count, spend_usd }\n   - Serves dashboard queries: filter by campaign, group by ad/geo/device, time-range queries\n   - Typical query: <100ms for last 24 hours\n\n5. Batch Reconciliation (Lambda-style):\n   - Daily batch job (Spark or Flink in batch mode) reprocesses raw_clicks from Kafka\n   - Computes authoritative aggregates for all of yesterday\n   - Compares hot store (Druid) against batch results\n   - Alerts on discrepancies, triggers manual review for billing disputes\n   - Results written to a separate 'canonical' partition in Pinot for audit\n\nDeduplication Strategy:\n  - event_id is a UUID assigned by the SDK (or ingest service if missing)\n  - Stream processor maintains a state store keyed by (event_id, time_window)\n  - Duplicate within same window → dropped\n  - Duplicate in different window → counted twice (rare, log for investigation)\n  - For exactly-once to OLAP: Pinot upsert mode uses (campaign_id, ad_id, geo, device_type, time_bucket) as primary key\n\nDelay Handling:\n  - Watermark set to 10 minutes: clicks arriving >10 min late are dropped (or logged to a 'late_clicks' topic for manual reconciliation)\n  - Dashboard shows data up to (now - 5 seconds) to allow watermark buffer\n  - Billing query includes an additional batch recomputation of the prior day",
+      "hints": [
+        "The headline mechanism is the dual-pipeline: streaming for <5 sec freshness, batch for billing truth. Name each component's job.",
+        "Exactly-once requires end-to-end coordination: Kafka transactions, Flink checkpoints, and idempotent OLAP writes. Where does each kick in?",
+        "Hot-key problem: one campaign gets 50% of all clicks. Your partition key is ad_id, but now one ad is overloaded. How do you split the load?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-scale-aggregation",
+      "title": "Scale to 10k clicks/sec peak",
+      "questionPrompt": "Your peak traffic is 10k clicks/sec (10× average). How do you scale the stream processor to handle spikes without falling behind?",
+      "sampleAnswer": "Flink parallelism scales horizontally: at 1.2k clicks/sec sustained, a parallelism of 4 (4 task managers, each processing 300 clicks/sec) is comfortable. At 10k/sec peak, scale to parallelism 12–20 (autoscaling based on backlog lag). The Kafka topic partitions must match or exceed Flink parallelism (e.g., 16 partitions). For hot keys (single ad dominating), apply per-ad salting: instead of aggregating ad=X directly, aggregate ad=X:salt0, ad=X:salt1, ..., ad=X:salt9 in parallel, then merge the results on read (cost is a small post-aggregation query). This breaks the bottleneck from 10k→1k clicks/sec per task.",
+      "rubric": {
+        "must": [
+          "Identify the bottleneck: stream processor parallelism vs. Kafka partitions",
+          "Horizontal scaling argument: parallelism ≥ peak throughput / per-task capacity",
+          "Hot-key mitigation strategy (salting or hierarchical aggregation)"
+        ],
+        "should": [
+          "Autoscaling trigger (e.g., Flink backlog lag threshold)",
+          "Merge strategy for salted results"
+        ],
+        "avoid": [
+          "'Just add more servers' with no partition/parallelism plan",
+          "Ignoring the hot-key problem entirely"
+        ]
+      },
+      "hints": [
+        "Each Flink task can process ~300–1k clicks/sec. At 10k/sec peak, how many tasks do you need?",
+        "Kafka partition count is a constraint — Flink parallelism can't exceed partitions. What's the scaling limit?",
+        "One campaign is 50% of traffic. Your partition key is ad_id (fine for ordering), but how does key salting help if the partition key is ad_id, not campaign_id?"
+      ]
+    },
+    {
+      "slug": "dd-exactly-once",
+      "title": "Exactly-once billing semantics",
+      "questionPrompt": "How do you guarantee that billing events are counted exactly once, even if the ingest service crashes mid-request or Flink restarts?",
+      "sampleAnswer": "End-to-end exactly-once requires three layers:\n1. Kafka: idempotent producer + transactional writes ensure a click written once to Kafka.\n2. Flink: checkpoint-based recovery with two-phase commit. On failure, Flink restores state to the last successful checkpoint; unprocessed clicks are replayed from Kafka. Event IDs in the state store prevent re-counting.\n3. OLAP (Pinot): upsert semantics using (campaign_id, ad_id, geo, device_type, time_bucket) as the primary key. A duplicate aggregate write atomically overwrites the old value (idempotent).\nFinal safeguard: daily batch reconciliation recomputes the entire day from raw Kafka and compares against Pinot. Discrepancies trigger alerts.",
+      "rubric": {
+        "must": [
+          "Name the idempotency mechanism at each layer (Kafka transactions, Flink state + event ID, OLAP upsert)",
+          "Explain how a failure (e.g., mid-ingest HTTP request) is recovered without duplicate counts"
+        ],
+        "should": [
+          "Checkpoint frequency and recovery time estimate",
+          "Reconciliation strategy for detecting missed counts"
+        ],
+        "avoid": [
+          "Hand-waving 'Kafka guarantees it'",
+          "Ignoring the ingest→Kafka boundary (client crash before ack)"
+        ]
+      },
+      "hints": [
+        "Idempotency requires a unique key at each step. What's the event_id, and who generates it?",
+        "Flink checkpoints capture state + offset. On restart, which messages are replayed, and why does the event ID prevent re-counting?",
+        "OLAP upsert: (campaign_id, ad_id, geo, device_type, time_bucket) is the key. A retried aggregate write updates the row (idempotent). How is this different from 'insert'?"
+      ]
+    },
+    {
+      "slug": "dd-late-data",
+      "title": "Handling late-arriving clicks",
+      "questionPrompt": "A user's click events arrive 15 minutes late due to a slow network. How does the system count the late click correctly, and what does the dashboard show?",
+      "sampleAnswer": "Watermark strategy:\n- Watermark = max(event_time) - 10 minutes. At time=T, a click with event_time > (T - 10min) is on-time; event_time < (T - 10min) is late.\n- On-time clicks: aggregated into the 1-min window immediately (e.g., click at 12:05:00 goes into window [12:05:00, 12:06:00)).\n- Late clicks (15 min late): received at time=T, event_time=T-15min. Since event_time < watermark, the window is already closed. Late clicks are either (a) dropped, or (b) applied as a retraction / correction to the OLAP store (upsert the aggregate for that past window).\n- Dashboard: shows data up to (now - 5 seconds) to account for watermark jitter, hiding in-flight late events. Prior day's aggregates come from batch reconciliation, which reprocesses all raw Kafka data.\n- Billing: batch job does the same recomputation, so late clicks are eventually reconciled.",
+      "rubric": {
+        "must": [
+          "Define the watermark concretely (e.g., 10 minutes lag)",
+          "Explain on-time vs late window assignment",
+          "Describe the handling of late data (drop, retract, or re-aggregate)"
+        ],
+        "should": [
+          "Dashboard lag strategy (e.g., show data 5 sec behind watermark)",
+          "Batch reconciliation catches late clicks eventually"
+        ],
+        "avoid": [
+          "Ignoring late data entirely (real-world clicks are always late!)",
+          "Retracting without explaining idempotency on the OLAP side"
+        ]
+      },
+      "hints": [
+        "Event-time vs processing-time: a click's event_time is when the user actually clicked (UTC timestamp from client). Processing-time is when the system sees it. Watermark bridges them.",
+        "A 10-minute watermark means we wait 10 min before closing a window. Clicks arriving after the window closes are late. Where do they go?",
+        "Billing is the constraint: if you drop late clicks, advertisers lose money. So either handle them (upsert), or catch them in batch. Which is your design?"
+      ]
+    }
+  ]
+}

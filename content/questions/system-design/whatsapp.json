@@ -1,0 +1,240 @@
+{
+  "id": "whatsapp",
+  "title": "WhatsApp",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design a 1:1 and group messaging service like WhatsApp. Users send text messages to individuals or groups; messages are delivered to online and offline recipients, with read and delivery receipts. Target 2B users, 100B messages per day, and sub-1s latency for live delivery.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "Focus on messaging: send 1:1 and group messages, receive them, show delivery/read status. Don't design account creation, media sharing, or calls unless asked.",
+      "rubric": {
+        "must": [
+          "Users can send a text message to another user (1:1)",
+          "Users can send a message to a group",
+          "Users receive messages in real-time if online",
+          "Offline messages are delivered when the user comes online",
+          "Users see delivery receipt (message reached server)",
+          "Users see read receipt (recipient opened message)"
+        ],
+        "should": [
+          "Typing indicators",
+          "Last seen timestamp",
+          "Message editing or deletion"
+        ],
+        "avoid": [
+          "Designing media upload/download unless explicitly asked",
+          "Voice calls, video calls, or voice messages",
+          "Accounts, authentication, or 2FA — assume that layer exists"
+        ]
+      },
+      "sampleAnswer": "1. Users can send a text message to one other user (1:1).\n2. Users can send a message to a group (up to 256 members).\n3. Messages are delivered in real-time to online recipients and stored for offline delivery.\n4. Users see 'sent' (on server), 'delivered' (received by device), and 'read' (opened by user) status per message.\n5. Users receive notifications (push or in-app) when they receive a message.",
+      "hints": [
+        "Two distinct message paths: one for direct chats, one for groups. That shapes the design.",
+        "Delivery receipt and read receipt are separate states on each message — why?",
+        "Don't invent features: stick to messaging and receipt status; assume accounts and auth are elsewhere."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Message ordering, latency, scale (DAU/RPS), durability, and consistency. The headline NFR is reliability + ordering within a chat.",
+      "rubric": {
+        "must": [
+          "Message ordering — messages in a chat must stay in send order (causal)",
+          "Delivery guarantee — each message reaches the recipient exactly once",
+          "Sub-second latency for live delivery (p99 <1s to an online recipient)",
+          "Durability — messages are never lost once acknowledged",
+          "Scale: 2B DAU, ~100B messages/day (~1.2M RPS sustained)"
+        ],
+        "should": [
+          "Availability during partial outages (eventual consistency is OK)",
+          "Offline storage on the client (let users scroll history even offline)",
+          "Push notification latency <30s for offline delivery"
+        ],
+        "avoid": [
+          "Eventual consistency on message order (users will notice out-of-order messages)",
+          "At-most-once delivery without retries"
+        ]
+      },
+      "sampleAnswer": "- Message ordering: within a chat (1:1 or group), messages must be ordered by sender timestamp (causally consistent).\n- Delivery: at-least-once semantics; duplicate detection on the receiver side.\n- Latency: <1s p99 for live delivery to an online peer; <30s for push to offline users.\n- Durability: write to replicated persistent store before acknowledging sender.\n- Scale: ~2B DAU, ~1.2M RPS sustained, ~10TB/day new messages.\n- Availability: 99.95% (brief message loss during failover is unacceptable).",
+      "hints": [
+        "Order is a business requirement, not a technicality — users will notice scrambled messages. What invariant ensures FIFO within a chat?",
+        "Exactly-once is hard; at-least-once + idempotent replay is simpler. How do you detect and skip duplicates on the receiver?",
+        "Push notifications for offline users have a very different latency budget than live delivery. Design them separately."
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "User, Chat (1:1 or group), Message, MessageReceipt (delivery + read state).",
+      "rubric": {
+        "must": [
+          "User: identity, presence (online/offline/away), phone number / email",
+          "Chat: 1:1 conversation or Group",
+          "Message: sender, text, timestamp, chat_id",
+          "MessageReceipt: per-user per-message state (sent, delivered, read)"
+        ],
+        "should": [
+          "GroupMember: tracks membership and last-read position per user",
+          "TypingIndicator: transient state"
+        ],
+        "avoid": [
+          "Mixing Media, Calls, or Status updates into the core"
+        ]
+      },
+      "sampleAnswer": "- User: { userId, phoneNumber, status (online/offline/away), lastSeenAt }\n- Chat: { chatId, type (1:1 or group), members: [userId] }\n- Message: { messageId, chatId, senderId, text, sentTimestamp, sequenceNumber }\n- MessageReceipt: { messageId, recipientId, deliveredAt?, readAt? }",
+      "hints": [
+        "Distinguish the Chat (persistent container) from the Message stream. They have different access patterns.",
+        "Receipts track per-message per-user state — why separate from Message itself?",
+        "Sequence numbers on messages help you detect duplicates and enforce ordering."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "Send message, receive message stream (websocket or long-poll), fetch chat history, mark as read. Show request/response shapes.",
+      "rubric": {
+        "must": [
+          "POST /chats/{chatId}/messages — send message (returns messageId)",
+          "GET /chats/{chatId}/messages — fetch message history (paginated by cursor)",
+          "WebSocket /chats/{chatId}/stream or POST /chats/{chatId}/messages/subscribe — real-time message delivery or long-poll",
+          "POST /messages/{messageId}/read — mark message as read"
+        ],
+        "should": [
+          "PATCH /messages/{messageId} — edit message",
+          "DELETE /messages/{messageId} — delete message",
+          "POST /chats — create 1:1 or group chat",
+          "PUT /chats/{chatId}/members — add/remove members (groups)"
+        ],
+        "avoid": [
+          "Bulk send (broadcast) in the core — handle via group internally",
+          "Mixing media upload into send message — separate endpoint or service"
+        ]
+      },
+      "sampleAnswer": "POST /chats/{chatId}/messages\n  body: { text, clientMessageId (idempotency) }\n  → 201 { messageId, sentAt, status: 'sent' }\n\nGET /chats/{chatId}/messages?cursor=... → { messages: [...], nextCursor }\n\nWS /chats/{chatId}/stream → server pushes { messageId, senderId, text, sentAt } to all online members\n\nPOST /messages/{messageId}/read → 200 { readAt }\n\nGET /chats → list of recent chats with unread counts\nGET /users/{userId}/presence → { status, lastSeenAt }",
+      "hints": [
+        "Send and receive are separate APIs — send is REST, receive is often push (WebSocket) or long-poll.",
+        "Idempotency key on send is critical — what happens if the client times out waiting for ACK?",
+        "Message ordering lives in the response shape. If you return a cursor, what does it sort by?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the architecture. Walk through the send and receive paths.",
+      "howToAnswer": "Client → API Gateway → Message Service → Message Queue → Persistence (messages + receipts). Separate connection manager for WebSockets. Diagram the paths.",
+      "rubric": {
+        "must": [
+          "Message Service: handles send, routes to online recipients or queues for delivery",
+          "Persistent message store (ordered per chat, probably per-partition key)",
+          "Receipt store (delivery + read state)",
+          "Connection Manager: tracks online users, WebSocket connections",
+          "Message delivery path: online → WebSocket push; offline → queue → push notification"
+        ],
+        "should": [
+          "Message deduplication (idempotency key → messageId mapping)",
+          "Sequence numbering per chat to detect duplicates and enforce order",
+          "Acknowledgment path: client ACKs delivery, server updates receipt",
+          "Group fan-out strategy (one-to-many)"
+        ],
+        "avoid": [
+          "Writing messages to a non-ordered database (use Kafka or similar)",
+          "Pushing messages to offline users synchronously",
+          "Trusting client timestamp for ordering — use server sequence numbers"
+        ]
+      },
+      "sampleAnswer": "Architecture:\n- Client → ALB → API Gateway (REST + WebSocket upgrade)\n- Message Service (stateless): receives send request, assigns sequence number, writes to Message Broker (Kafka, partitioned by chatId)\n- Message Broker: each chat (or chat group) maps to a partition; consumers read from this partition and write to MessageDB (ordered, queryable)\n- Receipt Service: subscribes to Kafka, writes delivery/read events to ReceiptDB (denormalized per message for fast lookup)\n- Connection Manager: maintains a registry of online users and their WebSocket connections (Redis backed, or in-process if colocated)\n- On send: Message Service publishes to Kafka, immediately returns messageId + status='sent' to sender. Kafka consumer picks up, checks if recipients are online (Connection Manager). If online, WebSocket push via connection manager. If offline, enqueue to push notification service.\n- On receive (online): WebSocket consumer streams messages from the chat's Kafka partition to the device in order. Client sends read receipt → API → Receipt Service → update MessageDB.\n- Duplicate handling: clientMessageId → messageId mapping in dedup service or message store; second send with same clientMessageId returns the same messageId.",
+      "hints": [
+        "Ordering within a chat is the headline mechanism — what data structure guarantees this? Kafka partitions? Ordered ranges in a DB?",
+        "Send path and receive path are asymmetric: send is request-response (quick acknowledgment), receive is push (or polling).",
+        "Fan-out in groups: do you send one message and fan to each member, or one message per member? Storage cost vs. delivery latency?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-message-ordering",
+      "title": "Message ordering in groups",
+      "questionPrompt": "How do you guarantee that a group with 50 members all sees the same message order, even if they receive messages with different latencies?",
+      "sampleAnswer": "The source of truth is the server-assigned sequence number per chat. When a message arrives at the Message Service, it checks the last sequence number for that chat (atomically), assigns nextSeq, and publishes messageId + seq to Kafka. All consumers (devices, receipts, etc.) respect this sequence number. A device's inbox for a chat is ordered by sequence, not by when the device received it. If a device receives seq=5 before seq=4, it buffers seq=5 and waits for seq=4; once arrived, it inserts in order and renders.",
+      "rubric": {
+        "must": [
+          "Server assigns sequence number atomically per chat",
+          "All replicas use the same sequence number, not client timestamp",
+          "Receivers sort by sequence, not arrival time"
+        ],
+        "should": [
+          "Handle out-of-order arrival at the receiver (buffer + replay)",
+          "Quantified sequencing (e.g., up to seq=1B per chat)"
+        ],
+        "avoid": [
+          "Trusting client clock for ordering",
+          "Each member using a different ordering (will see different message order)"
+        ]
+      },
+      "hints": [
+        "Clock skew means you can't trust client timestamps for global order. What's the alternative, and where is it enforced?",
+        "A group has multiple recipients, each potentially on a slow network. They can't coordinate with each other — the server must be the arbiter.",
+        "What does a receiver do if it gets seq=10 before seq=9? Buffer it or discard it?"
+      ]
+    },
+    {
+      "slug": "dd-offline-delivery",
+      "title": "Offline message delivery",
+      "questionPrompt": "A user is offline for 2 hours and misses 5000 messages. How does the system reliably deliver them when they come back online?",
+      "sampleAnswer": "Messages are durably stored in the Message Service keyed by chatId. When a user comes online (WebSocket reconnect), they send their last-known sequence number per chat. The server queries Message Service for seq > lastKnown for each chat and streams them to the device in order, up to ~500 messages per request (paginated). If there are more, the client fetches the next batch. The device applies them locally and sends read receipts. If the user was offline for too long and some messages were purged from hot storage, they can still fetch history from the archive (at degraded latency, e.g., S3) for recent days.",
+      "rubric": {
+        "must": [
+          "Durable message storage (not just in-memory)",
+          "Resumption on reconnect via sequence number",
+          "Batched delivery (don't send 5000 at once)"
+        ],
+        "should": [
+          "Pagination and cursor-based fetch for deep history",
+          "Archive cold-storage after N days"
+        ],
+        "avoid": [
+          "Keeping all 5000 messages in a queue per offline user (memory blowup)",
+          "Sending all offline messages in a single huge response"
+        ]
+      },
+      "hints": [
+        "An offline user is just a user whose WebSocket is disconnected. What state survives the disconnect?",
+        "Pagination: if you retrieve 500 messages at a time, what's the sequence number range in each batch?",
+        "Storage: should a message stay accessible forever, or can you archive old messages? What's the cutoff?"
+      ]
+    },
+    {
+      "slug": "dd-group-fan-out",
+      "title": "Scaling group delivery",
+      "questionPrompt": "How do you efficiently deliver a message to a group with 256 members without overwhelming the sender's device or the server?",
+      "sampleAnswer": "Store one Message row, not 256. Fan-out is the server's job, not the client's. When a user sends to a group, the Message Service stores it once, assigns a sequence number, and publishes to Kafka partition for that group chat. The Delivery Service (or direct WebSocket subscriptions) fans it out: each online member receives it via their WebSocket. For offline members, the Message Broker already has it; when they reconnect, they fetch missing messages. Deduplication is idempotency key + clientMessageId → messageId, so if the sender retries, they get the same messageId back, preventing double-send.",
+      "rubric": {
+        "must": [
+          "Single Message row per group message, not one per recipient",
+          "Server-side fan-out (client sends once)",
+          "Idempotent duplicate detection"
+        ],
+        "should": [
+          "Batch delivery to many members in parallel",
+          "Receipt aggregation (track per-user read, but show 'you' '+'N others)"
+        ],
+        "avoid": [
+          "Client duplicating the message 256 times before sending",
+          "Synchronously waiting for all 256 ACKs before returning to sender"
+        ]
+      },
+      "hints": [
+        "One message or 256? The answer determines your storage and delivery cost.",
+        "Sender sends once and gets back immediately — why can we afford to do that?",
+        "Offline members don't need a separate copy waiting for them. Where do they get it from when they reconnect?"
+      ]
+    }
+  ]
+}

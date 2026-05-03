@@ -1,0 +1,257 @@
+{
+  "id": "online-auction",
+  "title": "Online Auction",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design an eBay-style real-time auction service. Users post items with a starting price and duration, place bids that must exceed the current highest, and watch live price updates. The system must prevent double-bid wins and broadcast new bids to all viewers in real-time. Target 10M concurrent active auctions, 100M DAU, and 10k bids/sec at peak.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering posting items, bidding, and viewing live updates. Skip accounts, search, and analytics.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Users can post an item for auction",
+          "Users can place a bid on an item",
+          "Users see real-time updates to the highest bid"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can post an item with a starting price and end time",
+          "Users can place a bid that must exceed the current highest bid",
+          "Users see the current highest bid for an item in real-time"
+        ],
+        "should": [
+          "Automatic proxy bidding (bid incrementally up to a max)",
+          "Bid history or retract-last-bid",
+          "Auction-end notifications"
+        ],
+        "avoid": [
+          "Drifting into search, filtering, or account features",
+          "Vague phrasing like 'users can auction' — be explicit about what actions"
+        ]
+      },
+      "sampleAnswer": "1. Users should be able to post an item with a starting price and a duration (e.g., 7 days).\n2. Users should be able to place a bid on an open item; the system accepts it only if the bid exceeds the current highest bid.\n3. Users should see the current highest bid and bidder name updated in real-time as new bids come in.",
+      "hints": [
+        "Walk through a user's auction lifecycle: post → watch bids come in → end. What can they do at each step?",
+        "Bidding is the core action. What makes a bid valid? What prevents two bids from winning the same auction simultaneously?",
+        "Real-time is mentioned in the prompt — that's a hint to think about how updates flow to viewers."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover consistency (no double-bids), latency (real-time updates), scale (10M auctions, 10k bids/sec), and durability. Tie each to a real product concern.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Strong consistency on bid ordering",
+          "Real-time updates <1s latency",
+          "10M concurrent auctions, 10k bids/sec peak",
+          "Durability: no lost bids"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Strong consistency: only the highest valid bid wins; no two bids can both claim victory",
+          "Real-time broadcast latency (e.g., <1s from bid accepted to viewers see update)",
+          "Scale: 10M concurrent auctions, 10k bids/sec peak, 100M DAU"
+        ],
+        "should": [
+          "Durability: all accepted bids are persisted",
+          "Fairness during last-second bidding (sniping protection, if in scope)"
+        ],
+        "avoid": [
+          "Saying 'eventual consistency is fine for bids' — consistency is paramount",
+          "Latency targets without a number"
+        ]
+      },
+      "sampleAnswer": "- Strong consistency: only one bid can win an auction. If two bids arrive simultaneously, exactly one is accepted.\n- Real-time latency: <1s from bid accepted to all viewers seeing the update.\n- Scale: 10M concurrent auctions, 10k bids/sec at peak, 100M DAU.\n- Durability: accepted bids are logged durably; no bid loss on failure.\n- Fairness: earliest valid bid wins; sniping (last-second bids) is allowed but not rigged.",
+      "hints": [
+        "What's the invariant that absolutely cannot break? (Hint: it's about bid ordering, not availability.)",
+        "Real-time updates are expensive. Where does the broadcast originate, and how do you fan it out to viewers?",
+        "Scale is interesting here: 10M auctions but only 10k bids/sec means most auctions are idle. Use that insight."
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design. Distinguish Auction, Bid, and User roles.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Auction",
+          "Bid",
+          "User"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Auction: item, starting price, duration, end time",
+          "Bid: amount, timestamp, user, auction"
+        ],
+        "should": [
+          "User: seller, buyer",
+          "ProxyBid: (optional) if automatic bidding is in scope"
+        ],
+        "avoid": [
+          "Inventing entities like AuctionState or BidLog that don't add clarity"
+        ]
+      },
+      "sampleAnswer": "- Auction: the item being sold, with a starting price, seller, start/end times, and current status (OPEN / ENDED / CANCELLED).\n- Bid: a specific user's offer on an auction, with amount, timestamp, and user.\n- User: bidder and seller, with identity for tracking purposes.\n- (Optional) ProxyBid: if automatic incremental bidding is in scope.",
+      "hints": [
+        "What's the minimal set of nouns to satisfy the functional requirements?",
+        "Bid and Auction are separate — why is that distinction important?"
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement: create auction, place bid, view auction. Bid placement is the interesting one — it must be atomic.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "POST /auctions body: { itemName, startingPrice, durationSec }",
+          "POST /auctions/:id/bids body: { amount }",
+          "GET /auctions/:id → { auction, currentBid, bids }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST endpoint to create an auction",
+          "POST endpoint to place a bid (must return success/failure with reason)",
+          "GET endpoint to view auction details and current bid"
+        ],
+        "should": [
+          "Idempotency key on bid placement",
+          "GET /auctions/:id/bids for bid history (optional)",
+          "Status codes: 201 on create, 409 if bid rejected"
+        ],
+        "avoid": [
+          "Forgetting that bid placement can fail and the client needs to know why",
+          "Vague response like '{ success: true }' — include the current highest bid"
+        ]
+      },
+      "sampleAnswer": "POST /auctions\n  body: { itemName, startingPrice, durationSec }\n  → 201 { auctionId, endsAt }\n\nPOST /auctions/:id/bids  body: { amount }, header: Idempotency-Key\n  → 200 { accepted: true, currentBid, bidId }\n  → 409 { accepted: false, reason: 'bid_too_low' | 'auction_ended' }\n\nGET /auctions/:id\n  → 200 { auctionId, itemName, startingPrice, currentBid, bidderId, endsAt, bids: [{ amount, timestamp, bidderId }] }",
+      "hints": [
+        "Bidding is atomic — the client submits one bid and learns immediately if it won. What happens on network timeout?",
+        "A failed bid (too low, auction ended) must communicate why. What reasons should the API return?",
+        "Viewing is a read. Does it need to be consistent with the latest write, or is eventual consistency acceptable?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through each endpoint.",
+      "howToAnswer": "Separate read and write paths. Write path: bid → atomic check-and-set (DB transaction or Redis Lua). Read path: cache auction state, fan out bids to viewers via WebSocket/SSE.",
+      "rubric": {
+        "must": [
+          "Atomic bid ordering: single-writer per auction (DB row lock, Redis key, or optimistic concurrency with retry)",
+          "Broadcast mechanism for real-time updates (WebSocket, SSE, or message queue fan-out)",
+          "Separation of read path (auction view) and write path (bidding)"
+        ],
+        "should": [
+          "Cache for auction metadata (hot auctions cached, cold ones queried on-demand)",
+          "Message queue (e.g., Kafka) for reliable bid fan-out",
+          "Schema: Auction table, Bid table, User table"
+        ],
+        "avoid": [
+          "Optimistic locking on bid without a retry loop (livelock under contention)",
+          "'Just broadcast to all viewers' without naming the mechanism"
+        ]
+      },
+      "sampleAnswer": "Architecture:\n\nRead path (GET /auctions/:id): \n  Client → ALB → API Service → Redis cache (hot auction state) → DB on miss → fan-out WebSocket connection\n\nWrite path (POST /auctions/:id/bids):\n  Client → ALB → Bid Service (stateless) → DB (row-level lock on Auction row) → atomically update Auction.currentBid and insert Bid row → publish to Kafka BidAccepted topic → return 200 to client.\n\nReal-time fan-out:\n  Kafka topic subscriber (running in or alongside API) → WebSocket manager → broadcasts bid update to all connected viewers of that auction. CDN can cache immutable auction metadata.\n\nBid ordering invariant:\n  DB transaction with SELECT FOR UPDATE on the Auction row ensures only one bid at a time can check and update currentBid. Bids arriving while a bid is in-flight are queued by the DB and serialized. If a bid is lower than currentBid, it fails before the transaction completes.",
+      "hints": [
+        "The hot path is bidding under contention. Name the primitive that ensures serialization: a database row lock, a Redis key, or an optimistic CAS loop.",
+        "Real-time updates: think about where the broadcast originates (close to the write) and how it reaches 1000s of viewers efficiently.",
+        "Most auctions are cold. Where does the caching work? What's your eviction policy?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-bid-ordering",
+      "title": "Bid ordering under contention",
+      "questionPrompt": "Two users submit bids on the same auction within milliseconds of each other. How do you ensure the higher bid always wins and the lower bid is rejected, even under high contention?",
+      "sampleAnswer": "Use a DB transaction with row-level locking. The Auction row is locked with SELECT FOR UPDATE when processing a bid. The transaction reads currentBid, compares the incoming bid, and only if the bid is higher does it update currentBid, insert a Bid row, and publish to Kafka. If the bid is lower or equal, the transaction rolls back and returns 409 to the client. Concurrent bids queue naturally at the database lock; the DB serializes them, so even with perfect timing, exactly one wins. Alternative: Redis Lua script with similar semantics, but requires Lua familiarity and loses durability unless you write-through to the DB asynchronously.",
+      "rubric": {
+        "must": [
+          "Name the serialization primitive (DB lock, Redis Lua, unique constraint)",
+          "Explain how concurrent bids queue and serialize",
+          "Show the read-compare-write atomic step"
+        ],
+        "should": [
+          "Discuss durability: where is the single source of truth?",
+          "Mention the failure path: what the losing bidder sees"
+        ],
+        "avoid": [
+          "Optimistic locking on bid without addressing livelock retry loops",
+          "Ignoring the durability of the 'winning' decision"
+        ]
+      },
+      "hints": [
+        "If two bids arrive at the exact same microsecond, how does the database (or cache) decide a winner? What primitive serializes them?",
+        "Optimistic concurrency (CAS retry loop) can livelock under high contention. What's a better strategy for a single auction?",
+        "The loser must learn immediately that their bid lost. Where does that rejection originate?"
+      ]
+    },
+    {
+      "slug": "dd-real-time-broadcast",
+      "title": "Real-time bid broadcast",
+      "questionPrompt": "A bid is accepted. How does the system ensure all 1000+ viewers of that auction see the new highest bid within <1s?",
+      "sampleAnswer": "On bid acceptance, the Bid Service publishes a BidAccepted event to a Kafka topic (keyed by auctionId for ordering). A fan-out service subscribed to that topic loads the event and pushes it to all connected viewers of that auction via WebSocket (or SSE fallback). Viewers establish a persistent WebSocket connection to a WebSocket gateway on accepting the auction page; the gateway maintains a registry of {auctionId → [connections]}. When the fan-out service receives BidAccepted, it looks up the registry and sends the update to each connection. Network latency (RTT) dominates; within-datacenter Kafka → WebSocket gateway is <50ms, plus client RTT (<500ms over internet), so <1s is achievable. If a viewer disconnects and reconnects, they do a GET /auctions/:id to fetch the latest state.",
+      "rubric": {
+        "must": [
+          "Message queue (Kafka) to carry bid updates reliably",
+          "WebSocket connection registry for quick lookup",
+          "Concrete path from bid accepted to client receiving update"
+        ],
+        "should": [
+          "Fallback for clients without WebSocket (SSE or polling)",
+          "Deduplication: if a client reconnects, they don't see double-updates"
+        ],
+        "avoid": [
+          "'Just broadcast to all clients' without naming the mechanism",
+          "Ignoring network latency and assuming <1s is free"
+        ]
+      },
+      "hints": [
+        "Scale: 1000 viewers on a popular auction. If you're running a thread per viewer, you'll exhaust the server. What scales better?",
+        "Kafka carries bids reliably; who reads from Kafka and pushes to clients?",
+        "How does a viewer know if they're up-to-date after a reconnect? What's the source of truth?"
+      ]
+    },
+    {
+      "slug": "dd-auction-close",
+      "title": "Reliable auction close",
+      "questionPrompt": "When an auction's end-time arrives, the system must declare a winner and prevent late bids. How do you handle auctions closing reliably across millions of concurrent auctions?",
+      "sampleAnswer": "Use a scheduled task (e.g., Kafka Streams, or a recurring job) that polls the database for auctions with endsAt ≤ now() and status = OPEN every 1 second. Atomically transition each auction to CLOSED and record the winner (the highest bidder). Late bids arriving after the state flip to CLOSED are rejected with a 409 'auction_ended'. The scheduled job is idempotent: flipping OPEN → CLOSED is a no-op on the second run. For reliability, the job runs on multiple hosts with consensus (Zookeeper, Etcd, or a 'processed' flag in the DB) to avoid duplicates. Publish an AuctionClosed event to Kafka so notification and settlement services react.",
+      "rubric": {
+        "must": [
+          "Scheduled mechanism to close auctions at the right time",
+          "Atomic state transition (OPEN → CLOSED)",
+          "Rejection of late bids"
+        ],
+        "should": [
+          "Idempotency: safe to run multiple times",
+          "High-availability scheduler (multiple hosts, coordination)"
+        ],
+        "avoid": [
+          "Per-auction timer on an app server (doesn't survive restart)",
+          "Running the job once per second naively (no deduplication, crashes lose state)"
+        ]
+      },
+      "hints": [
+        "10M concurrent auctions. A cron job that wakes every 5 minutes is too coarse. What's a tighter polling cadence?",
+        "Late bids must be rejected. Where does the rejection check happen: in the API, or after state flip?",
+        "The job must survive restarts and crashes. What persistence guarantees it?"
+      ]
+    }
+  ]
+}

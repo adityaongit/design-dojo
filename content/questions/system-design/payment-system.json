@@ -1,0 +1,261 @@
+{
+  "id": "payment-system",
+  "title": "Payment System",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design a payment processing system that handles 10M transactions per day with 99.99% availability. The system must process payments against payment service providers (PSPs like Stripe, Square), prevent duplicate charges on client retry, and reconcile actual payments against internal ledgers daily. Consider idempotency keys, double-entry ledger bookkeeping, and async settlement delays.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "List the main user and system actions: initiate payment, capture status, and reconcile. Don't include refunds or subscription management unless asked.",
+      "exampleHints": {
+        "headline": "Example (Stripe Webhook Integration):",
+        "bullets": [
+          "Customers initiate payments through a client",
+          "System captures payment status from PSP",
+          "Admins view settlement reports"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Initiate a payment request to an external PSP",
+          "Receive and store the PSP response (success/failure/pending)",
+          "Prevent duplicate charges if a client retries the same request",
+          "Expose payment status to the client"
+        ],
+        "should": [
+          "Retry failed payments against PSP",
+          "Webhook ingestion for async settlement notifications"
+        ],
+        "avoid": [
+          "Designing refund or dispute workflows unless explicitly asked",
+          "Conflating payment initiation with ledger reconciliation (different concern)"
+        ]
+      },
+      "sampleAnswer": "1. A customer submits a payment request with an idempotency key (client-generated UUID).\n2. The system submits the payment to a PSP (e.g., Stripe) if not previously seen.\n3. The system immediately records the request and PSP response in an internal ledger.\n4. The client polls or receives a webhook for the payment status.\n5. Admins can view transaction history and settlement status.",
+      "hints": [
+        "Walk through the customer's journey: they click 'pay', the system contacts the PSP, something might fail, they retry. What does the system do on retry to avoid charging twice?",
+        "Receiving the PSP response and storing it locally are two separate actions — why does that matter?",
+        "The PSP settlement (actual money arriving) may take days. That's not the same as 'payment initiated.' Separate those concerns in your functional requirements."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "The headline NFR is idempotency: no double-charging. Then cover scale, latency, and durability. PSPs add async settlement, so eventual consistency on the settlement side is acceptable.",
+      "exampleHints": {
+        "headline": "Example (Square Payments):",
+        "bullets": [
+          "Idempotency: same request never charges twice",
+          "Latency: payment decision <2s",
+          "Durability: zero loss of payment records"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Idempotency: identical requests return identical results, charge only once",
+          "High availability: 99.99% uptime — system stays up if PSP is down (async retry)",
+          "Durability: zero data loss on payment records (all writes persisted before response)",
+          "Scale: handle 10M txns/day (~115 RPS sustained, 10× burst)"
+        ],
+        "should": [
+          "Latency: payment decision within 2 seconds",
+          "Reconciliation: daily batch reconciliation against PSP reports",
+          "Audit trail: immutable record of every payment event"
+        ],
+        "avoid": [
+          "Saying 'strong consistency' across all components — PSPs are eventually consistent",
+          "Forgetting that PSP settlement takes 1–3 days; internal state diverges from 'money arrived'",
+          "Ignoring duplicate prevention as a separate NFR from idempotency"
+        ]
+      },
+      "sampleAnswer": "- Idempotency: an idempotency key uniquely identifies a payment request. If the same key arrives twice, the system returns the cached result without charging again.\n- Availability: if the PSP is down, the system queues the payment and retries async. Clients get a 'pending' status.\n- Durability: every payment request and PSP response is written to a persistent ledger before responding to the client.\n- Scale: 10M txns/day = ~115 RPS average, 10× = 1150 RPS burst. Must handle this without losing requests or mis-charging.\n- Settlement: PSP settlement arrives 1–3 days later. Daily reconciliation job compares PSP reports against our ledger to catch discrepancies.",
+      "hints": [
+        "The headline NFR is idempotency. Every system that calls a PSP must handle 'what if the client retries?' — name the mechanism that prevents double-charging.",
+        "The PSP is external and unreliable. If the PSP is down when a payment lands, what does the client see? Success, failure, or pending? How does the system recover?",
+        "Settlement happens asynchronously (days later). When the client asks 'has my payment cleared?', are you reporting 'the PSP accepted it' or 'the money arrived in the account'? They're different."
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "Payment, Account (internal ledger), PSPTransaction (the response from the PSP). Be clear about how these relate.",
+      "exampleHints": {
+        "headline": "Example (Uber Payments):",
+        "bullets": [
+          "Payment: client request with idempotency key",
+          "Account: customer balance or ledger line",
+          "PSPTransaction: the response from Stripe/Square"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "PaymentRequest: customer, amount, idempotency key, timestamp",
+          "LedgerEntry: debit/credit pair (double-entry ledger)",
+          "PSPTransaction: response from external payment service (status, provider txn ID)"
+        ],
+        "should": [
+          "Idempotency state machine: submitted → pending/success/failed",
+          "Settlement record: matches ledger entries to PSP reports"
+        ],
+        "avoid": [
+          "Conflating PSP response with final settlement",
+          "A single 'Payment' entity that conflates the request, ledger effect, and settlement"
+        ]
+      },
+      "sampleAnswer": "- PaymentRequest: { userId, idempotencyKey, amount, currency, psProvider, createdAt }. Unique constraint on (userId, idempotencyKey).\n- LedgerEntry: { accountId, type (debit/credit), amount, transactionId, txnTimestamp }. Two entries always created per payment: debit from customer account, credit to platform holding account.\n- PSPTransaction: { paymentRequestId, psProvider, psProviderTxnId, status (pending/success/failed), statusReason, receivedAt }.\n- ReconciliationRecord: { psProviderTxnId, ledgerTxnId, matchedAt, discrepancyFlag }.",
+      "hints": [
+        "A 'Payment' in a real system is not one entity — it's a flow across multiple tables. Name them.",
+        "Double-entry ledger means every charge is a debit from one account and a credit to another. Which two accounts?",
+        "The PSP response is not the source of truth — the ledger is. The PSP response is just one input to reconciliation."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "Main endpoint: POST /payments with idempotency key header. Also a GET for status. Keep it minimal.",
+      "exampleHints": {
+        "headline": "Example (PayPal API):",
+        "bullets": [
+          "POST /payments { amount, currency, ... } + Idempotency-Key header",
+          "→ 202 { paymentId, status: 'pending' }",
+          "GET /payments/:id → { status, pspTxnId, ... }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST /payments with Idempotency-Key header, returning 201/202 with a payment ID",
+          "GET /payments/:id returning payment status",
+          "Handle idempotency key collision (return cached response)"
+        ],
+        "should": [
+          "Return status codes: 201 (success), 202 (pending), 400 (validation), 409 (conflict/duplicate amount)"
+        ],
+        "avoid": [
+          "Returning 200 for a successful payment creation (should be 201 or 202)",
+          "Forgetting the Idempotency-Key header as a required field"
+        ]
+      },
+      "sampleAnswer": "POST /payments\n  Headers: { Idempotency-Key: UUID }\n  Body: { customerId, amount, currency, psProvider }\n  → 201 { paymentId, status: 'success', pspTxnId } (if PSP responded immediately)\n  → 202 { paymentId, status: 'pending', retrievalUrl } (if PSP delayed or down)\n  → 409 { error: 'duplicate' } (if same Idempotency-Key with different amount)\n\nGET /payments/:paymentId\n  → { paymentId, status, amount, pspTxnId, createdAt, completedAt }",
+      "hints": [
+        "The Idempotency-Key header is how the client signals 'if you've already done this, tell me without charging again.' Where do you store it?",
+        "A POST that may take time to complete isn't always 201. What status code signals 'I've accepted your request but I'm still processing'?",
+        "If the client sends the same key twice with different amounts, what should the API do? Reject it or ignore the amount difference?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the architecture. Walk through the payment flow end-to-end.",
+      "howToAnswer": "API layer → idempotency check (cache) → ledger writes (double-entry) → async PSP call (queue) → webhook listener for async completion. Show how retries work.",
+      "rubric": {
+        "must": [
+          "Idempotency cache (check before processing)",
+          "Double-entry ledger: debit/credit entries written atomically with the payment record",
+          "Async queue for PSP calls (decouple from the request path)",
+          "Webhook listener for PSP settlement notifications"
+        ],
+        "should": [
+          "Reconciliation service: daily batch comparing ledger vs PSP reports",
+          "Outbox pattern for publishing payment events (at-least-once guarantee)",
+          "Fallback if PSP is down: queue the payment, retry async"
+        ],
+        "avoid": [
+          "Calling the PSP synchronously in the request path (too slow, risk losing the request if the connection drops)",
+          "Writing to ledger and PSP in separate transactions (split-brain on failure)"
+        ]
+      },
+      "sampleAnswer": "Flow:\n1. Client POSTs /payments with Idempotency-Key header.\n2. API service receives request, checks the Idempotency-Key in Redis cache. If hit, return cached response.\n3. If miss, begin transaction: insert PaymentRequest record (with unique constraint on idempotency key) and two LedgerEntry rows (debit from customer, credit to platform holding account). Both succeed or both fail atomically.\n4. Write event to Outbox table: PaymentRequested (for event subscribers).\n5. Commit transaction; return 202 Accepted { paymentId, status: 'pending' }.\n6. Async worker polls Outbox, reads PaymentRequested event, enqueues job to Kafka: { paymentId, pspProvider, amount }.\n7. PSP worker dequeues, calls Stripe/Square API with paymentId as the idempotency key. Retries on transient errors with exponential backoff.\n8. On success: update PaymentRequest.status = 'success', insert PSPTransaction record. Publish PaymentSucceeded event to Outbox.\n9. On failure: PaymentRequest.status = 'failed', insert error reason.\n10. PSP webhook listener receives settlement confirmation (1–3 days later). Matches PSPTransaction by pspProviderTxnId, updates status to 'settled'.\n11. Nightly reconciliation: compare ledger entries against PSP settlement report. Flag any mismatches.",
+      "hints": [
+        "Idempotency must be checked before any state change. But storing the idempotency key result is also a state change. How do you avoid race conditions when two identical requests land simultaneously?",
+        "A payment involves three state transitions: (1) client requests, (2) PSP accepts/rejects, (3) money arrives days later. These are at different layers (API, PSP, settlement). Show how the architecture separates them.",
+        "The PSP call must be async — the network might fail partway. Once the ledger is written, you're committed to retrying the PSP call until success or timeout. How does the system track that?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-idempotency-at-scale",
+      "title": "Idempotency at scale",
+      "questionPrompt": "How do you store and check idempotency keys for 10M transactions per day without becoming a bottleneck? What about the race between two identical requests arriving at the same microsecond?",
+      "sampleAnswer": "Primary idempotency store: Redis, with (userId, idempotencyKey) → cachedResponse (TTL 48 hours). On request arrival: SETNX (set-if-not-exists) on a mutex key (userId:idempotencyKey:processing). If set succeeds, proceed; if fails, someone else is processing, so poll the idempotency result key until it appears. If it appears, return the cached response. If timeout, fail with 503 (server busy). After processing completes, write (userId:idempotencyKey) → response to Redis with TTL 48 hours. Also write the idempotency key to Postgres (in the PaymentRequest row) as a secondary durable store for auditing. On startup, rebuild Redis from Postgres entries >24h old.",
+      "rubric": {
+        "must": [
+          "Fast lookup: Redis for O(1) checks",
+          "Atomic check-and-set: SETNX to prevent concurrent processing of duplicates",
+          "Durable fallback: Postgres for recovery and audit"
+        ],
+        "should": [
+          "TTL strategy: why 48 hours? (PSP settlement takes 1–3 days)",
+          "Conflict handling: two identical requests at the same instant — one wins, the other waits"
+        ],
+        "avoid": [
+          "Checking the database every time (too slow for 115 RPS average)",
+          "Storing every idempotency key in Postgres without pruning (unbounded growth)"
+        ]
+      },
+      "hints": [
+        "10M txns/day is ~115 RPS. A Redis SETNX is ~1µs; a Postgres query is ~5ms. Where's the bottleneck, and why is Redis better for the hot path?",
+        "Two identical requests arrive at the same microsecond. The first thread does SETNX, succeeds, starts processing. The second thread does SETNX, fails. What should the second thread do?",
+        "Idempotency keys must live for at least as long as the PSP can take to settle (1–3 days). But you can't store all keys forever. When and how do you prune?"
+      ]
+    },
+    {
+      "slug": "dd-double-entry-reconciliation",
+      "title": "Double-entry reconciliation",
+      "questionPrompt": "How does the double-entry ledger ensure the system's balance never drifts? What happens if a payment succeeds in Postgres but the PSP call is lost?",
+      "sampleAnswer": "Every payment creates exactly two ledger entries: debit from customer account (amount), credit to platform holding account (amount). The sum is zero. Nightly, sum all debits per account and compare to the 'available balance' column. If they don't match, flag an anomaly. If a payment succeeds in Postgres (ledger entries written, committed) but the PSP call is lost, the ledger shows the customer charged but the platform holding account has no corresponding PSP transaction. The reconciliation job detects this mismatch: ledger has the entry, but PSP report has no record of settlement. The job reraises the PSP call. If the PSP rejects it (already settled), reconciliation auto-reverses the phantom ledger entry. If PSP accepts it (legitimate retry), settlement is recorded.",
+      "rubric": {
+        "must": [
+          "Every payment = debit + credit. The ledger's total balance is always zero.",
+          "Ledger entries are immutable; corrections are new entries (not updates)",
+          "Nightly reconciliation compares ledger sum per account against PSP settlement report"
+        ],
+        "should": [
+          "Anomaly alerting: if balance check fails, page on-call immediately",
+          "Reversal process: how to record a ledger correction without breaking audit trail"
+        ],
+        "avoid": [
+          "Updating existing ledger entries (kills audit trail)",
+          "Assuming the ledger and PSP will always match (they won't, until reconciliation runs)"
+        ]
+      },
+      "hints": [
+        "Double-entry means two entries per transaction. If you sum all debits and credits, what number should you get, always?",
+        "Suppose customer paid $100 and it was recorded in the ledger (debit/credit), but the PSP call never completed. The customer's phone died before we sent the request, so the PSP has no record. Reconciliation runs the next day. Ledger has a debit; PSP report has nothing. What do you do?",
+        "Can you update a ledger entry after the fact, or does that break the audit trail? If you can't update, how do you correct a mistake?"
+      ]
+    },
+    {
+      "slug": "dd-async-settlement-delays",
+      "title": "Async settlement delays",
+      "questionPrompt": "The customer paid, you recorded it in the ledger, the PSP says it's accepted — but the money doesn't arrive for 2 days. How does the system track this delay? What if the PSP reverses a payment after settlement?",
+      "sampleAnswer": "PSPTransaction has four states: (1) pending (sent to PSP), (2) accepted (PSP confirms receipt), (3) settled (money arrived in bank account), (4) reversed/failed (reversed or failed after settlement). The payment status returned to the client is 'settled' only after webhook #3. In the interim (pending or accepted), the client sees 'processing'. The platform's balance sheet has the customer's debit immediately (strict liability), but the holding account credit is only 'real' (counted toward bank balance) after settlement. Nightly reconciliation pulls the PSP settlement report and matches PSPTransaction records. If a PSP row shows 'settled' but our record shows only 'accepted', we update it. If a PSP row shows 'reversed' (chargeback), we flip our state and emit a PaymentReversed event, which triggers a reversal ledger entry (credit customer, debit holding account).",
+      "rubric": {
+        "must": [
+          "Multi-state lifecycle: pending → accepted → settled OR failed/reversed",
+          "Webhook ingestion: PSP sends us settlement confirmation async",
+          "Reversal handling: on chargeback/reversal, mirror it with new ledger entries"
+        ],
+        "should": [
+          "Timeline: what the client sees vs. what the platform's balance sheet says",
+          "Reconciliation: how to detect and recover from state mismatches"
+        ],
+        "avoid": [
+          "Treating 'PSP accepted' as 'settled' (money hasn't arrived yet)",
+          "Ignoring chargebacks / reversals after settlement"
+        ]
+      },
+      "hints": [
+        "The customer sees 'payment successful' when? When you call the PSP, or when money arrives, or in between? The client expectation vs. the reality are often different.",
+        "A payment settles after 2 days. In those 2 days, what prevents the platform from spending that money (issuing a refund from it, for example)? Some platforms lock the balance until settlement, others don't. What's the tradeoff?",
+        "PSPs can reverse payments days or weeks after 'settlement' due to chargebacks. The ledger already recorded the credit. When the reversal lands, what ledger entries do you write to undo it?"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,258 @@
+{
+  "id": "elevator",
+  "title": "Elevator",
+  "difficulty": "medium",
+  "type": "low-level-design",
+  "prompt": "Design an elevator control system for a multi-elevator building. The building has up to 15 floors. Each elevator can hold a maximum of 8 passengers. Users press buttons on external panels (up/down per floor) and internal panels (floor selection inside the elevator). The ElevatorController must intelligently dispatch requests across multiple elevators to minimize wait time. Elevators move up, down, or remain idle. Doors open only when stationary.",
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "questionPrompt": "Clarify the requirements. What's in scope and what isn't?",
+      "howToAnswer": "Capture the rules tightly. Decide whether to scope: capacity limits, multiple elevators, scheduling strategy, external vs internal requests. State assumptions about button behavior and state transitions.",
+      "exampleHints": {
+        "headline": "Example (Movie Theater Ticketing):",
+        "bullets": [
+          "Multiple ticketing counters (like multiple elevators)",
+          "Customers queue and request specific showings (like requesting floors)",
+          "Counter assignment minimizes wait time (like elevator dispatch)",
+          "Out of Scope: authentication, payment processing, network communication"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Multiple elevators serving a building with N floors",
+          "External buttons (up/down per floor) and internal buttons (floor selection)",
+          "Elevator states: moving up, moving down, idle, doors open/closed",
+          "Request acceptance only when doors closed and elevator idle",
+          "Capacity limit per elevator",
+          "Minimize wait time via intelligent dispatch"
+        ],
+        "should": [
+          "Support concurrent requests from multiple floors",
+          "Display current floor and direction on each elevator",
+          "Handle both external (up/down) and internal (destination) requests"
+        ],
+        "avoid": [
+          "Building a UI or visualization",
+          "Emergency services, mechanical failures, or power loss",
+          "Persistent state or historical analytics"
+        ]
+      },
+      "sampleAnswer": "Scope:\n- Building with 1 to N floors (configurable, default 15).\n- M elevators, each holds 8 passengers max.\n- External panels: up/down buttons per floor.\n- Internal panels: destination floor buttons inside each elevator.\n- Elevator states: IDLE, UP, DOWN. Doors: CLOSED, OPEN.\n- Request = (source floor, destination floor, direction).\n- Elevator must be idle with doors closed to accept a new request.\n- ElevatorController assigns each request to an optimal elevator (nearest, matching direction).\n\nOut of scope: Emergency brakes, power loss, mechanical failures, persistence, UI, authentication, real-time tracking APIs.",
+      "hints": [
+        "What are the key actors? Elevators, buttons, requests, the controller that dispatches them.",
+        "Capture the state machine: idle vs moving, doors open vs closed. When can a new request be accepted?",
+        "Think about what triggers a dispatch decision — what information does the controller need to pick the best elevator?"
+      ]
+    },
+    {
+      "slug": "entities-relationships",
+      "title": "Entities & Relationships",
+      "questionPrompt": "What are the core entities and how do they relate?",
+      "howToAnswer": "Pick the orchestrator (likely ElevatorController). Decide what owns the request queue, the floors, the elevators. Avoid putting all logic on ElevatorController.",
+      "exampleHints": {
+        "headline": "Example (ATM):",
+        "bullets": [
+          "ATMController (orchestrator)",
+          "ATM (state: idle, dispensing)",
+          "User transaction (request: withdraw amount)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "ElevatorController (orchestrator) — dispatches requests to elevators",
+          "Elevator — owns current floor, direction, door state, request queue",
+          "Request — (source, destination, direction enum)",
+          "Floor — owns external panel (up/down buttons)",
+          "Button interface with implementations (ElevatorButton, HallButton)"
+        ],
+        "should": [
+          "Direction enum: UP, DOWN, IDLE",
+          "Door state management per elevator",
+          "Capacity tracking per elevator"
+        ],
+        "avoid": [
+          "God class: all logic on ElevatorController",
+          "Request queue on the controller — belongs on each Elevator"
+        ]
+      },
+      "sampleAnswer": "- ElevatorController: orchestrates request dispatch. Holds list of Elevators and Floors. Receives external requests from HallButtons and internal requests from ElevatorButtons.\n- Elevator: owns current floor, direction, door state, passenger count, internal request queue. Can move(), openDoor(), closeDoor().\n- Request: { sourceFloor, destinationFloor, direction }.\n- Floor: owns external panel (HallButton for UP and DOWN).\n- Direction enum: UP, DOWN, IDLE.\n- Door enum: OPEN, CLOSED.\n- Button: interface with press() method. ElevatorButton and HallButton implement it.",
+      "hints": [
+        "Who owns the list of elevators? Who owns the list of floors? The orchestrator or distributed?",
+        "Each elevator needs its own request queue. Where does it live?",
+        "Buttons are pressed by users. Which entity is responsible for routing the button press?"
+      ]
+    },
+    {
+      "slug": "class-design",
+      "title": "Class Design",
+      "questionPrompt": "Define the classes — fields and methods. Keep rules with the entity that owns the state.",
+      "howToAnswer": "Sketch each class with explicit method signatures. Use enums for Direction and Door state. ElevatorController.dispatch() is the headline method.",
+      "exampleHints": {
+        "headline": "Example (ATM):",
+        "bullets": [
+          "class ATMController: + dispatchTransaction(amount) -> TransactionStatus",
+          "class ATM: + withdraw(amount) -> bool; + isBusy() -> bool",
+          "enum TransactionStatus { SUCCESS, INSUFFICIENT_FUNDS, BUSY }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "ElevatorController.dispatch(request) -> Elevator (picks best elevator)",
+          "Elevator.addRequest(request) -> bool; canAcceptRequest() -> bool",
+          "Elevator.move() — advances toward next floor, dequeues completed requests",
+          "Elevator properties: currentFloor, direction, doorState, capacity, requestQueue",
+          "Direction and Door state as enums, not magic strings"
+        ],
+        "should": [
+          "HallButton.press(floor, direction) calls ElevatorController.dispatch()",
+          "ElevatorButton.press(floor) adds internal request to the elevator",
+          "Elevator.getNextStop() -> int for peek at the next destination",
+          "Configurable: numFloors, numElevators, capacity per constructor"
+        ],
+        "avoid": [
+          "Returning bool for state-mutating methods — return the Elevator or a status enum",
+          "Hard-coded 15 floors, 8 capacity, 3 elevators in multiple places"
+        ]
+      },
+      "sampleAnswer": "```\nenum Direction { UP, DOWN, IDLE }\nenum DoorState { OPEN, CLOSED }\nenum ElevatorStatus { IDLE, MOVING_UP, MOVING_DOWN }\n\nclass Request:\n  sourceFloor: int\n  destinationFloor: int\n  direction: Direction\n\nclass Elevator:\n  currentFloor: int\n  direction: Direction\n  doorState: DoorState\n  capacity: int = 8\n  passengerCount: int = 0\n  requestQueue: Queue<Request>\n  \n  addRequest(request: Request) -> bool:\n    if passengerCount == capacity: return false\n    requestQueue.enqueue(request)\n    return true\n  \n  canAcceptRequest() -> bool:\n    return doorState == CLOSED and direction == IDLE and passengerCount > 0\n  \n  move():\n    if direction == IDLE or requestQueue.isEmpty(): return\n    if direction == UP: currentFloor += 1\n    else: currentFloor -= 1\n    if isAtRequestFloor(): openDoor()\n  \n  openDoor():\n    doorState = OPEN\n    // dequeue requests for this floor, adjust passengerCount\n  \n  closeDoor():\n    doorState = CLOSED\n    // determine next direction based on remaining requests\n  \n  getNextStop() -> int:\n    if requestQueue.isEmpty(): return -1\n    return requestQueue.peek().destinationFloor\n\nclass ElevatorController:\n  elevators: List<Elevator>\n  floors: List<Floor>\n  \n  dispatch(request: Request) -> Elevator:\n    best = null\n    minCost = infinity\n    for e in elevators:\n      if not e.canAcceptRequest(): continue\n      cost = calculateDistance(e.currentFloor, request.sourceFloor) + ...\n      if cost < minCost:\n        minCost = cost\n        best = e\n    if best: best.addRequest(request)\n    return best\n  \n  calculateDistance(current: int, target: int) -> int:\n    return abs(current - target)\n```",
+      "hints": [
+        "What makes dispatch() hard? It must pick an elevator that's not full, not too far, and moving in the right direction.",
+        "Elevator.move() should not just increment the floor — it should check if it's at a stop and open the door.",
+        "Direction should be an enum, not a string or int. Same for DoorState. This prevents confusion."
+      ]
+    },
+    {
+      "slug": "implementation",
+      "title": "Implementation",
+      "questionPrompt": "Pseudo-code the dispatch and move methods. Trace through one scenario: request from floor 2 (going up) to floor 8.",
+      "howToAnswer": "The dispatch algorithm is the meaty method — write it carefully. Then trace a full scenario: button press, dispatch decision, elevator moves, doors open/close, passenger exit/entry.",
+      "rubric": {
+        "must": [
+          "dispatch() compares elevators using a clear metric (distance + direction alignment)",
+          "move() checks if current floor matches a requested stop, opens doors, dequeues",
+          "Trace includes: external request, dispatch selection, movement steps, door open/close, passenger exit/entry"
+        ],
+        "should": [
+          "Helper method: bestElevatorForRequest() or calculateDispatchScore()",
+          "Handle edge case: all elevators full — dispatch returns null or queues externally",
+          "Trace shows direction change when queue reverses"
+        ],
+        "avoid": [
+          "Naive O(N*M) scoring — should be O(N) or cached",
+          "Forgetting to check doorState == CLOSED before move()",
+          "Off-by-one in floor numbering"
+        ]
+      },
+      "sampleAnswer": "```\ndispatch(request: Request) -> Elevator:\n  bestElevator = null\n  bestScore = infinity\n  \n  for elevator in elevators:\n    if elevator.passengerCount == elevator.capacity:\n      continue  // full, skip\n    \n    // Score: distance + directional alignment penalty\n    distance = abs(elevator.currentFloor - request.sourceFloor)\n    penalty = 0\n    \n    if elevator.direction != IDLE:\n      // If moving up and request is above, no penalty; if below, add penalty\n      if elevator.direction == UP and request.sourceFloor < elevator.currentFloor:\n        penalty += 5  // opposite direction, higher cost\n      elif elevator.direction == DOWN and request.sourceFloor > elevator.currentFloor:\n        penalty += 5\n    \n    score = distance + penalty\n    \n    if score < bestScore:\n      bestScore = score\n      bestElevator = elevator\n  \n  if bestElevator:\n    bestElevator.addRequest(request)\n  \n  return bestElevator\n\nmove():\n  if direction == IDLE:\n    return  // no pending requests\n  \n  if direction == UP:\n    currentFloor += 1\n  else:\n    currentFloor -= 1\n  \n  // Check if we've reached a requested floor\n  if isAtRequestFloor():\n    openDoor()\n    // Caller will handle passenger exit/entry\n\nisAtRequestFloor() -> bool:\n  for request in requestQueue:\n    if request.destinationFloor == currentFloor:\n      return true\n  return false\n\nopenDoor():\n  doorState = OPEN\n  // In a real system, wait for door to close or timeout\n  // For simulation, remove completed requests\n  requestQueue.filter(r => r.destinationFloor != currentFloor)\n  \n  // Determine next direction\n  if requestQueue.isEmpty():\n    direction = IDLE\n  else:\n    // Look at min/max of remaining floors\n    minFloor = requestQueue.map(r => r.destinationFloor).min()\n    maxFloor = requestQueue.map(r => r.destinationFloor).max()\n    if minFloor > currentFloor:\n      direction = UP\n    else if maxFloor < currentFloor:\n      direction = DOWN\n    else:\n      // Mixed requests, pick one (e.g., UP first)\n      direction = UP\n  \n  closeDoor()\n\ncloseDoor():\n  doorState = CLOSED\n```\n\nTrace: User presses UP button at floor 2, wants to go to floor 8.\n1. HallButton.press(2, UP) → ElevatorController.dispatch(Request(2, 8, UP))\n2. ElevatorController scores all elevators. Assume Elevator A is at floor 3, idle: distance=1, penalty=0, score=1. Assume Elevator B is at floor 1, moving down: distance=1, penalty=5, score=6. Pick Elevator A.\n3. Elevator A.addRequest(Request(2, 8, UP)). direction becomes UP.\n4. Elevator A.move(): 3 → 2. Check: floor 2 is in request? Yes. openDoor(). Display shows floor 2, UP.\n5. User enters (passengerCount++). closeDoor().\n6. Elevator A.move(): 2 → 3 → 4 → 5 → 6 → 7 → 8. Check: floor 8 in request? Yes. openDoor().\n7. User exits (passengerCount--). requestQueue is now empty, direction becomes IDLE.\n8. Elevator A.move() returns early (direction == IDLE).",
+      "hints": [
+        "The dispatch score should balance distance and direction alignment. How do you weight them?",
+        "The move() method has two jobs: advance the floor AND check for stops. Keep them together.",
+        "After opening the door at a stop, how does the elevator decide which direction to go next? Look at the remaining requests."
+      ]
+    },
+    {
+      "slug": "extensibility",
+      "title": "Extensibility",
+      "questionPrompt": "How would the design extend for: (1) priority requests (e.g., emergency floor), (2) a SCAN/LOOK algorithm instead of greedy dispatch, (3) dynamic capacity changes (e.g., maintenance)?",
+      "howToAnswer": "Stay high-level. Point at the seams in the design that make the change clean.",
+      "rubric": {
+        "must": [
+          "Priority requests: add priority field to Request, sort queue by priority",
+          "SCAN/LOOK: replace greedy dispatch with a dedicated SchedulingStrategy interface"
+        ],
+        "should": [
+          "Dynamic capacity: Elevator can temporarily reduce capacity; dispatch respects it",
+          "Multiple dispatch strategies: introduce DispatchStrategy interface (Greedy vs SCAN vs LOOK)"
+        ],
+        "avoid": [
+          "Rewriting dispatch() for each new feature — use polymorphism"
+        ]
+      },
+      "sampleAnswer": "1. Priority requests: Add priority field to Request (NORMAL, EXPRESS, EMERGENCY). Sort requestQueue by priority, not FIFO. Elevator.move() dequeues the highest-priority stop. No changes to ElevatorController.dispatch() or move() signature.\n\n2. SCAN/LOOK algorithm: Extract a DispatchStrategy interface with `selectElevator(request, elevators) -> Elevator`. Implement GreedyDispatchStrategy (current) and SCANDispatchStrategy (scan from min to max floors without gaps). ElevatorController holds a DispatchStrategy and calls `strategy.selectElevator(request, elevators)`. Switch strategy via constructor or setter without touching other code.\n\n3. Dynamic capacity: Elevator stores a `maxCapacity` field (not const). Controller respects current capacity in dispatch checks. Maintenance service calls `elevator.setMaxCapacity(4)`. No changes to the move() or door logic.",
+      "hints": [
+        "What's the smallest abstraction that lets you plug in different dispatch algorithms?",
+        "Priority: does the elevator need to reorder its queue, or should dispatch pre-filter by priority?",
+        "SCAN vs greedy: they differ in *which elevator* is selected, not how elevators move. Where's the seam?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-dispatch-score",
+      "title": "Dispatch scoring",
+      "questionPrompt": "How do you score elevators to pick the best one for a request? What factors matter, and how do you weight them?",
+      "sampleAnswer": "Score = distance + direction_mismatch_penalty + wait_penalty. Distance = |elevator.floor - request.sourceFloor|. If elevator is idle, direction_mismatch = 0. If moving opposite direction, penalty = large constant (e.g., 5 or 10). If moving same direction and request.sourceFloor is \"ahead\" on that path, penalty = 0; if \"behind\", penalty = small (e.g., 3). Wait_penalty can account for queue length: each pending request adds 1-2 points. Example: Elevator at floor 5 moving UP, request (floor 2, UP): distance=3, direction_mismatch_penalty=3 (opposite direction), queue_length=2 pending requests, score=8. Elevator at floor 4 idle, same request: distance=2, direction_mismatch=0, queue_length=0, score=2 — pick the idle one. Tuning these weights determines load balancing behavior (short-wait vs balanced-across-elevators).",
+      "rubric": {
+        "must": [
+          "Score includes distance and direction alignment",
+          "Explain why direction matters (e.g., turning around is costly)"
+        ],
+        "should": [
+          "Mention queue length or pending request count as a tiebreaker",
+          "Give concrete weights or penalty examples"
+        ],
+        "avoid": [
+          "Naive: just distance, ignoring direction",
+          "Magic numbers without justification"
+        ]
+      },
+      "hints": [
+        "What's expensive for an elevator? Distance AND direction changes. How does reversing direction affect passengers?",
+        "If two elevators are equally close, which would a user prefer? The one already moving toward them, or the idle one?",
+        "How does adding more pending requests to a queue affect its future dispatch score?"
+      ]
+    },
+    {
+      "slug": "dd-door-timing",
+      "title": "Door and timing semantics",
+      "questionPrompt": "How long should doors stay open? How do you prevent a request mid-door-open? What if an elevator gets stuck?",
+      "sampleAnswer": "Doors stay open for a fixed duration (e.g., 2 seconds) or until a closeDoor() signal. While doors are open, canAcceptRequest() returns false, so new requests to that floor go to another elevator. If doors are stuck open, a timeout timer (e.g., 10 seconds) closes them forcefully. A separate thread or event loop drives the move() and door state machine. Concurrent requests must be thread-safe: each elevator has a lock on its requestQueue and state. The move() loop checks both direction and doorState; it only advances when doorState == CLOSED. This prevents a request from being added mid-movement. In practice, real elevators use mechanical switches (door sensors); here, you might simulate with a simple flag or condition variable.",
+      "rubric": {
+        "must": [
+          "Explain door timing (open duration, close signal)",
+          "Prevent adding requests while doors are open"
+        ],
+        "should": [
+          "Mention timeout for stuck doors",
+          "Discuss thread safety if move() and dispatch() run concurrently"
+        ],
+        "avoid": [
+          "Ignoring timing entirely (instant doors)",
+          "Race conditions between move() and addRequest()"
+        ]
+      },
+      "hints": [
+        "In a real elevator, you can't call a button while the doors are opening. How does your code reflect that?",
+        "If move() runs in one thread and dispatch() in another, what shared state needs protection?",
+        "What happens if a passenger holds the door open forever? Is there a safety timeout?"
+      ]
+    },
+    {
+      "slug": "dd-schedule-fairness",
+      "title": "Fair scheduling across elevators",
+      "questionPrompt": "How do you ensure all elevators contribute equally and no elevator is starved of requests?",
+      "sampleAnswer": "Greedy dispatch (picking the closest) can cause load imbalance: one elevator gets hammered while others idle. LOOK/SCAN algorithms naturally distribute load by servicing all requests in a direction before reversing. Alternatively, track idle time or request count per elevator and bias the score toward underutilized ones. Example: Score += (totalRequests[otherElevator] - totalRequests[thisElevator]) * 0.5, so a busy elevator's score increases. Round-robin on ties breaks symmetry. External request queues (waitlists at each floor) can be fed to multiple elevators to balance load. Key insight: fairness ≠ optimal latency. A perfectly fair system might have *worse* average wait time than one that concentrates requests. Tradeoff: measure SLA (95th percentile wait time) vs max imbalance and tune the dispatch weights.",
+      "rubric": {
+        "must": [
+          "Identify the load-imbalance problem (one elevator overloaded)",
+          "Propose a mechanism (SCAN/LOOK, load-aware scoring, or external queues)"
+        ],
+        "should": [
+          "Explain the tradeoff between optimal wait time and fairness",
+          "Mention concrete metrics (load histogram, 95th percentile latency)"
+        ],
+        "avoid": [
+          "Assuming greedy always works",
+          "Ignoring the cost of load-balancing logic itself"
+        ]
+      },
+      "hints": [
+        "Greedy dispatch can concentrate requests on one elevator. How does LOOK help?",
+        "If you want to distribute load equally, what score adjustment rewards underutilized elevators?",
+        "Is perfect fairness (every elevator serves exactly N requests) even possible? Why or why not?"
+      ]
+    }
+  ]
+}

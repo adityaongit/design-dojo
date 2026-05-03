@@ -1,0 +1,263 @@
+{
+  "id": "google-docs",
+  "title": "Google Docs",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design Google Docs: a real-time collaborative document editing platform. Multiple users can edit the same document simultaneously and see each other's changes in real-time, with cursor/presence information. Target ~2B active documents, ~50M concurrent editors, <500ms latency for edit propagation, and strong consistency (no conflicting edits).",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering the must-have behavior. Focus on the editing and collaboration experience. Skip rich formatting, comments, or version history unless asked.",
+      "exampleHints": {
+        "headline": "Example (Figma):",
+        "bullets": [
+          "Users can create and open designs that multiple people can edit",
+          "Users see real-time cursor positions and selections from other collaborators",
+          "Users can draw, edit, and delete shapes; changes show up on all connected clients"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can open a document and edit its content (add/modify/delete text)",
+          "Multiple users can edit the same document simultaneously",
+          "Users see each other's edits in real-time (within seconds)"
+        ],
+        "should": [
+          "Users can see cursor positions and presence of other editors",
+          "Users can undo/redo their own edits"
+        ],
+        "avoid": [
+          "Drifting into Comments, Suggestions, or Version History",
+          "Designing the rich text toolbar or formatting UI",
+          "Including access control or sharing (assume users are already invited)"
+        ]
+      },
+      "sampleAnswer": "1. Users should be able to open an existing document and view its content.\n2. Users should be able to insert, modify, and delete text in a document.\n3. Users should see their own and others' edits reflected in real-time on the same document.\n4. Users should see the cursor position and selection of other active editors.",
+      "hints": [
+        "Collaborative editing has two halves: your own edits going out, and others' edits coming in. Frame both as user actions.",
+        "Presence (cursor, selection) is separate from content. Why might you want to show where others are typing?",
+        "Stay on the document itself — sharing links, notifications, and comments are separate features."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover consistency guarantees (strong or eventual), latency targets with concrete numbers, scale (concurrent editors, documents, DAU), and durability. Tie each to a real product concern.",
+      "exampleHints": {
+        "headline": "Example (Notion):",
+        "bullets": [
+          "Strong consistency: everyone sees the same content at the same time",
+          "Low latency: edits appear within <1s on all clients",
+          "High availability: 99.99% uptime",
+          "Durability: no data loss once written"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Strong consistency: all users must converge to the same document state",
+          "Edit propagation latency: <500ms p99 for an edit to reach all collaborators",
+          "Quantified scale: ~2B documents, ~50M concurrent editors, ~100k concurrent editors per doc"
+        ],
+        "should": [
+          "Durability: edits must not be lost once confirmed to the user",
+          "Availability: 99.9%+ uptime",
+          "Read-heavy once a document is opened (more reads of the doc state than edits)"
+        ],
+        "avoid": [
+          "Confusing strong consistency with immediate local echo (local edits are instant, remote edits propagate within budget)",
+          "Listing requirements without numbers",
+          "Assuming eventual consistency is safe for document editing (can lead to merge conflicts)"
+        ]
+      },
+      "sampleAnswer": "- Strong consistency: no two clients ever see conflicting versions of the document. All edits must be ordered by the server.\n- Edit propagation: <500ms p99 for a change to be seen by all connected clients.\n- Scale: 2B documents lifetime, 50M concurrent editors globally, up to 100k concurrent editors in a single document.\n- Durability: edits persisted to durable storage before confirming to the user.\n- Availability: 99.9%, with graceful degradation if a region fails.",
+      "hints": [
+        "In a text editor, what's the worst thing that could happen if two clients didn't see the same content? That tells you whether you need strong or eventual consistency.",
+        "Edit propagation is the hot path. Pin a number — what's acceptable from a user's perspective, and what's your SLO?",
+        "Scale matters: 100k concurrent editors in one doc is very different from 100k spread across many. Which is the bottleneck?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "User",
+          "Track",
+          "Playlist",
+          "Play History"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Document: the shared resource being edited",
+          "Edit / Operation: a unit of change (insertion, deletion, character change)"
+        ],
+        "should": [
+          "User / Editor: identifies who is making a change",
+          "Presence / Cursor: tracks where each user is editing"
+        ],
+        "avoid": [
+          "Inventing entities for out-of-scope features (Comments, Suggestions, Versions)"
+        ]
+      },
+      "sampleAnswer": "- Document: the top-level shared resource with a docId, title, and current content state.\n- Edit/Operation: a single change — { type: 'insert'|'delete', position, content, userId, timestamp }.\n- User: an editor with a userId and display name.\n- Presence: real-time cursor/selection state for each active user in the doc.",
+      "hints": [
+        "What's the unit of change? Is it a 'character edit' or a 'larger operation'? Think about what the server needs to replay.",
+        "Presence is ephemeral (only while online), while Operations are persistent (forever). Keep them separate.",
+        "Don't add entities for analytics, versioning, or comments unless the requirements ask for them."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "Show endpoints for opening a document, submitting edits, and subscribing to remote edits. REST for metadata, WebSocket for real-time.",
+      "exampleHints": {
+        "headline": "Example (Slack):",
+        "bullets": [
+          "GET /channels/:id → Channel metadata",
+          "POST /channels/:id/messages body: { text }",
+          "WS /sync/:channelId → stream of new messages"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "GET endpoint to fetch a document (metadata + initial content)",
+          "Endpoint to submit an edit (POST or via WebSocket)",
+          "WebSocket or long-poll channel to receive edits from others",
+          "Endpoint to publish presence (cursor/selection)"
+        ],
+        "should": [
+          "Include operation version/sequence number on responses",
+          "Include userId and timestamp on each operation"
+        ],
+        "avoid": [
+          "Using REST POST for every edit (too latency-heavy)",
+          "Forgetting that presence is transient and separate from edits"
+        ]
+      },
+      "sampleAnswer": "GET /docs/:docId\n  → 200 { docId, title, content, currentVersion, activeEditors: [{userId, name, cursor}] }\n\nPOST /docs/:docId/edits\n  body: { op: { type, position, content }, clientId }\n  → 200 { version, transformedOp }\n\nWS /docs/:docId/sync\n  subscribe → stream of { version, op: { userId, type, position, content }, timestamp }\n\nPOST /docs/:docId/presence\n  body: { cursor, selection, name }\n  → 200",
+      "hints": [
+        "Real-time edits need two channels: one to send (reliable), one to receive (push). Why both REST POST + WebSocket?",
+        "Each operation needs a version number so clients can detect if they're out of sync.",
+        "Presence (cursor, selection) is separate from edits — it's ephemeral and high-frequency."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through the edit path: a user types → server processes → all clients see the change.",
+      "howToAnswer": "Boxes and arrows: client tier (Web/Mobile) → WebSocket gateway → edit/sync service → conflict-resolution engine → operation log → database. Mention the conflict resolution strategy (OT or CRDT).",
+      "rubric": {
+        "must": [
+          "Client ↔ WebSocket gateway / load balancer for real-time sync",
+          "Operational Transformation (OT) or CRDT to handle concurrent edits without conflicts",
+          "Operation log (append-only) to persist all edits in order",
+          "Document storage (snapshot + op-log for recovery)"
+        ],
+        "should": [
+          "Session management: one connection per client, subscribed to one or more docs",
+          "Presence broadcast: cursor and selection updates via the same WebSocket",
+          "Version vector or sequence number to detect out-of-sync clients"
+        ],
+        "avoid": [
+          "Skipping the conflict-resolution strategy (OT or CRDT)",
+          "Polling-based sync (too slow and expensive)",
+          "Storing the entire document text in memory for every edit"
+        ]
+      },
+      "sampleAnswer": "Architecture: Client (Web/Mobile) ↔ WebSocket Gateway (stateless, many instances behind ALB) ↔ Sync Service (stateless) ↔ Conflict Resolution Engine ↔ Operation Log (Append-only, sharded by docId) ↔ Primary Store (Document snapshot) + Replica (read-heavy presence queries).\n\nEdit path:\n1. Client types → local echo (instant) + sends edit op to server via WebSocket POST.\n2. Sync Service receives op { docId, userId, type, position, content }.\n3. Conflict Resolution Engine (OT or CRDT) transforms the op against concurrent ops.\n4. Transformed op appended to Operation Log for docId.\n5. Broadcast to all clients subscribed to docId via WebSocket.\n6. Periodically compact ops into a document snapshot (every 1000 ops or hourly).\n\nPresence path: Client sends cursor/selection via WebSocket → broadcast to all connected clients for the doc (no persistence).\n\nConsistency: Server is the single source of truth. All edits flow through it in a total order. Clients apply local edits immediately, then await server acknowledgment. If server rejects due to conflict, client re-sends with correct version.",
+      "hints": [
+        "Conflict resolution is the headline. There are two families: Operational Transformation (client-server, strong consistency) and CRDTs (peer-to-peer, eventual consistency). Which fits a SaaS product?",
+        "Don't replay all ops on every read — maintain a snapshot and only replay delta ops. Where do you store the snapshot?",
+        "WebSocket is bidirectional and low-latency. Why not use polling? Consider the cost of 50M concurrent users polling every 100ms."
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-conflict-resolution",
+      "title": "Conflict resolution strategy",
+      "questionPrompt": "Two clients concurrently insert text at overlapping positions. How do you ensure both clients eventually see the same result?",
+      "sampleAnswer": "Use Operational Transformation (OT). Server maintains a canonical operation log ordered by a sequence number. Each client's edit op carries a version number (the last op it saw). Server transforms incoming ops against all ops between the client's version and the current version, ensuring the result is deterministic. For example, if Client A inserts 'hello' at position 0 and Client B inserts 'world' at position 1, the server transforms B's op to position 6 (after A's insertion) and broadcasts both in order. Both clients apply edits in sequence and converge to 'helloworld'.",
+      "rubric": {
+        "must": [
+          "Name the conflict-resolution scheme (OT, CRDT, or LWW)",
+          "Show how concurrent edits are ordered or transformed to avoid conflicts",
+          "Explain why the scheme guarantees convergence"
+        ],
+        "should": [
+          "Discuss version numbers / sequence numbers to detect out-of-order edits",
+          "Note the trade-off between OT (strong consistency, server-centric) and CRDT (eventual consistency, peer-friendly)"
+        ],
+        "avoid": [
+          "Last-writer-wins without transformation (causes data loss)",
+          "Assuming edits are always sequential (they're not — concurrency is the problem)"
+        ]
+      },
+      "hints": [
+        "The server is the arbiter. How does it decide the order of concurrent edits from two clients?",
+        "Each edit from a client needs metadata: what version of the doc did you see when you made this edit? Use that to transform against any in-between ops.",
+        "Why not just reject conflicting edits and make the client retry? Think about user experience: would you ask the user to re-type if their edit conflicted?"
+      ]
+    },
+    {
+      "slug": "dd-operation-log-scale",
+      "title": "Operation log storage",
+      "questionPrompt": "The operation log grows unbounded as users edit. How do you keep the log queryable and compact without losing history?",
+      "sampleAnswer": "Append-only operation log sharded by docId (e.g., Kafka topics or Google Spanner). Every N operations (e.g., 1000) or after M minutes (e.g., 60), trigger a compaction: write a document snapshot (current text state) to a primary store (Firestore, DynamoDB), clear the log up to that point, and keep only the delta ops since the last snapshot. On read, fetch the snapshot + deltas, rebuild the state. This bounds the latency on recovering a doc and keeps the log small.",
+      "rubric": {
+        "must": [
+          "Append-only operation log (not mutable in-place)",
+          "Snapshot + delta strategy to bound log size",
+          "Sharding by docId to handle scale (2B docs)"
+        ],
+        "should": [
+          "Concrete compaction trigger (time or count)",
+          "Metadata on each snapshot (version, timestamp, who triggered it)"
+        ],
+        "avoid": [
+          "Storing the entire operation log forever (unbounded memory/latency)",
+          "Deleting old ops without a snapshot (can't recover history)"
+        ]
+      },
+      "hints": [
+        "An append-only log can grow to GB per document if there are millions of edits. At what point is replay so slow that users see a lag?",
+        "Snapshots are your escape hatch. When do you take them, and what happens if a snapshot is corrupted or lost?",
+        "Sharding by docId means each shard is independent. What's the replica count per shard to ensure durability?"
+      ]
+    },
+    {
+      "slug": "dd-scale-concurrent-editors",
+      "title": "Handle 100k concurrent editors in one doc",
+      "questionPrompt": "A popular document has 100k users simultaneously editing. How does your system stay responsive (sub-500ms propagation)?",
+      "sampleAnswer": "Broadcast is the bottleneck. Instead of sending every op to every client (100k × 100 ops/sec = 10M messages/sec), use a hierarchical fan-out: Sync Service publishes ops to a Pub/Sub topic (e.g., Google Pub/Sub) partitioned by docId. Multiple broadcast workers subscribe and fan out to connected clients via WebSocket gateways. Each gateway handles ~1k concurrent clients. Presence updates (low-priority) are sent separately with 1-2 second batching. For the 100k case, you'd have ~100 gateways, each publishing presence deltas every 2s rather than per-edit.",
+      "rubric": {
+        "must": [
+          "Identify the bottleneck (broadcast to all clients)",
+          "Concrete fan-out mechanism (Pub/Sub, message queues)",
+          "Separate high-priority (edits) from low-priority (presence)"
+        ],
+        "should": [
+          "Gateway tier that holds WebSocket connections",
+          "Batching strategy for non-critical messages"
+        ],
+        "avoid": [
+          "Naive broadcast (server → all 100k clients serially)",
+          "Sending every presence update individually"
+        ]
+      },
+      "hints": [
+        "One server can't handle 100k WebSocket connections. How do you shard them? What partitions naturally?",
+        "Edits are critical (latency matters). Presence is nice-to-have. Can you prioritize edits and batch presence?",
+        "Back-of-the-envelope: assume 100 edits/sec in a 100k-person doc. How many messages per second? Is your infrastructure ready?"
+      ]
+    }
+  ]
+}

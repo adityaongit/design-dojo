@@ -1,0 +1,265 @@
+{
+  "id": "job-scheduler",
+  "title": "Job Scheduler",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design a distributed job scheduler like Quartz, Temporal, or Airflow. It should execute recurring and one-off jobs on a schedule, handle retries, and guarantee no duplicate executions. Target 100K active jobs, 1M job executions per day, and 99.9% availability. Jobs can be CPU-bound or I/O-bound and may take seconds to hours.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "Schedule jobs (cron-like and one-off), trigger execution, track status, retry failures, and view history. Don't drift into job authoring, cluster orchestration, or user dashboards unless asked.",
+      "exampleHints": {
+        "headline": "Example (Pipeline Orchestrator like Airflow):",
+        "bullets": [
+          "Users can define a DAG of tasks with dependencies",
+          "Users can schedule the DAG to run on a cron expression",
+          "Users see execution status (queued, running, succeeded, failed) in real-time"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Schedule a job (cron expression or one-time at a specific instant)",
+          "Execute a job at the scheduled time",
+          "Retry failed jobs with a configurable policy",
+          "Report job execution status and history"
+        ],
+        "should": [
+          "Pause / resume a scheduled job",
+          "View execution logs and runtime",
+          "Exponential backoff for retries"
+        ],
+        "avoid": [
+          "Designing the job code authoring framework — jobs are opaque black boxes",
+          "Building user dashboards in detail",
+          "Designing distributed tracing or ML-based failure prediction"
+        ]
+      },
+      "sampleAnswer": "1. Users should be able to submit a job definition with a schedule (e.g., cron '0 9 * * *' or one-time at timestamp T).\n2. The system should trigger the job execution at the scheduled time.\n3. The system should retry failed jobs with exponential backoff up to a configurable limit.\n4. Users should be able to query execution history, status, and logs for a job.",
+      "hints": [
+        "What are the three main user operations: submission, execution, and observability?",
+        "Cron expressions and one-off timestamps are two different schedules — both needed.",
+        "Retries are not auto-magical; they need a policy (max attempts, backoff strategy)."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Execution guarantee (at-least-once or exactly-once?), latency (when must job start), durability, scale, and availability. Tie each to a real product concern.",
+      "exampleHints": {
+        "headline": "Example (Batch Processing System like Spark):",
+        "bullets": [
+          "Execution guarantee: at-least-once (some jobs may re-run)",
+          "Job startup latency: < 30 sec from scheduled time",
+          "Durability: no scheduled job is lost even if the system crashes",
+          "Scale: 500K jobs, 10M executions/day"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Execution guarantee (at-least-once vs exactly-once — clarify which is acceptable and why)",
+          "Latency to start a job from scheduled time (concrete number, e.g., < 30 sec)",
+          "Durability: schedule and execution state must survive crashes",
+          "Quantified scale (active jobs, executions/sec, max job runtime)"
+        ],
+        "should": [
+          "Availability target (99.9%+)",
+          "Failure recovery time (e.g., < 5 min to resume after outage)"
+        ],
+        "avoid": [
+          "Conflating job execution time with job dispatch latency",
+          "Ignoring the exactly-once problem"
+        ]
+      },
+      "sampleAnswer": "- Execution guarantee: exactly-once (idempotency key + de-duplication), since financial or billing jobs must not run twice.\n- Startup latency: < 30 seconds from scheduled time (p99).\n- Durability: job schedule and execution state are persisted before hand-off to workers.\n- Scale: 100K active jobs, 1M executions/day ≈ 11 execs/sec sustained.\n- Availability: 99.9% uptime (≤ 43 min/month downtime).\n- Max job runtime: up to 24 hours for batch jobs.",
+      "hints": [
+        "At-least-once vs exactly-once is a critical choice. Which is tolerable for billing or financial jobs?",
+        "Latency here is dispatch latency, not job runtime. Why does this matter?",
+        "Durability means the schedule survives a crash, and in-flight executions don't get lost — how do you ensure both?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "Job definition, schedule, execution record, and worker assignment. Don't define schemas yet.",
+      "exampleHints": {
+        "headline": "Example (Task Manager like Todoist):",
+        "bullets": [
+          "Task: a to-do item with description and due date",
+          "Schedule: recurring weekly, monthly, or one-time",
+          "Execution: a specific instance of a task run"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Job definition (what to run, with what config)",
+          "Schedule (cron or timestamp)",
+          "Execution record (one per run: status, start, end, logs)"
+        ],
+        "should": [
+          "Lease / lock per job (to avoid concurrent runs)",
+          "Idempotency key per execution (for exactly-once)"
+        ],
+        "avoid": [
+          "Inventing entities like 'alert' or 'notification' unless required"
+        ]
+      },
+      "sampleAnswer": "- Job: { id, name, schedule (cron/timestamp), timeout, maxRetries, createdAt, updatedAt }\n- Execution: { id, jobId, scheduledTime, startTime?, endTime?, status (queued/running/success/failed/timeout), result?, error?, attempt }\n- Lease: { jobId, workerId, leaseExpiresAt } — held by a worker to claim a job.\n- IdempotencyKey: { jobId, executionId, idempotencyKeyHash } — used to detect and skip duplicate requests.",
+      "hints": [
+        "The core nouns: the job definition, the schedule, and the record of each execution.",
+        "What enforces 'only one execution at a time'? Leases.",
+        "What enforces 'no duplicate execution'? Idempotency keys."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "REST endpoints for submitting jobs, checking status, and retrieving history. Keep it simple.",
+      "exampleHints": {
+        "headline": "Example (Booking Service like Airbnb):",
+        "bullets": [
+          "POST /reservations body: { propertyId, dates, guestCount } → 201 { reservationId }",
+          "GET /reservations/:id → reservation",
+          "PATCH /reservations/:id/cancel → 200 { status: 'cancelled' }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST /jobs endpoint to create a scheduled job",
+          "GET /jobs/:id/executions endpoint to list executions",
+          "GET /executions/:executionId endpoint for execution details"
+        ],
+        "should": [
+          "POST /jobs/:id/pause and /resume endpoints",
+          "GET /jobs/:id/status for quick health check"
+        ],
+        "avoid": [
+          "Over-complicating with filtering / pagination before being asked",
+          "Exposing worker-only APIs to the client"
+        ]
+      },
+      "sampleAnswer": "POST /jobs\n  body: { name: 'str', schedule: 'cron | timestamp', timeout: ms, maxRetries: int, config: {...} }\n  → 201 { jobId }\n\nGET /jobs/:jobId → { id, name, schedule, status, lastExecutionTime?, nextExecutionTime? }\n\nGET /jobs/:jobId/executions → [ { id, status, scheduledTime, startTime, endTime, attempt } ]\n\nGET /executions/:executionId → { id, jobId, status, output?, error?, logs? }\n\nPOST /jobs/:jobId/pause → 200",
+      "hints": [
+        "Two main flows: submission (define a job) and observation (check status and history).",
+        "One endpoint for job metadata, another for execution history.",
+        "Keep the worker-facing APIs separate from the client-facing ones."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through the submit and execution paths.",
+      "howToAnswer": "Job store (Postgres) + leader-elected scheduler (single scheduler picks due jobs) → durable queue (Kafka/SQS) → worker pool → result store. Show how exactly-once is enforced.",
+      "rubric": {
+        "must": [
+          "Schedule store (persistent job definitions and schedules)",
+          "Leader-elected scheduler tier (picks due jobs without duplicates)",
+          "Durable queue (fanout to workers)",
+          "Worker pool (executes jobs)",
+          "Exactly-once via idempotency key and deduplication"
+        ],
+        "should": [
+          "Execution state store (tracks in-flight executions with leases)",
+          "Result store (persists execution logs and output)",
+          "Health check / TTL on leases (to detect crashed workers)"
+        ],
+        "avoid": [
+          "Multiple schedulers picking the same job (race condition)",
+          "Losing in-flight execution on worker crash",
+          "Skipping the idempotency key mechanism"
+        ]
+      },
+      "sampleAnswer": "Schedule Store (Postgres): { jobId, schedule (cron), nextRunTime, status (active/paused), config }. Indexed by (nextRunTime, status) for fast scans.\n\nScheduler Tier (leader-elected): Single scheduler (via distributed lock in Redis/Zookeeper) scans job table for nextRunTime <= now(), enqueues each due job once into Kafka topic partitioned by jobId. On crash, lock is released within TTL; replica takes over and resumes scan.\n\nDurable Queue (Kafka): Topic 'job-executions', partitioned by jobId. Each message: { jobId, executionId, idempotencyKey, jobConfig, attempt, scheduledTime }. Consumers stay offset and retry on failure.\n\nExecution Store (Postgres): { executionId, jobId, idempotencyKey, status (queued/running/success/failed), startTime?, endTime?, workerId?, leaseExpiresAt? }. Updated via idempotency-key dedup: if same (jobId, idempotencyKey) exists with success, no re-execution.\n\nWorker Pool (stateless): Poll Kafka, acquire lease { jobId, workerId, expiresAt + 30min } in Execution Store (or fail if lease already held). Run job with timeout. Write result. Release lease. On TTL expire, lease becomes stale; another worker can claim it.\n\nResult Store (S3 / TimescaleDB): { executionId, stdout, stderr, duration, errorMessage? }.",
+      "hints": [
+        "Single scheduler with leader election is the headline trick — why does this avoid duplicate picks?",
+        "What's the role of the idempotency key? How does it prevent double execution?",
+        "How do you recover from a crashed worker? Leases with TTL.",
+        "Walk through the path: job submission → schedule store → scheduler scan → queue → worker → execution store → result store."
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-scale-executions",
+      "title": "Scale execution throughput",
+      "questionPrompt": "Your target is 1M executions per day ≈ 11 exec/sec. How do you scale the scheduler and queue to 10M executions/day (≈ 115 exec/sec) without bottlenecking?",
+      "sampleAnswer": "Kafka topic 'job-executions' is partitioned by jobId (hash-based), so enqueue load is spread across partitions. Scheduler tier uses multiple replicas in a leader+followers config: followers do a read-only scan of the job table to prepare the next batch, but only the leader enqueues. This keeps the leader CPU-bound on Kafka writes, not on DB scans. If leader hits throughput limit, promote a second scheduler to co-leader with sticky partition assignment (leader 1 handles jobs 0-50K, leader 2 handles 50K-100K). Worker pool scales horizontally: each worker polls a stable partition subset from Kafka, so 100 workers can handle 11.5K execs/sec per worker. Use SQS FIFO if guaranteed order per job is critical; else Kafka is cheaper at this scale.",
+      "rubric": {
+        "must": [
+          "Partition the scheduler work (not one global scan)",
+          "Parallel Kafka writes from multiple leaders or sharded writes",
+          "Horizontal worker scaling with partition assignment"
+        ],
+        "should": [
+          "Explain why partitioning by jobId preserves ordering per job",
+          "Discuss co-leader failover without losing enqueued messages"
+        ],
+        "avoid": [
+          "Single-leader scheduler doing all enqueues (becomes bottleneck)",
+          "Unpartitioned queue forcing all workers to contend on one resource"
+        ]
+      },
+      "hints": [
+        "At 115 execs/sec, a single DB scan or Kafka producer is the bottleneck. How do you partition the scan?",
+        "Should you scale via multiple leaders, or one leader + faster infra? Trade-offs?",
+        "Workers pull from partitions, not a shared queue. Why does this help?"
+      ]
+    },
+    {
+      "slug": "dd-exactly-once",
+      "title": "Exactly-once execution guarantee",
+      "questionPrompt": "How do you ensure a job runs exactly once, even if the scheduler enqueues it twice or a worker crashes mid-execution?",
+      "sampleAnswer": "Scheduler: Kafka partition assignment by jobId means each job's due events go to one partition. Scheduler writes { jobId, executionId, idempotencyKey: hash(jobId, scheduledTime) } exactly once per due time via Kafka's idempotent producer (in-flight dedup). If scheduler crashes after writing but before ACK, it resumes and sees the execution already in the Execution Store; the idempotency key prevents re-enqueue.\n\nWorker: Before running, upsert Execution record with idempotencyKey and status='running'. If the same key already exists with status='success', skip execution and return cached result. Otherwise, hold a lease (workerId, expiresAt). If a crashed worker's lease expires, a new worker can retry. Result is written with the executionId, ensuring idempotent updates.\n\nEnd-to-end: if the queue is durable and the Execution Store is the source-of-truth for idempotency keys, exactly-once is achieved.",
+      "rubric": {
+        "must": [
+          "Idempotency key definition and generation (hash of jobId + scheduledTime or UUID)",
+          "How you detect and skip a duplicate in the Execution Store",
+          "Lease-based recovery for crashed workers"
+        ],
+        "should": [
+          "Kafka idempotent producer on the scheduler",
+          "Explain why idempotency key is better than 'version numbers' or 'timestamps'"
+        ],
+        "avoid": [
+          "Relying on Kafka dedup alone (not enough if scheduler crashes)",
+          "Checking idempotency key only in memory (lost on crash)",
+          "Assuming a worker won't crash mid-execution"
+        ]
+      },
+      "hints": [
+        "Idempotency key is the anchor — same key must always produce the same result, even on retry. What makes a good key?",
+        "How do you detect 'already ran' without reading the full result? Execution status in the Store.",
+        "Leases are the answer to 'what if the worker dies mid-execution'. How long should the lease be?"
+      ]
+    },
+    {
+      "slug": "dd-failure-recovery",
+      "title": "Failure modes and recovery",
+      "questionPrompt": "What happens if the scheduler crashes, a worker crashes, the job store goes down, or the queue fills up? How does the system recover?",
+      "sampleAnswer": "Scheduler crash: Distributed lock in Redis / Zookeeper with TTL (e.g., 10s). If leader crashes, lock is released; a replica acquires it within 10s and resumes from the last successful scan position (stored in a control table). If a job was enqueued but not marked as 'next_run_time updated', the replica will re-enqueue it (idempotency key deduplicates).\n\nWorker crash: Lease on the Execution record expires (e.g., after 30 min). Another worker polls the queue, sees an old lease, claims the job, and retries. Configurable max retries (e.g., 3) ensure we don't retry forever. On final failure, mark as 'failed' and alert.\n\nJob store down: Scheduler cannot read job table; replicas hold the last-read job snapshot in memory + Zookeeper. They continue enqueuing from the snapshot until the store recovers. Risk: new jobs added during outage are not picked up until recovery.\n\nQueue fills up (rare): Scheduler backs off on enqueue. In-flight executions complete, and Kafka lag decreases. Auto-scale workers if lag > threshold.\n\nResult store (S3) down: Worker retries result write with backoff; execution is marked 'success' in Execution Store regardless (decouple from result storage). Result availability degrades, but execution state is preserved.",
+      "rubric": {
+        "must": [
+          "Name a critical component and its failure mode",
+          "Concrete recovery mechanism (not 'just restart')"
+        ],
+        "should": [
+          "TTL and failover timing (e.g., 10s for scheduler, 30min for worker)",
+          "Explain how re-execution is safe (idempotency key)"
+        ],
+        "avoid": [
+          "Ignoring distributed lock failure (scheduler could enqueue twice)",
+          "Relying on human intervention to recover"
+        ]
+      },
+      "hints": [
+        "A crashed component should recover automatically via TTL or failover, not manual restart.",
+        "Which failures are tolerable (degraded latency, missing new jobs)? Which are not (double execution)?",
+        "Leases and idempotency keys are your recovery mechanisms. How do they work together?"
+      ]
+    }
+  ]
+}

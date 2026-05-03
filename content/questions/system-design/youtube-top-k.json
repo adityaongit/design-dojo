@@ -1,0 +1,258 @@
+{
+  "id": "youtube-top-k",
+  "title": "YouTube Top K",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design the YouTube trending videos pipeline. Given ~1B daily watch events across 1M videos, compute the top K trending videos (not most-watched, but gaining popularity) in a 24-hour sliding window. Serve fresh rankings every 5 minutes with <100ms latency. Trending means velocity (rate of increase), not absolute count.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "List what users and systems can do. Don't drift into recommendation engines or homefeed ranking — focus on the trending pipeline itself.",
+      "exampleHints": {
+        "headline": "Example (Spotify Top K Songs):",
+        "bullets": [
+          "Users can view the top K trending songs globally or by region",
+          "Playlist/chart updates reflect new trends within minutes",
+          "Trending score derives from play velocity, not total plays"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Query top K trending videos in a time window",
+          "Ingest watch events (millions per minute)",
+          "Compute trending score based on velocity, not raw counts"
+        ],
+        "should": [
+          "Support regional / category-based trending",
+          "Separate ingestion from query serving"
+        ],
+        "avoid": [
+          "Confusing trending (velocity) with most-watched (absolute count)",
+          "Designing the homefeed ranking algorithm"
+        ]
+      },
+      "sampleAnswer": "1. Ingest watch events in real-time (video ID, timestamp, region).\n2. Compute trending score: rate of views in the last 24h relative to historical baseline.\n3. Query top K videos by trending score for a given region or globally.\n4. Refresh rankings every 5 minutes.",
+      "hints": [
+        "What's the unit of data you're counting? Not unique users, but events.",
+        "Trending is not 'most watched.' What's the difference in scoring between a video with 10M views yesterday and 10M+1M today vs. a video with 5K views yesterday and 5K+1M today?",
+        "Don't try to rank recommendations. Focus on the trending leaderboard itself."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Cover scale (events/sec, videos, regions), latency (query and ingest), consistency vs. availability, and what 'correctness' means for an approximate trending score.",
+      "exampleHints": {
+        "headline": "Example (Ad Click Aggregator):",
+        "bullets": [
+          "High throughput: 1M+ events/sec sustained",
+          "Low query latency: <100ms p99",
+          "Data freshness: rankings update every 5 minutes",
+          "Approximate counts acceptable (small bounded error)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Throughput target: 1B events/day ≈ 11.5K events/sec",
+          "Query latency: <100ms p99",
+          "Ranking freshness: update every 5 minutes",
+          "Approximate counts are acceptable (small error margin)"
+        ],
+        "should": [
+          "Support 50+ regions with localized trending",
+          "Recovery: no event loss on service restart",
+          "Availability > consistency"
+        ],
+        "avoid": [
+          "Exact counts at the cost of latency (use approximation)",
+          "Global consistency across all regions (eventual consistency OK)"
+        ]
+      },
+      "sampleAnswer": "- Throughput: ~12K events/sec sustained (1B/86400s), burst to 50K/sec during peaks.\n- Query latency: <100ms p99 for top K lookup.\n- Freshness: trending scores recomputed every 5 minutes.\n- Approximate accuracy: ±5% error in frequencies acceptable.\n- Availability > consistency. If a region's data lags by 10 min, show the last-known ranking.\n- Multi-region: trending computed independently per region + global rollup.\n- Event loss: no — log to persistent queue (Kafka) before processing.",
+      "hints": [
+        "Scale: 1B events/day. What does that mean in events/sec and bytes/sec?",
+        "Trending is inherently approximate — exact counts would require global consensus per query, which is too slow.",
+        "When you refresh rankings every 5 minutes, what happens to queries that arrive in between? Do they get stale data, or do you re-query?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "Name the key nouns. Don't worry about schema details yet.",
+      "exampleHints": {
+        "headline": "Example (Twitter Trending):",
+        "bullets": [
+          "Trend (hashtag or topic)",
+          "Event (tweet, retweet)",
+          "TimeWindow (1h, 24h sliding)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Video (ID, metadata)",
+          "Event (video ID, timestamp, region, user context)"
+        ],
+        "should": [
+          "TrendingScore (video ID, score, timestamp, region)",
+          "TimeWindow (window boundaries, slide interval)"
+        ],
+        "avoid": [
+          "Mixing raw events with aggregated scores in the same entity"
+        ]
+      },
+      "sampleAnswer": "- Event: { videoId, timestamp, region, userId (hashed), deviceType }.\n- TrendingScore: { videoId, score, computedAt, region }.\n- Video: { id, title, channel, category } (metadata lookup).",
+      "hints": [
+        "One entity is the raw input, one is the computed output.",
+        "TrendingScore lives in a fast-lookup store (Redis, in-memory).",
+        "Event details: what's the minimum you need to track for ranking?"
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "Show endpoints for querying trending videos and (optionally) submitting watch events. Focus on what clients call.",
+      "exampleHints": {
+        "headline": "Example (Ad Click Aggregator):",
+        "bullets": [
+          "GET /trending/videos?region=US&limit=10 → { videos: [...], refreshedAt }",
+          "GET /trending/videos?category=music&region=global&limit=5",
+          "Internal: POST /events (log watch event)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "GET trending videos endpoint with region and limit parameters",
+          "Response includes video metadata and trending score"
+        ],
+        "should": [
+          "Time-range filter (e.g., trending-in-last-4h)",
+          "Category filter"
+        ],
+        "avoid": [
+          "Exposing internal score algorithm details",
+          "Requiring clients to know the refresh interval"
+        ]
+      },
+      "sampleAnswer": "GET /trending/videos\n  query: { region: 'US' | 'IN' | 'GLOBAL', limit: 10, category?: 'music' | 'gaming' }\n  → 200 { videos: [ { id, title, channel, trendingScore, position }, ... ], refreshedAt: timestamp }\n\nInternal event API (called by clients / SDKs):\nPOST /events\n  body: { videoId, regionCode, timestamp, sessionId }\n  → 204",
+      "hints": [
+        "The query response should tell the client when the data was refreshed.",
+        "Trending scores are opaque to the client — just show a rank or percentage.",
+        "Event ingestion is best handled off-path (async SDKs / client-side logging) to not block video playback."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Show the event pipeline, aggregation, and serving.",
+      "howToAnswer": "Boxes: clients → event logger → streaming ingestion (Kafka) → aggregation service → trending store → query service. Show how the 24h sliding window and per-shard aggregation work. Mention the headline trick (approximate frequency via Count-Min Sketch or exact top-K via min-heap per shard).",
+      "rubric": {
+        "must": [
+          "Event ingestion pipeline (clients → Kafka topic partitioned by video or region)",
+          "Aggregation service: min-heap per shard + Count-Min Sketch or exact frequency map",
+          "Sliding-window state: track counts in 24h window, discard old events",
+          "Trending store (Redis/Memcached with <5min TTL) for low-latency query",
+          "Query service (stateless) that reads from trending store"
+        ],
+        "should": [
+          "Lambda architecture: fast layer (real-time stream) + batch layer (recompute authoritative top-K daily)",
+          "Sharding by video ID or region to parallelize aggregation",
+          "Snapshot / recovery mechanism"
+        ],
+        "avoid": [
+          "Computing top-K synchronously at query time (too slow)",
+          "Storing raw events forever (use windowing to garbage-collect old data)"
+        ]
+      },
+      "sampleAnswer": "Architecture:\n1. Event ingestion: SDKs log watch events to a Kafka topic partitioned by (region, videoId hash). Each event: { videoId, region, timestamp }.\n\n2. Aggregation (real-time stream):\n   - N aggregation workers, each assigned a stable set of partitions.\n   - Worker maintains in-memory state: a 24-hour sliding window of counts.\n   - For each incoming event: lookup video's count in the window, increment. If count exceeds local min-heap threshold, add to min-heap(K).\n   - Every 5 minutes, flush top-K heap to Redis with region-specific keys (trending:US, trending:IN, etc.).\n   - Use Count-Min Sketch as a pre-filter for heavy-hitter detection: when a video's sketch frequency is ~high, promote it to the exact min-heap.\n\n3. Sliding window:\n   - Divide 24h into 24 buckets (1-hour each).\n   - Old buckets are discarded as time moves forward.\n   - Lookup: sum counts across active buckets to get 24h total.\n\n4. Trending store:\n   - Redis cache: trending:{region} → sorted set [ { videoId, score }, ... ]\n   - TTL: 5 minutes (force recomputation).\n\n5. Query service:\n   - Stateless, behind load balancer.\n   - GET /trending/videos?region=US → Redis lookup for trending:US, return top 10.\n   - Fallback to batch-layer snapshot if Redis misses.\n\n6. Batch layer (overnight):\n   - Reprocess raw events from the last 24h using Spark / Presto.\n   - Compute exact top-K per region.\n   - Store as snapshot for auditing and to seed next day's real-time layer.",
+      "hints": [
+        "The headline trick: how do you avoid computing top-K across 1M videos for every query? Where do you pre-compute the top-K, and when?",
+        "Sharding: if one worker handles all of region 'US', can you scale? What if a region gets too hot?",
+        "Sliding window: don't store all 1B events. Bucket by time, discard old buckets. How many buckets and what's the granularity?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-scale-aggregation",
+      "title": "Scale aggregation layer",
+      "questionPrompt": "Your aggregation workers can't keep up with event velocity. How do you scale without losing accuracy?",
+      "sampleAnswer": "Increase worker parallelism by sub-partitioning: partition the Kafka topic by hash(videoId) % N, so each worker owns a stable subset. That avoids network shuffles — all events for a video land on the same worker's memory. If a single worker becomes a bottleneck (e.g., because one video gets millions of events), use a dedicated 'hot-shard' worker or fan out the top 0.1% of videos to multiple workers with a merge-combine step. Count-Min Sketch also compresses the state: instead of keeping exact counts for all 1M videos, use a 2D array (rows = hash functions, cols = buckets). Query time: O(1) lookup per video; space: O(hash_functions * bucket_count) ≈ constant, not linear in video count.",
+      "rubric": {
+        "must": [
+          "Identify the bottleneck (single worker can't handle event throughput or heap size)",
+          "Concrete scaling mechanism (more workers + stable partitioning, or approximate counting)"
+        ],
+        "should": [
+          "Hot-shard handling for super-popular videos",
+          "Count-Min Sketch trade-off (bounded error, constant space)"
+        ],
+        "avoid": [
+          "Rebalancing the Kafka topic on every hot video (causes cache thrashing)",
+          "Keeping exact counts for all 1M videos per worker (memory explosion)"
+        ]
+      },
+      "hints": [
+        "If you partition by videoId, all events for that video land on one worker. What if Billie Eilish drops a new song and 1M events/sec flood in?",
+        "Approximate counting: what data structure trades a small error for constant memory?",
+        "Can you combine exact counts (for top-K videos you know are hot) with approximate counts (for the long tail)?"
+      ]
+    },
+    {
+      "slug": "dd-correctness-window",
+      "title": "Correctness: sliding window",
+      "questionPrompt": "How do you ensure the 24-hour window is accurate? What if an event arrives late, or a worker crashes mid-window?",
+      "sampleAnswer": "Time-bucketing: divide 24h into fixed 1-hour buckets. Each worker maintains a ringbuffer of 24 counts (one per bucket). When a new event arrives, hash its timestamp to the correct bucket and increment. Old buckets are garbage-collected as the window slides. On late events (within, say, 10 minutes): backfill the appropriate bucket. Beyond that: discard (or log as late-arrival). On crash: snapshot the 24-bucket ringbuffer + current min-heap to a persistent log (or Kafka state store). On recovery, replay the snapshot and resume. The trade-off: eventual consistency (a few seconds of data loss is OK), not strong consistency.",
+      "rubric": {
+        "must": [
+          "Define the window boundary (24h with 1h buckets)",
+          "Mechanism for old-event cleanup (discard after grace period)",
+          "Recovery mechanism (snapshot + replay)"
+        ],
+        "should": [
+          "Handle late-arrival events (within a configured window)",
+          "Precisely track which events are in vs. out of the 24h window"
+        ],
+        "avoid": [
+          "Keeping all events ever (unbounded memory)",
+          "Losing data on worker crash without a snapshot"
+        ]
+      },
+      "hints": [
+        "You can't store 1B events — you need a compact representation. What's the minimum state?",
+        "Late arrivals: define a grace period. Events beyond that are lost.",
+        "Snapshot strategy: what's the smallest state you need to persist (buckets, not raw events)?"
+      ]
+    },
+    {
+      "slug": "dd-failure-query",
+      "title": "Failure: query path degradation",
+      "questionPrompt": "Redis goes down. Your trending store is empty. How does the system gracefully degrade?",
+      "sampleAnswer": "Tier 1: in-memory cache on the query service (updated every 5 min from Redis, expires in 5 min). On Redis miss, serve from in-mem cache. Tier 2: fallback to batch-layer snapshot stored in S3 / DynamoDB (recomputed daily, always available). Tier 3: if batch is also missing, return a hard-coded 'seed' list of evergreen top videos (e.g., music videos that have been trending for a week). Graceful degradation: show a 'last updated 30 min ago' label so clients know the data is stale. This is preferable to returning 500 or empty list.",
+      "rubric": {
+        "must": [
+          "Local cache on query service (survive Redis outage)",
+          "Persistent snapshot fallback (survive aggregation restart)",
+          "Client signaling of data staleness"
+        ],
+        "should": [
+          "Health check on Redis; automatic failover",
+          "Warm-start: seed query cache from persistent snapshot on startup"
+        ],
+        "avoid": [
+          "Serving empty top-K (always have fallback data)",
+          "Hiding staleness from client (disclose refresh time)"
+        ]
+      },
+      "hints": [
+        "You have two layers of state: in-memory (fast but volatile) and persistent (slow but durable). Use both.",
+        "Batch layer is slow to recompute but always has an answer. Real-time layer is fast but can fail.",
+        "What's acceptable to show the user if everything fails? A 'best effort' answer with a staleness warning."
+      ]
+    }
+  ]
+}

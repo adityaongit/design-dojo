@@ -1,0 +1,280 @@
+{
+  "id": "robinhood",
+  "title": "Robinhood",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design a stock trading platform like Robinhood. Users deposit funds, place orders (market or limit), view portfolio, and receive real-time price updates. Target 10M active traders, 1M concurrent users during market open, and sub-100ms order execution latency.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "Focus on deposits, orders (market/limit), portfolio, and price feeds. Skip regulatory reporting, tax documents, margin lending.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Users can fund and withdraw from their account",
+          "Users can place buy/sell market and limit orders",
+          "Users see their portfolio: cash balance and current holdings"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can deposit funds into their trading account",
+          "Users can place market orders and limit orders",
+          "Users can cancel or view active orders",
+          "Users can view their portfolio (holdings, balance, cash)"
+        ],
+        "should": [
+          "Real-time streaming price updates",
+          "Order history and trade confirmation"
+        ],
+        "avoid": [
+          "Designing margin lending, options, or derivatives",
+          "Regulatory compliance and reporting (a separate system)",
+          "Tax reporting or gains calculation"
+        ]
+      },
+      "sampleAnswer": "1. Users can deposit and withdraw cash.\n2. Users can place market orders (execute at current price) and limit orders (execute at a target price).\n3. Users can cancel pending orders and view active orders.\n4. Users can view their portfolio: cash balance, current holdings, and realized gains.\n5. Users receive real-time market data (price ticks, bid/ask).",
+      "hints": [
+        "Walk through the user journey: fund account → see price → place order → confirm. What are the distinct user actions?",
+        "Orders have types (market vs limit) and states (pending, filled, cancelled). Distinguish them.",
+        "Real-time prices are read-heavy and low-value (eventual consistency is acceptable). Deposits and orders are transactional. Split them mentally."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Order execution latency, fund consistency, scale (DAU, concurrent, QPS), availability during market volatility. Quantify every NFR.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "Sub-100ms order latency (p99)",
+          "Strong consistency for fund movements",
+          "10M DAU, 1M concurrent traders at market open",
+          "99.99% availability during trading hours"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Order execution latency <100ms p99",
+          "Strong consistency on fund movements (no double-spends, no lost deposits)",
+          "Quantified scale: 10M DAU, 1M concurrent, ~100k orders/sec peak",
+          "High availability during market hours (99.99%)"
+        ],
+        "should": [
+          "Eventual consistency acceptable for price feeds (< 1 sec stale)",
+          "Replay and idempotency for critical transactions",
+          "Deterministic replay for order audit"
+        ],
+        "avoid": [
+          "Conflating order latency (write) with price latency (read)",
+          "Forgetting that fund consistency is a hard requirement",
+          "Underestimating peak load (1M concurrent is 10× average)"
+        ]
+      },
+      "sampleAnswer": "- Order execution: <100ms p99 latency from client to fill.\n- Fund consistency: double-entry bookkeeping, every fund move is journaled. No lost deposits or double-spends, ever.\n- Scale: 10M DAU, 1M concurrent users at market open, ~100k orders/sec peak, ~1M price ticks/sec.\n- Availability: 99.99% uptime during trading hours (can degrade outside hours).\n- Idempotency: order placement and fund moves are idempotent by design (replay-safe).",
+      "hints": [
+        "Which NFR is the hardest? Fund consistency or order latency? Why does one drive your architecture more than the other?",
+        "Quantify the scale: DAU → concurrent → QPS. What's the bottleneck layer at each scale?",
+        "Trading is synchronous writes + read-heavy reads. How do you balance low write latency with high read volume on price feeds?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "Users, accounts, holdings, orders, price data. Be precise about the entity lifecycle.",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "User: trader identity",
+          "Account: cash balance and deposit ledger",
+          "Order: market or limit order with state",
+          "Holding: position in a stock symbol",
+          "Fill: an executed transaction"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "User: trader identity, authentication",
+          "Account: cash balance, deposit/withdrawal ledger",
+          "Order: market or limit order with state (PENDING, FILLED, CANCELLED)",
+          "Holding: position in a symbol (quantity, average cost)",
+          "Fill: an executed fill (partial or full order match)"
+        ],
+        "should": [
+          "Price / Tick: real-time bid/ask",
+          "Trade: historical filled order"
+        ],
+        "avoid": [
+          "Conflating Order and Fill — they have different lifecycles",
+          "Over-normalizing holdings — denormalize for read performance"
+        ]
+      },
+      "sampleAnswer": "- User: identity, email, password hash.\n- Account: userId, cashBalance, depositHistory, withdrawalHistory.\n- Order: userId, symbol, orderType (MARKET/LIMIT), side (BUY/SELL), quantity, limitPrice?, state (PENDING/FILLED/CANCELLED), createdAt.\n- Holding: userId, symbol, quantity, avgCostBasis.\n- Fill: orderId, symbol, quantity, executionPrice, timestamp.",
+      "hints": [
+        "What's the smallest set of entities that satisfy your functional requirements? Start there.",
+        "Order and Fill are different — an Order can produce zero or more Fills. Why does that matter?",
+        "Holdings are read-heavy (portfolio view). Can you afford to denormalize them from the order ledger?"
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement. Deposit, order placement (POST), order cancel, portfolio view (GET), price stream (WebSocket).",
+      "exampleHints": {
+        "headline": "Example (DoorDash):",
+        "bullets": [
+          "POST /deposits body: { amount } → { txId }",
+          "POST /orders body: { symbol, side, quantity, limitPrice? }",
+          "GET /portfolio → { cashBalance, holdings }",
+          "WS /prices/:symbol → live ticks"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "POST /deposits for fund inflow (idempotency key)",
+          "POST /withdrawals for fund outflow (idempotency key)",
+          "POST /orders for placing an order (idempotency key, returns orderId + status)",
+          "DELETE /orders/:orderId for cancellation",
+          "GET /portfolio for account view",
+          "WebSocket /prices/:symbol for real-time price stream"
+        ],
+        "should": [
+          "GET /orders for order history",
+          "GET /orders/:orderId for order details",
+          "Idempotency keys on all writes"
+        ],
+        "avoid": [
+          "Synchronous price updates on POST /orders (decouple them)",
+          "Forgetting WebSocket for live data",
+          "Order endpoints without idempotency keys"
+        ]
+      },
+      "sampleAnswer": "POST /deposits\n  body: { amount, bankAccountId }, header: Idempotency-Key\n  → 201 { txId, status: PENDING }\n\nPOST /orders\n  body: { symbol, side: BUY|SELL, orderType: MARKET|LIMIT, quantity, limitPrice? }, header: Idempotency-Key\n  → 201 { orderId, status: PENDING }\n\nDELETE /orders/:orderId\n  → 204\n\nGET /portfolio\n  → 200 { cashBalance, holdings: [{ symbol, quantity, avgCostBasis }] }\n\nWS /prices/:symbol\n  → { symbol, bid, ask, last, timestamp }\n  (streaming updates)",
+      "hints": [
+        "Synchronous writes (deposits, orders) need idempotency keys. How would a client retry safely?",
+        "Price updates are advisory and high-volume. Which transport makes sense — polling or streaming?",
+        "What does a market order response look like? It's not filled immediately — it's queued to the matching engine."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the architecture. Walk through order placement and price fan-out.",
+      "howToAnswer": "Client → API Gateway → Account Service (double-entry ledger) + Order Service (matching engine) + Price Service (pub/sub). Order book is single-writer per symbol.",
+      "rubric": {
+        "must": [
+          "Separation: read-heavy market data vs. write-heavy transactional trades",
+          "Order matching engine: single-writer guarantee per symbol (no races)",
+          "Double-entry bookkeeping for fund moves (journal table + ledger)",
+          "Real-time price distribution via pub/sub + WebSocket"
+        ],
+        "should": [
+          "Order book: in-memory bid/ask per symbol, keyed by price level + timestamp",
+          "Sharded account storage by user (blast radius containment)",
+          "Event log (Kafka/Pulsar) for replay and audit",
+          "Cache for portfolio reads (denormalized holdings)"
+        ],
+        "avoid": [
+          "Single-threaded matching engine as the only bottleneck (shard by symbol)",
+          "Synchronous writes to the order book (use a queue to decouple client from matching)",
+          "No idempotency on fund moves (replay leads to double-spends)"
+        ]
+      },
+      "sampleAnswer": "Architecture:\n\n1. **API Gateway** (load-balanced, stateless): validates, routes to services, handles WebSocket upgrades.\n\n2. **Account Service** (sharded by userId):\n   - Maintains double-entry ledger: every fund move creates a (debit, credit) pair in the journal.\n   - Cash balance stored in account table, denormalized for fast reads.\n   - Withdrawals check balance atomically with journal append.\n\n3. **Order Service** (sharded by symbol):\n   - One single-threaded executor per symbol (or small shard of symbols) guarantees no race on order matching.\n   - Executor maintains in-memory order book: bid-side (sorted descending by price, then ascending by timestamp) and ask-side (ascending by price, then ascending by timestamp).\n   - Client POSTs order → Order Service enqueues to a topic-based queue (symbol-keyed) → executor processes sequentially.\n   - On a new order: match as much as possible greedily against existing orders of opposite side. Generate Fills for matched quantity. Enqueue remainder as a resting order.\n\n4. **Price Service** (pub/sub, distributed):\n   - Aggregates price ticks from multiple exchanges or internal order book state.\n   - Publishes to a topic per symbol (Kafka, Pulsar).\n   - WebSocket gateway subscribes to topics and fans out to connected clients.\n   - Clients receive < 1 sec stale price.\n\n5. **Event Log** (Kafka/Pulsar, durable):\n   - Every order, fill, deposit, withdrawal is logged to the event stream (in sequence).\n   - Enables deterministic replay and audit.\n\nData stores:\n- **Postgres** (sharded by userId): account ledger, cash balance, orders, fills, holdings.\n- **Redis** (per symbol): order book (in-memory for low latency).\n- **Event Log** (Kafka): immutable order, fill, fund move history.",
+      "hints": [
+        "Orders and prices have conflicting scale demands: orders are write-heavy transactional, prices are read-heavy advisory. How does separating them help?",
+        "Single-writer per symbol is a powerful invariant — why does it prevent race conditions on order matching?",
+        "How does double-entry bookkeeping ensure that a lost socket doesn't cause a lost deposit?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-order-matching",
+      "title": "Order matching atomicity",
+      "questionPrompt": "How do you guarantee that when a buy and sell order cross, exactly one fill is recorded and the matched quantity is removed from both orders atomically?",
+      "sampleAnswer": "Single-writer guarantee per symbol: the executor is a single-threaded handler that processes all order events (new, cancel) for a set of symbols sequentially. When an order arrives, the executor reads the order book, identifies all opposite-side orders that match (price ≥ threshold and timestamp-ordered), generates Fill records, updates order state to FILLED/PARTIALLY_FILLED, removes matched quantity from the order book, and writes all mutations to Postgres in a single transaction. The transaction includes the order state update, the fill records, and the updated holdings (for both sides). If the transaction fails, the order book stays in-memory (unreplicated); on recovery, replay the event log from the last checkpoint to rebuild the order book. No two fills for the same order cross can exist because the single writer enforces the invariant.",
+      "rubric": {
+        "must": [
+          "Single-writer guarantee on the order book (one executor per symbol)",
+          "Atomic transaction: check matching rule, generate fills, update state, update ledger — all or nothing",
+          "Explain why two concurrent matches can't produce duplicate fills"
+        ],
+        "should": [
+          "Event log for replay and recovery",
+          "Fail-safe: what happens to in-memory state if the executor crashes"
+        ],
+        "avoid": [
+          "Optimistic locking per order (livelock under high contention)",
+          "Trusting application-level locks (scheduler can unwind them)",
+          "Assuming Postgres serializable isolation is enough without explicit sequencing"
+        ]
+      },
+      "hints": [
+        "Two buy orders and one sell order arrive within microseconds. What resolves the conflict — locks, queues, or something else?",
+        "If the matching engine crashes after generating a Fill but before it's written to disk, how do you recover without replay-causing a double-match?",
+        "Name the primitive that gives you 'one at a time' semantics. Is it a lock, a queue, or a thread?"
+      ]
+    },
+    {
+      "slug": "dd-fund-consistency",
+      "title": "Double-entry fund consistency",
+      "questionPrompt": "How do you ensure that every deposit or withdrawal is recorded exactly once, with no lost or double-counted funds?",
+      "sampleAnswer": "Every fund move (deposit, withdrawal, fill settlement) creates two ledger entries: a debit on one side and a credit on the other (e.g., deposit = credit to Cash account, debit to Bank liability; fill settlement = debit to Cash, credit to Holdings). Deposits are idempotent: the client submits an idempotency key (UUID) along with the amount. The Account Service checks if that key already exists in the ledger; if yes, return the cached result. If no, insert the (idempotencyKey, amount) pair and the two ledger entries in a single transaction. The cash balance is maintained as a denormalized sum of all ledger entries with that userId, updated on each transaction. Withdrawals check that the balance is sufficient before appending the ledger entries. The journal is immutable — corrections are appended as reversals, not updates. Audit can replay the ledger from the start to recompute the balance at any point in time.",
+      "rubric": {
+        "must": [
+          "Double-entry model: every move has a debit and credit side",
+          "Idempotency: idempotency key on every deposit / withdrawal",
+          "Atomic transaction: ledger append + balance update in one step"
+        ],
+        "should": [
+          "Immutable ledger (reversals, not updates)",
+          "Replay path to recompute balance",
+          "Concurrency control on cash balance updates"
+        ],
+        "avoid": [
+          "Updating the cash balance without appending to the ledger",
+          "Accepting a withdrawal without checking balance first",
+          "Allowing out-of-order ledger appends"
+        ]
+      },
+      "hints": [
+        "A client sends a deposit request twice (network glitch + retry). The first one succeeds. What does the second one do?",
+        "If two deposits for the same user arrive simultaneously, do they race on updating cash_balance? How do you serialize them?",
+        "If the system crashes after appending a ledger entry but before updating the cached balance, how do you recover the true balance?"
+      ]
+    },
+    {
+      "slug": "dd-scale-price-fan-out",
+      "title": "Scale price fan-out to 1M users",
+      "questionPrompt": "How does your system fan out a single price tick to 1M connected users in sub-1-second latency?",
+      "sampleAnswer": "Price ticks come from an exchange feed (or internal order book). Each tick is published to a Kafka topic keyed by symbol (e.g., topic/AAPL). A pool of WebSocket gateway workers subscribes to all symbols, consumes ticks, and fans out to connected clients. Each gateway maintains a set of active WebSocket connections grouped by symbol. On a tick, the gateway broadcasts it to all clients subscribed to that symbol. Scale the gateway pool horizontally — each gateway handles ~10k concurrent WebSocket connections at ~10 messages/sec per symbol → ~100k msg/sec per gateway. For 1M users across ~100 symbols, 1 tick/sec per symbol means ~100 msg/sec total per gateway. Oversubscription to popular symbols (e.g., SPY) is acceptable; broaden the gateway pool if p99 latency creeps up. Use HTTP/2 or gRPC for inter-gateway aggregation if multiple gateways subscribe to the same symbol.",
+      "rubric": {
+        "must": [
+          "Identify the bottleneck (fan-out at the gateway)",
+          "Pub/sub topic per symbol or broadcast strategy",
+          "Horizontal scaling of the gateway tier"
+        ],
+        "should": [
+          "Numbers: connections per gateway, messages per second, latency target",
+          "Handling dropped connections gracefully (backpressure, buffering)"
+        ],
+        "avoid": [
+          "Synchronous writes to 1M clients from a single process",
+          "No topic partitioning (all gateways read the same topic → contention)",
+          "Ignoring popular-symbol hotspots (SPY gets 10× the ticks)"
+        ]
+      },
+      "hints": [
+        "One price tick arrives. It needs to reach 1M subscribed users. What's the bottleneck — the broker, the gateway, or the client?",
+        "Can you scale by adding more gateways? What coordination is needed if two gateways both subscribe to the same symbol?",
+        "Some symbols (AAPL, TSLA) are 100× more popular. How does your design handle the skew without amplifying the hotspot?"
+      ]
+    }
+  ]
+}

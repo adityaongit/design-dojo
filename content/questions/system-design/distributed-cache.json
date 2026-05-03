@@ -1,0 +1,262 @@
+{
+  "id": "distributed-cache",
+  "title": "Distributed Cache",
+  "difficulty": "hard",
+  "type": "system-design",
+  "prompt": "Design a Memcached/Redis-style distributed in-memory cache. Clients should be able to set and get key-value pairs with sub-millisecond latency. Target ~100K requests per second, support 10TB of data across a cluster, and gracefully handle node failures.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements?",
+      "howToAnswer": "Focus on the core cache operations: set, get, delete. Skip fancy features like eviction policies and replication unless asked.",
+      "exampleHints": {
+        "headline": "Example (Spotify in-memory playlist cache):",
+        "bullets": [
+          "Users can store short-lived playlists in cache",
+          "Cache returns playlists in <10ms",
+          "Expired playlists are evicted automatically"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Clients can set a key-value pair with optional TTL",
+          "Clients can get a value by key",
+          "Clients can delete a key"
+        ],
+        "should": [
+          "Batch get (fetch multiple keys in one request)",
+          "Atomic operations (increment, compare-and-swap)"
+        ],
+        "avoid": [
+          "Drifting into pub-sub or streaming features",
+          "Conflating cache with persistent storage"
+        ]
+      },
+      "sampleAnswer": "1. Clients should be able to set a key-value pair with an optional TTL (time-to-live).\n2. Clients should be able to get a value by key; miss returns nil.\n3. Clients should be able to delete a key explicitly.\n4. Expired keys are evicted automatically.",
+      "hints": [
+        "A cache is fundamentally a read/write store with time-limited data. Frame the three core operations as 'Clients should be able to…' statements.",
+        "TTL is important for correctness — stale data in a cache can corrupt downstream logic. Make it explicit.",
+        "Think about what a cache is NOT: it's not a database. Durability and ACID transactions are out of scope."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements?",
+      "howToAnswer": "Latency targets with concrete numbers, throughput (RPS), capacity (total data), availability, and failure tolerance. Tie each to a real use case.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "Sub-10ms p99 latency on cache hits",
+          "100K RPS sustained",
+          "10TB total data",
+          "Survive single-node failure with no data loss"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Low latency: <1ms p99 on hits, <10ms on miss+fallback",
+          "Throughput target: ~100K RPS",
+          "Capacity: 10TB total with even distribution",
+          "Availability: 99.9%+ with single-node recovery"
+        ],
+        "should": [
+          "Read-heavy workload (95:5 read:write ratio)",
+          "Memory efficiency — no wasting space",
+          "Eviction should not cause cascading failures downstream"
+        ],
+        "avoid": [
+          "Listing requirements without numbers",
+          "Confusing memory footprint with actual capacity"
+        ]
+      },
+      "sampleAnswer": "- Latency: <1ms p99 on cache hit (in-memory), <10ms on miss (fallback to DB).\n- Throughput: 100K RPS sustained.\n- Capacity: 10TB total; scale to N shards as needed.\n- Availability: 99.9%; single-node failure does not cause data loss.\n- Eviction: LRU policy; when memory limit is hit, remove least-recently-used entries.",
+      "hints": [
+        "Latency is the headline for a cache. Pin a sub-millisecond number for hits and a reasonable bound for misses.",
+        "Throughput and capacity are tied to shard count. Estimate: at 100K RPS across N shards, each shard sees ~100K/N RPS.",
+        "Single-node failure is not a hypothetical — it's guaranteed to happen. Plan for graceful degradation or failover."
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "CacheEntry (key, value, expiration)",
+          "Node (a server in the cluster)",
+          "Shard (a partition of the keyspace)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "CacheEntry or KeyValuePair — the fundamental unit of storage"
+        ],
+        "should": [
+          "Node — represents a cache server in the cluster",
+          "Replica — for failover"
+        ],
+        "avoid": [
+          "Inventing entities the requirements don't justify (e.g., RateLimiter without a rate-limit requirement)"
+        ]
+      },
+      "sampleAnswer": "- CacheEntry: { key, value, expiresAt, lastAccessedAt, size }. Stored in each shard.\n- Node: a server that hosts one or more shards (primary or replica).\n- Shard: a partition of the keyspace; owns ~N keys / numShards.",
+      "hints": [
+        "A cache entry is minimal: key, value, expiration. Metadata like size and last-access-time come later.",
+        "Don't model replication as a separate entity yet — just name it. Same for sharding.",
+        "Resist modeling failure detection, gossip, or other infrastructure concerns as entities."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "REST or client library bindings. Show SET, GET, DELETE, and optional batch operations.",
+      "exampleHints": {
+        "headline": "Example (Spotify):",
+        "bullets": [
+          "SET /cache/{key}  body: { value, ttlSeconds }  → 200 OK",
+          "GET /cache/{key}  → 200 { value } or 404",
+          "DELETE /cache/{key}  → 200 OK"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "SET endpoint with key, value, optional TTL",
+          "GET endpoint that returns value or nil/404",
+          "DELETE endpoint"
+        ],
+        "should": [
+          "MGET (batch get) for multiple keys",
+          "Idempotent DELETE (no error on missing key)",
+          "Proper status codes (200, 404, 400)"
+        ],
+        "avoid": [
+          "Over-specifying REST when a binary protocol (like Memcached) might be simpler",
+          "Forgetting status codes for error cases"
+        ]
+      },
+      "sampleAnswer": "SET /cache/{key}\n  body: { value: string, ttlSeconds?: int }\n  → 201 { \"status\": \"stored\" }\n\nGET /cache/{key}\n  → 200 { value } or 404 { \"status\": \"not_found\" }\n\nDELETE /cache/{key}\n  → 200 or 404 (idempotent)\n\nMGET /cache?keys=k1,k2,k3\n  → 200 { k1: v1, k2: null, k3: v3 }",
+      "hints": [
+        "One endpoint per functional requirement. SET and GET are the hot paths; define them clearly.",
+        "Decide early: REST with HTTP status codes, or a binary protocol like memcached? Both are valid; pick and justify.",
+        "Batch operations (MGET) are not core but are a 'should' — they reduce round-trips."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through a SET and GET end-to-end.",
+      "howToAnswer": "Client → load balancer → cache tier. Show how keys are mapped to shards (consistent hashing). Show the replication / failover story. Walk through both SET and GET paths.",
+      "rubric": {
+        "must": [
+          "Client → load balancer → cache service tier",
+          "Consistent hashing to map keys to shards with virtual nodes",
+          "Primary and replica shards for failover",
+          "Eviction policy (LRU) and memory management"
+        ],
+        "should": [
+          "TTL expiration mechanism (lazy or active)",
+          "Hot-key detection and replication",
+          "Fallback to DB on cache miss",
+          "In-memory data structure choices (hash table, heap for LRU)"
+        ],
+        "avoid": [
+          "Stateful nodes that can't scale horizontally",
+          "Synchronous replication that blocks writes",
+          "Missing the headline trick: consistent hashing with virtual nodes"
+        ]
+      },
+      "sampleAnswer": "Client → ALB (route to cache service tier) → consistent hasher (maps key → shard).\n\nSET path:\n1. Client sends SET request to LB.\n2. Hasher computes hash(key) → routes to primary shard on Node A.\n3. Node A writes entry to in-memory hash table: { key → CacheEntry(value, expiresAt) }.\n4. Node A replicates asynchronously to replica on Node B (fire-and-forget, no wait).\n5. Return 201 to client.\n\nGET path:\n1. Client sends GET request to LB.\n2. Hasher routes to primary shard on Node A.\n3. Node A looks up key in hash table. If found and not expired, return 200 with value. Update lastAccessedAt (for LRU).\n4. If not found or expired, evict (if expired) and return 404. Client falls back to DB.\n5. On Node B, replica is eventually consistent — if Node A fails mid-replication, the replica may not have the latest value.\n\nEviction:\n- When memory limit is hit, LRU evicts the least-recently-used entry from the shard.\n- Hot-key optimization: if a single key is accessed >1000 times/sec, replicate it to a secondary shard via a hot-key cache.\n\nFailover:\n- Each shard has a replica. If primary fails, the replica is promoted via a gossip protocol or external monitor.\n- In-flight requests to the failed primary timeout and retry to the promoted replica (eventual consistency).\n\nConsistent hashing:\n- Use 160 virtual nodes per physical node to balance load.\n- Adding a new node affects only ~1/N of keys, avoiding thundering herd on DB.",
+      "hints": [
+        "The headline trick is consistent hashing with virtual nodes. Frame it: how do you map billions of keys to a cluster without O(N) recomputation when nodes join/leave?",
+        "Replication is not synchronous — writes complete on primary immediately, replicas catch up. This is the cache availability story.",
+        "Eviction (LRU) is not free — it requires updating metadata on every access. Show the data structure or caching layer that makes it fast.",
+        "On a cache miss, where do clients go? They fall back to the DB or a slower tier. Mention this."
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-scale-throughput",
+      "title": "Scale to 100K RPS",
+      "questionPrompt": "How do you architect the cache to sustain 100K requests per second?",
+      "sampleAnswer": "Horizontal scaling: partition the keyspace via consistent hashing into N shards; each shard lives on a separate Node. At 100K RPS, with 10 shards, each shard handles ~10K RPS. A single node with a high-performance hash table (e.g., Go's sync.Map or a lock-free hash table) can sustain 50K+ RPS on a modern CPU. Load balancer distributes requests across shards using a simple hash-based router. Replicas absorb reads; partition replicas across separate physical servers to avoid correlated failure. With 3× replication (N shards × 3 replicas), 100K RPS is handled by ~30 nodes, each at ~3-5K RPS.",
+      "rubric": {
+        "must": [
+          "Horizontal shard partitioning with consistent hashing",
+          "Estimate: N shards, each shard's capacity (RPS per node)",
+          "Replicas do not all live on the same physical server"
+        ],
+        "should": [
+          "Acknowledge read replicas vs. write-only primary",
+          "Load balancer strategy (hash-based routing)"
+        ],
+        "avoid": [
+          "'Just add more servers' without estimating shard count or per-shard capacity",
+          "Assuming a single lock-free data structure can handle full cluster load"
+        ]
+      },
+      "hints": [
+        "Divide and conquer: total RPS / number of shards = RPS per shard. Can a single node handle that?",
+        "Replication increases the node count but does not increase write throughput to a single shard (reads can fan out to replicas, writes go to primary).",
+        "Hot keys (keys that are accessed millions of times/sec) are a problem — a single shard becomes the bottleneck. Hint: replicate the hot key across multiple shards using a secondary cache."
+      ]
+    },
+    {
+      "slug": "dd-consistency-eviction",
+      "title": "Consistency & eviction",
+      "questionPrompt": "How do you ensure consistency when replicas lag and LRU eviction removes entries a client just set?",
+      "sampleAnswer": "Eventual consistency is the answer: a SET succeeds on the primary immediately; replicas catch up asynchronously. If a client sets a key and then a replica serves a GET before replication, the client sees a miss — acceptable for a cache. For the LRU eviction problem: eviction is local to each shard, deterministic, and fast. A client that SET a key is responsible for holding a reference or re-setting it if it gets evicted. Cache eviction events are not signaled to clients — if you need a persistent value, store it in the DB, not the cache. For correctness under concurrent writes to the same key from different clients: last-write-wins. No version vectors — the cache is not a system of record.",
+      "rubric": {
+        "must": [
+          "Name the consistency model: eventual consistency",
+          "Explain eviction is local and final (no 'undo' if a client later requests the key)"
+        ],
+        "should": [
+          "Discuss replica lag implications (SET → immediate success, GET on replica may miss)",
+          "Mention last-write-wins for concurrent updates"
+        ],
+        "avoid": [
+          "Promising strong consistency (cache + strong consistency is a contradiction)",
+          "Drifting into version vectors or CRDT without explicit reason"
+        ]
+      },
+      "hints": [
+        "What's the consistency model of a cache? It's not ACID. It's 'best effort' — eventual consistency.",
+        "Eviction is not a network operation — it's a local memory-limit decision on one shard. Why does this simplify the design?",
+        "If two clients SET the same key, which value wins? In practice, 'last one in' or 'highest wall-clock time' — no causality tracking."
+      ]
+    },
+    {
+      "slug": "dd-failure-recovery",
+      "title": "Node failure & recovery",
+      "questionPrompt": "What happens when a primary shard fails? How do you recover the data and route around the failure?",
+      "sampleAnswer": "Failure detection: Gossip protocol. Each node pings 3 random nodes every 1 second; if a node doesn't respond in 5 pings, it's marked suspect. Consensus (quorum of N/2+1 nodes) confirms the failure. Once confirmed, the replica of the failed primary is promoted to primary. Clients detect the failure via a timeout and retry; the load balancer removes the failed node from its consistent hash ring, and subsequent requests route to the replica. Data loss: if the primary and all replicas fail simultaneously (unlikely but possible), the data in that shard is lost. To minimize risk, use async replication across multiple AZs and a quorum-write strategy for critical keys. Recovery: when a node comes back online, it's treated as a new replica and backfills data from the primary via a diff-based transfer (e.g., merkle tree). Slow replicas catch up over time without blocking reads.",
+      "rubric": {
+        "must": [
+          "Failure detection mechanism (gossip, timeouts, or heartbeat)",
+          "Replica promotion strategy",
+          "Client retry / load balancer updates"
+        ],
+        "should": [
+          "Quorum-based consensus for failure confirmation",
+          "Data loss risk assessment (single points of failure)",
+          "Backfill / recovery protocol for a rejoined node"
+        ],
+        "avoid": [
+          "Single-point-of-failure coordinator (e.g., 'just use Zookeeper without failover')",
+          "Synchronous replication that blocks writes on replica lag"
+        ]
+      },
+      "hints": [
+        "How do you detect a failure in a distributed system without a central authority? Gossip or heartbeat with a quorum.",
+        "If the primary fails, is the replica ready to be promoted immediately, or does it need to catch up? (Async replication means it may lag.)",
+        "If both primary and replica fail, the shard is unrecoverable. How do you tolerate this? Across multiple AZs? Quorum writes?"
+      ]
+    }
+  ]
+}

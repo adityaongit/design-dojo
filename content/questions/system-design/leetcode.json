@@ -1,0 +1,270 @@
+{
+  "id": "leetcode",
+  "title": "LeetCode",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design an online judge platform like LeetCode where users can submit code solutions to programming problems and receive instant feedback. The system must securely execute untrusted user code, handle 10M DAU, and support 100K concurrent submissions per minute.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users should be able to...' statements covering the must-have behavior. Focus on problem browsing, code submission, and result feedback. Skip admin panels, leaderboards, and premium features unless asked.",
+      "exampleHints": {
+        "headline": "Example (HackerRank):",
+        "bullets": [
+          "Users can browse programming problems",
+          "Users can write and submit code solutions",
+          "Users receive immediate pass/fail feedback"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Users can view a problem description (title, constraints, examples)",
+          "Users can submit code and receive pass/fail feedback with test results"
+        ],
+        "should": [
+          "Users can edit and re-submit their code",
+          "Users see execution time and memory usage",
+          "Compilation errors are reported to the user"
+        ],
+        "avoid": [
+          "Drifting into leaderboards, contests, or premium subscriptions",
+          "Designing the problem-creation admin panel"
+        ]
+      },
+      "sampleAnswer": "1. Users can view programming problems with descriptions, constraints, examples, and edge cases.\n2. Users can submit code in multiple languages (Python, Java, C++) for evaluation.\n3. Users receive immediate feedback: passed/failed, how many test cases passed, execution time, and memory usage.\n4. Users can re-submit after viewing errors.",
+      "hints": [
+        "Think about what a user does from login: browse a problem, write code, test it. What's the core loop?",
+        "Submission is the key action — it's not instantaneous. What does the user see while waiting?",
+        "Skip features not in scope: contests, premium tiers, social features, problem creation."
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover availability, latency targets, scale (concurrent submissions, code execution), and security of untrusted code execution. The execution latency is the critical SLO.",
+      "exampleHints": {
+        "headline": "Example (HackerRank):",
+        "bullets": [
+          "Execution latency <5 seconds p99",
+          "Handle 100K submissions/min globally",
+          "Security: sandboxed code execution with resource limits",
+          "99.9% availability"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Execution latency target with concrete number (e.g., <5s p99)",
+          "Security: sandboxed, isolated code execution with resource limits",
+          "Scale: 100K submissions/min, up to 10M DAU",
+          "Result durability: submission state and results must be persisted"
+        ],
+        "should": [
+          "Support multiple programming languages",
+          "Availability target (99.9%+)",
+          "Timeout enforcement (e.g., 10-second max execution)"
+        ],
+        "avoid": [
+          "Listing scale without numbers",
+          "Hand-waving security ('we trust the code')",
+          "Ignoring execution time guarantees"
+        ]
+      },
+      "sampleAnswer": "- Security: all code executes in isolated Docker containers with CPU/memory limits and restricted filesystem access.\n- Latency: submission to result feedback <5s p99 for small problems, <30s for large inputs.\n- Scale: 100K submissions/min globally, 10M DAU.\n- Durability: all submissions and results written to persistent storage within 1s.\n- Timeout: max 10s per test case; abort if exceeded.\n- Availability: 99.9%.",
+      "hints": [
+        "What's the nightmare scenario? A user's malicious code escapes the sandbox and crashes other submissions. That's your headline security NFR.",
+        "Latency includes queue wait + compilation + execution. Quantify the P99 SLO for each phase.",
+        "You're running untrusted code at 100K/min. What resource limits prevent one user from starving others?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. Don't define schemas yet — that comes in High-Level Design.",
+      "exampleHints": {
+        "headline": "Example (HackerRank):",
+        "bullets": [
+          "Problem",
+          "Submission",
+          "TestCase",
+          "User"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Problem (description, constraints, examples)",
+          "Submission (code, language, status)",
+          "TestCase (input, expected output)"
+        ],
+        "should": [
+          "User",
+          "ExecutionResult (time, memory, output)"
+        ],
+        "avoid": [
+          "Inventing entities not required by the core flow"
+        ]
+      },
+      "sampleAnswer": "- Problem: title, description, constraints, difficulty, examples.\n- TestCase: belongs to a Problem. Input, expected output, time/memory limits.\n- Submission: code, language, user, problem, status (queued/running/passed/failed).\n- ExecutionResult: execution time, memory, actual output, errors.",
+      "hints": [
+        "What are the 3-4 nouns that satisfy the functional requirements? List them in order.",
+        "A Submission and an ExecutionResult are different — one is the request, one is the output.",
+        "Don't add User, Leaderboard, or Contest unless they're explicitly in your functional requirements."
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement. Show endpoints for browsing problems, submitting code, and polling for results.",
+      "exampleHints": {
+        "headline": "Example (HackerRank):",
+        "bullets": [
+          "GET /problems → Problem[]",
+          "GET /problems/:id → Problem details",
+          "POST /submissions body: { code, language, problemId }",
+          "GET /submissions/:id → result status and output"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "GET endpoint to retrieve problem details",
+          "POST endpoint to submit code",
+          "GET endpoint to poll submission status/result"
+        ],
+        "should": [
+          "Return submission ID immediately on POST",
+          "Include execution time, memory, output, and error messages in the result",
+          "Support filtering problems by difficulty or tags"
+        ],
+        "avoid": [
+          "Blocking the POST until execution finishes",
+          "Returning raw stderr without context"
+        ]
+      },
+      "sampleAnswer": "GET /problems → [Problem]\nGET /problems/:id → { title, description, constraints, testCases: [input, output] }\nPOST /submissions\n  body: { problemId, code, language }\n  → 202 { submissionId }\nGET /submissions/:id\n  → { status, executionTime, memory, output, errors }",
+      "hints": [
+        "Submission is async — the POST returns immediately with a token. The client then polls for the result.",
+        "What fields do you return on GET /submissions/:id when the status is 'running' vs 'passed' vs 'runtime-error'?",
+        "Show request/response shapes. Include the language field on submit — the execution engine needs it."
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through the submission and polling paths.",
+      "howToAnswer": "Boxes: client → load balancer → API service → queue. Code Execution Workers poll the queue, run code in sandboxes, and write results back. Database stores problems and submissions.",
+      "rubric": {
+        "must": [
+          "Client → API service → Submission queue",
+          "Code Execution Workers (CEE) consuming from the queue in parallel",
+          "Sandboxing mechanism (Docker, LXC, or VM) with resource limits"
+        ],
+        "should": [
+          "Separate problem metadata store and submission result store",
+          "Cache for hot problems",
+          "Language-specific runtimes bundled in worker images"
+        ],
+        "avoid": [
+          "Synchronous code execution blocking the API response",
+          "Running arbitrary code without isolation"
+        ]
+      },
+      "sampleAnswer": "Client → ALB → API Service (stateless, multiple instances) → Submission Queue (Redis or Kafka).\n\nSubmission flow: API validates code, creates Submission row with status=QUEUED, publishes message to queue, returns submissionId immediately (202).\n\nExecution flow: Code Execution Workers (20-50 instances, auto-scaled by queue depth) poll the queue. For each message: pull code + testcases, spin up a Docker container with the target language runtime, compile (if needed) + run against each testcase with CPU/memory limits and 10s timeout per test, capture output/errors, mark passed/failed, write ExecutionResult to DB.\n\nPolling: Client calls GET /submissions/:id. API checks result DB; if status=RUNNING, returns 202 + estimated queue position. Once result is ready, returns 200 + execution time + pass/fail + output.\n\nDatabase: Postgres for problem metadata (immutable) and submission index; separate faster KV (Redis) for recent submission results to speed up polling.",
+      "hints": [
+        "The API must be stateless and respond immediately. What takes the latency hit instead?",
+        "Name the queue and explain why async matters at 100K submissions/min. What happens if the API waits for code execution?",
+        "Code runs in a container with limits. What are the limits (CPU cores, memory, time per test), and how does the worker enforce them?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-scale-code-execution",
+      "title": "Scale code execution workers",
+      "questionPrompt": "How do you scale the system to handle 100K submissions/minute without losing submissions or starving any user's code?",
+      "sampleAnswer": "Queue (Kafka or Redis streams) acts as a shock absorber. At 100K/min = ~1,667 RPS, and if average execution is 2 seconds, you need ~3,300 concurrent execution slots. Deploy 100 worker hosts, each running 30-40 containers in parallel (sandboxed + resource-limited), giving 3,000-4,000 concurrent slots. Auto-scale the fleet based on queue depth — target ~10s queue latency p99. Partition the queue by language (Python workers, Java workers, etc.) to avoid cross-contamination and allow per-language tuning of timeouts and resource limits.",
+      "rubric": {
+        "must": [
+          "Capacity calculation (100K/min → required concurrent slots)",
+          "Horizontal scaling of stateless workers",
+          "Queue-based admission control"
+        ],
+        "should": [
+          "Language-specific worker pools",
+          "Auto-scaling trigger (queue depth or latency SLO)",
+          "Graceful degradation (dropped submissions are retried, not lost)"
+        ],
+        "avoid": [
+          "'Just add more servers' without capacity math",
+          "Single-point-of-failure queue"
+        ]
+      },
+      "hints": [
+        "Convert submissions/min to RPS, then to required concurrent slots. 100K/min, 2s avg execution = how many concurrent slots?",
+        "Workers poll a queue. If the queue grows, what metric triggers a scale-up? Depth, latency, or CPU?",
+        "Language runtimes differ widely (Java startup slow, Python fast). Should you pool by language or mix?"
+      ]
+    },
+    {
+      "slug": "dd-sandbox-security",
+      "title": "Secure code sandboxing",
+      "questionPrompt": "How do you guarantee that a user's malicious code can't escape the sandbox, crash other submissions, or consume unbounded resources?",
+      "sampleAnswer": "Each submission runs in its own Docker container with hardened settings: read-only root filesystem (except /tmp for runtime artifacts), no network access, cgroups CPU + memory limits (e.g., 1 core, 512MB), and seccomp profile blocking dangerous syscalls (exec, fork beyond limits, raw socket, etc.). Timeout enforced via cgroups + kill-on-timeout. Container image is minimal (base OS + language runtime only), rebuilt weekly and scanned for vulns. On container exit (success, timeout, or crash), results are written by a trusted agent outside the container. The host OS isolates containers at the kernel level; no escapes via shared volumes or privileged mode.",
+      "rubric": {
+        "must": [
+          "Resource isolation (cgroups: CPU, memory, process limit)",
+          "Timeout enforcement with kill",
+          "Filesystem isolation (read-only root or restricted mount)"
+        ],
+        "should": [
+          "Network isolation (no outbound)",
+          "Seccomp profile with dangerous syscall blocking",
+          "Minimal container image",
+          "Regular vulnerability scanning"
+        ],
+        "avoid": [
+          "Running untrusted code with --privileged",
+          "Shared volumes between containers",
+          "Unbounded timeouts (infinite loop crashes workers)"
+        ]
+      },
+      "hints": [
+        "What's the worst-case attack? One submission uses 100GB RAM or forks infinitely. How does cgroups prevent it?",
+        "Timeout is critical — a single slow code path shouldn't block the worker. How do you kill it?",
+        "Network isolation, blocked syscalls, read-only root — pick one and explain why it matters.",
+        "Which layer enforces which constraint: Docker config, cgroups, seccomp, host kernel?"
+      ]
+    },
+    {
+      "slug": "dd-result-consistency",
+      "title": "Result consistency & retries",
+      "questionPrompt": "What happens if a Code Execution Worker crashes mid-execution? How do you ensure the user gets a result and submissions aren't lost?",
+      "sampleAnswer": "Submissions are idempotent: each message has a submissionId as the key. Worker pulls a message, increments an attempt counter, executes code, and writes ExecutionResult with status + output + metadata. If the worker crashes before acknowledging the queue message, the message returns to the queue (default timeout: 60s) and another worker picks it up. Max retries = 3; after 3 failures, mark the submission as SYSTEM_ERROR and notify the user. Submission state stored with version number; each write includes the expected version to detect concurrent updates. On rare duplicate execution, the second worker sees the result already written and skips re-execution.",
+      "rubric": {
+        "must": [
+          "Idempotent submission key (submissionId)",
+          "Queue-level retry + max attempts before giving up",
+          "Failure tracking and user notification"
+        ],
+        "should": [
+          "Version-aware writes to detect duplicates",
+          "Dead-letter queue for permanently failed submissions",
+          "Alerting on high failure rate per worker"
+        ],
+        "avoid": [
+          "Losing a submission if a worker crashes",
+          "Infinite retries that never notify the user",
+          "Duplicate execution that charges the user twice"
+        ]
+      },
+      "hints": [
+        "The queue guarantees at-least-once delivery. What does your code do to make execution idempotent?",
+        "A worker crashes after writing half the result. How do you detect that on retry?",
+        "When do you give up and tell the user 'the system couldn't grade this'? After how many failures?"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "id": "rate-limiter",
+  "title": "Rate Limiter",
+  "difficulty": "medium",
+  "type": "system-design",
+  "prompt": "Design a distributed rate limiter for API gateways. The system should support multiple rate-limiting algorithms and enforce per-user, per-IP, or per-API-key limits across thousands of API gateway instances. Target ~100k requests/sec and 99.9% availability.",
+  "stages": [
+    {
+      "slug": "functional-requirements",
+      "title": "Functional Requirements",
+      "questionPrompt": "What are the core functional requirements for this system?",
+      "howToAnswer": "List 3-5 'Users/systems should be able to...' statements. Focus on the limiter's behavior: rate limiting by identifier, multiple limit types, allowing/denying requests.",
+      "exampleHints": {
+        "headline": "Example (Load Balancer):",
+        "bullets": [
+          "Admins can configure rate limits per API key",
+          "The system allows or denies each request based on current token count",
+          "Operators can query remaining quota for a user"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Rate limiting by identifier (user ID, API key, IP address)",
+          "Allow or deny a request based on whether quota remains",
+          "Support multiple rate limit types (e.g., per-second, per-minute, per-hour)"
+        ],
+        "should": [
+          "Return remaining quota / reset time in the response",
+          "Support different limits for different user tiers"
+        ],
+        "avoid": [
+          "Drifting into authentication or authorization",
+          "Implementing circuit breakers (that's fault tolerance, not rate limiting)"
+        ]
+      },
+      "hints": [
+        "The core action is: given a request with an identifier, decide allow or deny. What information determines the decision?",
+        "Rate limiting can be keyed by different identifiers. The system should support at least one; flexibility is a bonus.",
+        "Beyond the binary allow/deny, what feedback does the client receive about their remaining quota?"
+      ]
+    },
+    {
+      "slug": "non-functional-requirements",
+      "title": "Non-Functional Requirements",
+      "questionPrompt": "What are the non-functional requirements for this system?",
+      "howToAnswer": "Cover throughput, accuracy of limits, low latency, consistency across instances, durability. Quantify each.",
+      "exampleHints": {
+        "headline": "Example (Load Balancer):",
+        "bullets": [
+          "Throughput: ~100k requests/sec",
+          "Latency: <5ms p99 for each limit check",
+          "All gateway instances enforce the same limit (not eventual consistency)",
+          "..."
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Throughput target (requests/sec)",
+          "Latency target with concrete number (e.g., <5ms p99)",
+          "Consistency: all instances see the same remaining quota for a user",
+          "Scale: number of users / identifiers tracked"
+        ],
+        "should": [
+          "Availability target (99.9%+)",
+          "Cost efficiency (minimize storage / network)"
+        ],
+        "avoid": [
+          "Confusing eventual consistency with strong consistency",
+          "Promising zero false negatives (even best systems have clock skew)"
+        ]
+      },
+      "hints": [
+        "Consistency is hard here — you have N gateway instances all checking the same user's quota. How do they stay in sync?",
+        "Latency is the killer metric. A limit check on every request must not add 100ms of overhead.",
+        "What's the scale — how many unique identifiers (users, keys, IPs) will you track at once?"
+      ]
+    },
+    {
+      "slug": "core-entities",
+      "title": "Core Entities",
+      "questionPrompt": "What are the core entities of this system?",
+      "howToAnswer": "List the nouns. The main entity is the rate limit counter; also consider configuration, quota rules.",
+      "exampleHints": {
+        "headline": "Example (Load Balancer):",
+        "bullets": [
+          "RateLimit: identifier + quota rule + current counter",
+          "QuotaRule: requests_per_interval, interval_duration",
+          "RequestEvent: timestamp, identifier, allowed/denied"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Counter or token bucket state per identifier (user_id, api_key, etc.)"
+        ],
+        "should": [
+          "Quota rule or limit configuration (rate, interval)",
+          "Audit log or metrics on allow/deny decisions"
+        ],
+        "avoid": [
+          "Inventing entities like 'RateLimitBreach' when a simple counter suffices"
+        ]
+      },
+      "hints": [
+        "At minimum, you need a data structure that tracks how many requests an identifier has made. What fields does it need?",
+        "Configuration should be separate from state — where do the actual rate limits (e.g., '100 requests/min') live?"
+      ]
+    },
+    {
+      "slug": "api",
+      "title": "API",
+      "questionPrompt": "Define the API contract.",
+      "howToAnswer": "One endpoint per functional requirement. The main endpoint is allow/deny on a request. Optionally, config and introspection endpoints.",
+      "exampleHints": {
+        "headline": "Example (Load Balancer):",
+        "bullets": [
+          "POST /check  body: { key: string, identifier: string }  → 200 { allowed: bool, remaining: int }",
+          "POST /rules  body: { identifier: string, requests_per_sec: int }",
+          "GET /status/:identifier  → { used, remaining, reset_time }"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Check/allow endpoint: accepts identifier, returns allow/deny decision",
+          "Returns remaining quota or reset time"
+        ],
+        "should": [
+          "Config endpoint to set/update rate limit rules",
+          "Query endpoint to inspect current state"
+        ],
+        "avoid": [
+          "Putting the identifier in the URL path instead of a header or body field"
+        ]
+      },
+      "hints": [
+        "The main endpoint is synchronous — a gateway calls it for every request. How does the contract reflect that?",
+        "What fields in the response help the client respect the limit gracefully (e.g., Retry-After header)?"
+      ]
+    },
+    {
+      "slug": "high-level-design",
+      "title": "High-Level Design",
+      "questionPrompt": "Sketch the high-level architecture. Walk through the allow/deny path.",
+      "howToAnswer": "Boxes and arrows: API gateway → rate limiter service → counter store. Show the algorithm (token bucket vs sliding window). Show synchronization across gateways.",
+      "rubric": {
+        "must": [
+          "Centralized counter store (Redis or similar) — single source of truth",
+          "Rate limiting algorithm choice (token bucket, sliding window counter, or leaky bucket) with justification",
+          "Synchronization story: how do N gateways ensure the same limit is enforced"
+        ],
+        "should": [
+          "Local caching / soft limits to reduce latency",
+          "Graceful degradation if the counter store is slow"
+        ],
+        "avoid": [
+          "Assuming eventual consistency — gateways may disagree",
+          "Skipping the algorithm choice"
+        ]
+      },
+      "hints": [
+        "The headline trick is choosing between token bucket (handles bursts, stateful), sliding window log (precise, log-heavy), and sliding window counter (balance). Compare on three axes: memory, accuracy, burst handling.",
+        "Centralizing the counter in Redis (or a similar fast KV store) means all gateways talk to one source. What's the latency impact? Can you optimize it?",
+        "Walk through a single request: gateway receives request, calls rate limiter, updates counter, returns allow/deny. Where are the race conditions?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-algorithm-choice",
+      "title": "Algorithm trade-offs",
+      "questionPrompt": "Compare token bucket, sliding window counter, and sliding window log. Which would you use for an API gateway, and why?",
+      "sampleAnswer": "Token bucket: tokens refill at a constant rate; each request consumes one. Pros: handles bursts naturally (accumulated tokens), O(1) memory per identifier. Cons: less accurate for strict limits; token loss on refill. Sliding window counter: divide time into buckets, count requests in the current and previous bucket, interpolate. Pros: better accuracy than fixed buckets, O(1) memory. Cons: can have boundary-crossing spikes. Sliding window log: log every request timestamp, remove older than window, count. Pros: perfect accuracy, no boundary surprises. Cons: memory-heavy at high RPS, especially for popular identifiers. For API gateways, sliding window counter wins — it's accurate enough, low memory, and simple to implement. Use token bucket if you want to offer users burst capacity as a feature.",
+      "rubric": {
+        "must": [
+          "Name at least two algorithms and their mechanics",
+          "Compare on memory, accuracy, and burst handling",
+          "Pick one and justify it in context of API gateway constraints"
+        ],
+        "should": [
+          "Mention failure modes (clock skew, race conditions)",
+          "Discuss headroom for spikes"
+        ],
+        "avoid": [
+          "Declaring one algorithm 'best' without constraints",
+          "Confusing token bucket with leaky bucket"
+        ]
+      },
+      "hints": [
+        "Sketch the state for each algorithm — token bucket has a counter and timestamp, sliding window has a counter per time bucket, sliding window log has a sorted set of timestamps. Which is cheapest to store and update?",
+        "Accuracy matters under bursty traffic. Imagine a client sleeps for an hour then fires 1000 requests. Which algorithm lets the most through?",
+        "Redis INCR is O(1); Redis sorted-set with log entries is O(log N). How does that change your choice?"
+      ]
+    },
+    {
+      "slug": "dd-distributed-sync",
+      "title": "Consistency across instances",
+      "questionPrompt": "You have 100 API gateway instances, all rate-limiting the same user. How do you ensure they don't double-count and let the user exceed their limit?",
+      "sampleAnswer": "Centralize the counter in a single Redis instance (or a Redis cluster with strong consistency). All 100 gateways call Redis to check and increment the counter. Use INCR + a simple Lua script to make the check-and-increment atomic. If Redis becomes a bottleneck, add a local soft-limit cache on each gateway (e.g., 'this user has used 75 of 100 tokens in my local view'), refresh every 100ms from Redis. If the cache is stale, the worst case is a gateway allows one extra request; over 100ms windows, the overage is bounded. Redis cluster (via Sentinel or Cluster mode) handles failover for HA. Tradeoff: a centralized Redis is a single point of contention, but atomic operations keep it simple.",
+      "rubric": {
+        "must": [
+          "Identify the synchronization point (Redis, or similar centralized store)",
+          "Explain atomicity: INCR or Lua script to prevent double-count",
+          "Acknowledge the latency vs consistency tradeoff"
+        ],
+        "should": [
+          "Mention local soft limits or caching to reduce latency",
+          "Discuss failover strategy (replicas, Sentinel)"
+        ],
+        "avoid": [
+          "Assuming local counters on each gateway (they'll get out of sync)",
+          "Ignoring the latency hit of every request querying a remote store"
+        ]
+      },
+      "hints": [
+        "What's the simplest way to ensure an INCR on Redis is visible to all gateways immediately after? (Answer: they all talk to the same Redis.)",
+        "If every request hits Redis, can you handle 100k RPS? (Depends on Redis throughput; modern Redis clusters can do millions of ops/sec.) If not, what's a local optimization that's 'good enough'?",
+        "On a Redis failover (replica promotion), there's a window where some increments might be lost. Is that acceptable for a rate limiter?"
+      ]
+    },
+    {
+      "slug": "dd-latency-under-load",
+      "title": "Sub-5ms latency at 100k RPS",
+      "questionPrompt": "How do you keep latency under 5ms p99 when handling 100k requests/sec, all checking a centralized rate limiter?",
+      "sampleAnswer": "Redis cluster with multiple nodes — partition identifiers by hash(user_id) across, say, 10 Redis nodes. Each gateway connects to all nodes, so requests are spread and p99 latency stays sub-millisecond at the Redis layer. Add a local in-process cache (LRU, 1MB per gateway) of hot identifiers; refresh cache on every 100 requests or every 1s, whichever comes first. For cold identifiers, a single Redis lookup takes ~1ms at p99, easily within budget. Use connection pooling and pipelined requests if checking multiple limits in one gateway call. Finally, async logging — don't block the request path on audit log writes.",
+      "rubric": {
+        "must": [
+          "Identify the bottleneck (Redis latency)",
+          "Concrete optimization (partitioning, caching, or connection pooling)",
+          "Numbers: how many RPS per node, what's the p99 latency"
+        ],
+        "should": [
+          "Local cache warmth strategy",
+          "Mention pipelining or batch checks"
+        ],
+        "avoid": [
+          "Assuming a single Redis node can handle 100k RPS (it can, but p99 won't be <5ms under contention)",
+          "Ignoring network latency"
+        ]
+      },
+      "hints": [
+        "Estimate: if each Redis node can do 50k INCR ops/sec, how many nodes do you need? What's the lookup latency at 99th percentile?",
+        "Local caching is a big win for Zipfian traffic (a few users take most of the load). What's a simple refresh strategy that doesn't over-sync?",
+        "Network latency from gateway to Redis is usually 1-2ms in the same DC. What's your budget for the rest of the check (Lua script execution, reply)?"
+      ]
+    }
+  ]
+}

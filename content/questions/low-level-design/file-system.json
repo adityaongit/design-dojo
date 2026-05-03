@@ -1,0 +1,275 @@
+{
+  "id": "file-system",
+  "title": "File System",
+  "difficulty": "medium",
+  "type": "low-level-design",
+  "prompt": "Design an in-memory hierarchical file system. Implement classes to support: mkdir (create directories), ls (list contents), addContentToFile (create/append to a file), and readContentFromFile (read a file). All operations work with absolute paths like /a/b/c. Paths may have intermediate directories that don't exist — mkdir creates them implicitly.",
+  "stages": [
+    {
+      "slug": "requirements",
+      "title": "Requirements",
+      "questionPrompt": "Clarify the requirements. What's in scope and what isn't?",
+      "howToAnswer": "Capture the rules tightly. Decide whether to scope: symbolic links, permissions, file deletion, disk quotas. State assumptions about path formats and case sensitivity.",
+      "exampleHints": {
+        "headline": "Example (Movie Theater):",
+        "bullets": [
+          "Create directories recursively along a path (mkdir /a/b/c)",
+          "List files and directories at a path, lexicographically sorted (ls /a/b)",
+          "Create or append content to a file (addContentToFile /a/file.txt, content)",
+          "Read the full content of a file (readContentFromFile /a/file.txt)",
+          "Out of Scope: symbolic links, permissions, deletion, disk quotas"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "mkdir creates directories; intermediate dirs auto-created if needed",
+          "ls returns sorted names of files and directories in a given directory",
+          "addContentToFile creates a file or appends to existing; auto-creates parent dirs",
+          "readContentFromFile returns file content as a single string",
+          "Path format: absolute paths like /a/b/c; root is /"
+        ],
+        "should": [
+          "Return meaningful errors for invalid operations (file as directory, reading non-existent file)",
+          "Support empty files and empty content appends"
+        ],
+        "avoid": [
+          "Designing a UI or persistence layer",
+          "Building deletion/move operations unless asked",
+          "Implementing symbolic links or permissions"
+        ]
+      },
+      "sampleAnswer": "Scope:\n- mkdir(path): create directories along path, auto-creating intermediates\n- ls(path): return sorted list of file/dir names at path; if path is a file, return [filename]\n- addContentToFile(path, content): create file with content or append to existing; auto-create parent dirs\n- readContentFromFile(path): return full file content\n- Path format: absolute paths, root is /\n\nOut of Scope:\n- Deletion, move/rename\n- Symbolic links, hard links\n- Permissions, ownership\n- Disk quotas or size limits\n- Concurrency control",
+      "hints": [
+        "Start by clarifying what the core operations do: is mkdir idempotent? Does addContentToFile auto-create parent dirs?",
+        "Decide on the path format once. How do you parse /a/b/c into components?",
+        "Out of scope: don't build deletion or permission layers unless the interviewer asks."
+      ]
+    },
+    {
+      "slug": "entities-relationships",
+      "title": "Entities & Relationships",
+      "questionPrompt": "What are the core entities and how do they relate?",
+      "howToAnswer": "Pick the orchestrator. Decide what owns the file tree. Use an abstract Node class with File and Directory subclasses.",
+      "exampleHints": {
+        "headline": "Example (Elevator):",
+        "bullets": [
+          "FileSystem (orchestrator)",
+          "Node (abstract base)",
+          "File (holds content)",
+          "Directory (holds children map)"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "FileSystem (orchestrator, holds root node, exposes ls/mkdir/etc)",
+          "Node abstract class or interface",
+          "File (subclass of Node, owns content string)",
+          "Directory (subclass of Node, owns Map<name, Node>)",
+          "Path resolution logic (walk from root)"
+        ],
+        "should": [
+          "Avoid storing full paths — store parent and name only",
+          "Directory.children keyed by name, not path"
+        ],
+        "avoid": [
+          "Putting all logic into FileSystem; File and Directory should know themselves",
+          "Storing absolute paths on every node"
+        ]
+      },
+      "sampleAnswer": "- FileSystem: orchestrates, holds root Directory, exposes mkdir/ls/addContentToFile/readContentFromFile.\n- Node: abstract base class with name field.\n- File: extends Node, owns content (string).\n- Directory: extends Node, owns children (Map<String, Node>).\n- Path resolution: split path by '/', walk from root, create Directories as needed in mkdir.",
+      "hints": [
+        "Should every node know its parent, or should you pass context down the tree?",
+        "Use a shared abstract class or interface so File and Directory both fit into the children Map.",
+        "Path resolution: write a helper that walks the tree and returns the target node (or None if missing)."
+      ]
+    },
+    {
+      "slug": "class-design",
+      "title": "Class Design",
+      "questionPrompt": "Define the classes — fields and methods. Keep rules with the entity that owns the state.",
+      "howToAnswer": "Sketch each class with explicit method signatures. Return meaningful types: throw exceptions for invalid access (reading a dir, accessing non-existent path), return boolean for operations, return List for ls.",
+      "exampleHints": {
+        "headline": "Example (Parking Lot):",
+        "bullets": [
+          "class FileSystem: + ls(path) -> List<String>, + mkdir(path) -> void, + addContentToFile(...) -> void, + readContentFromFile(path) -> String",
+          "class Node: name: String",
+          "class File(Node): content: String, + append(text) -> void",
+          "class Directory(Node): children: Map<String, Node>, + addChild(node) -> void, + getChild(name) -> Node?"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "FileSystem methods: ls, mkdir, addContentToFile, readContentFromFile with correct signatures",
+          "File and Directory as subclasses of Node",
+          "Directory.children is a Map keyed by name",
+          "Methods throw exceptions for invalid operations (e.g., readContentFromFile on a directory)",
+          "ls returns List<String>, sorted"
+        ],
+        "should": [
+          "Helper method for path resolution",
+          "File.append(content) for content updates",
+          "Directory.getChild(name) -> Optional<Node>"
+        ],
+        "avoid": [
+          "Returning bool when you need to throw an exception",
+          "Exposing children map directly without encapsulation"
+        ]
+      },
+      "sampleAnswer": "```\nabstract class Node:\n  name: String\n  constructor(name: String): ...\n\nclass File(Node):\n  content: String = \"\"\n  constructor(name: String): super(name)\n  append(text: String): void\n    content += text\n\nclass Directory(Node):\n  children: Map<String, Node> = {}\n  constructor(name: String): super(name)\n  addChild(node: Node): void\n    children[node.name] = node\n  getChild(name: String): Node?\n    return children[name]\n\nclass FileSystem:\n  root: Directory = Directory(\"/\")\n  \n  ls(path: String) -> List<String>:\n    node = getNode(path)\n    if node is File: return [node.name]\n    if node is Directory: return sorted(node.children.keys())\n    throw FileNotFound\n  \n  mkdir(path: String) -> void:\n    ensurePath(path, createDirs=true)\n  \n  addContentToFile(path: String, content: String) -> void:\n    ensurePath(parentPath(path), createDirs=true)\n    file = getOrCreateFile(path)\n    file.append(content)\n  \n  readContentFromFile(path: String) -> String:\n    file = getNode(path)\n    if file is not File: throw NotAFile\n    return file.content\n```",
+      "hints": [
+        "Methods that modify the tree should return void or throw. Methods that read should return a value or throw.",
+        "ls is special: if path is a file, return just [filename]; if directory, return sorted child names.",
+        "Path resolution: split by '/', walk from root. What happens if a component is missing?"
+      ]
+    },
+    {
+      "slug": "implementation",
+      "title": "Implementation",
+      "questionPrompt": "Pseudo-code path resolution and the core mkdir/addContentToFile logic. Trace through one scenario.",
+      "howToAnswer": "The meaty method is path resolution — write it carefully. Then trace a sequence: mkdir /a/b, addContentToFile /a/b/file.txt content, readContentFromFile /a/b/file.txt.",
+      "exampleHints": {
+        "headline": "Example (Parking Lot):",
+        "bullets": [
+          "getNode(path): split path, walk tree from root, return node or None",
+          "ensurePath(path, createDirs): walk tree, creating Directory nodes as needed",
+          "addContentToFile: ensure parent dirs exist, then create File or append"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "Path resolution: split by '/', walk from root, validate at each step",
+          "mkdir: create intermediate Directory nodes if needed",
+          "addContentToFile: ensure parent dirs exist, create File or append to existing",
+          "Trace through one concrete scenario end-to-end"
+        ],
+        "should": [
+          "Single getNode(path) helper reused across methods",
+          "Explicit check: is this path a file or directory?"
+        ],
+        "avoid": [
+          "Re-parsing paths in every method",
+          "Silent failure on invalid paths — throw exceptions"
+        ]
+      },
+      "sampleAnswer": "```\ngetNode(path: String) -> Node?:\n  parts = path.split('/').filter(p => p != '')\n  current = root\n  for part in parts:\n    if current is File: return None  // can't traverse through a file\n    if not current.children.contains(part): return None\n    current = current.children[part]\n  return current\n\nensurePath(path: String, createDirs: bool) -> Directory:\n  parts = path.split('/').filter(p => p != '')\n  current = root\n  for part in parts:\n    if current is File: throw NotADirectory\n    if not current.children.contains(part):\n      if not createDirs: throw FileNotFound\n      newDir = Directory(part)\n      current.addChild(newDir)\n      current = newDir\n    else:\n      next = current.children[part]\n      if next is File: throw NotADirectory  // path has a file in the middle\n      current = next\n  return current\n\nmkdir(path: String) -> void:\n  ensurePath(path, createDirs=true)\n\naddContentToFile(path: String, content: String) -> void:\n  parentPath = path.substring(0, path.lastIndexOf('/'))\n  fileName = path.substring(path.lastIndexOf('/') + 1)\n  if parentPath == '': parentPath = '/'\n  \n  parentDir = ensurePath(parentPath, createDirs=true)\n  if parentDir.children.contains(fileName):\n    node = parentDir.children[fileName]\n    if node is Directory: throw NotAFile\n    ((File) node).append(content)\n  else:\n    file = File(fileName)\n    file.append(content)\n    parentDir.addChild(file)\n\nreadContentFromFile(path: String) -> String:\n  node = getNode(path)\n  if node == None: throw FileNotFound\n  if node is Directory: throw NotAFile\n  return ((File) node).content\n\nls(path: String) -> List<String>:\n  node = getNode(path)\n  if node == None: throw FileNotFound\n  if node is File: return [node.name]\n  names = node.children.keySet()\n  return names.sorted()\n```\n\nTrace: \n1. mkdir('/a/b'): ensurePath creates root->Directory('a')->Directory('b')\n2. addContentToFile('/a/b/file.txt', 'hello'): ensurePath('/a/b') returns existing, creates File('file.txt'), appends 'hello'\n3. addContentToFile('/a/b/file.txt', ' world'): getNode finds File, appends ' world' → content = 'hello world'\n4. readContentFromFile('/a/b/file.txt'): getNode returns File, returns 'hello world'\n5. ls('/a/b'): getNode returns Directory, returns ['file.txt']",
+      "hints": [
+        "Write getNode and ensurePath first — they're the foundation. The rest builds on them.",
+        "Path handling: split by '/', ignore empty parts. Root path '/' has no parts.",
+        "Trace one full scenario: mkdir, add, read, ls. Catch off-by-one errors in path parsing."
+      ]
+    },
+    {
+      "slug": "extensibility",
+      "title": "Extensibility",
+      "questionPrompt": "How would you extend this for: file deletion, move/rename, symbolic links, or permissions?",
+      "howToAnswer": "Stay high-level. Point at the seams in the design that make each extension clean.",
+      "exampleHints": {
+        "headline": "Example (Tic Tac Toe):",
+        "bullets": [
+          "File deletion: add rm(path) method, Directory.removeChild(name)",
+          "Move/rename: swap node references in children maps or rename field",
+          "Symbolic links: new Link subclass of Node, points to another Node",
+          "Permissions: add perms field to Node, check before mkdir/read/write"
+        ]
+      },
+      "rubric": {
+        "must": [
+          "File deletion: Directory.removeChild(name), rm(path) traverses and deletes",
+          "Move/rename: either swap children map entries or update node name and re-parent"
+        ],
+        "should": [
+          "Symbolic links: new Link(Node) subclass, getTarget() method, ensure no cycles",
+          "Permissions: add perms to Node, check in each operation's access path"
+        ],
+        "avoid": [
+          "Rewriting the tree structure for deletion or permissions",
+          "Storing full paths when parent pointers or name suffice"
+        ]
+      },
+      "sampleAnswer": "File deletion: add Directory.removeChild(name: String) -> void. rm(path) gets the parent directory and calls removeChild(filename). Cascading delete is implicit — the removed Directory's children are unreachable.\n\nMove/rename: rename is easy if you add a setName(newName) method; move is harder. Option 1: parentDir.removeChild(oldName), then re-parent the node into newDir and update name. Option 2: track parent pointers on nodes, update in both directions.\n\nSymbolic links: new Link(Node target) extends Node. When resolving a path, if you encounter a Link, follow link.getTarget() and continue from there. Detect cycles by tracking visited nodes in the resolution walk.\n\nPermissions: add perms: Perms to every Node. Modify ls, mkdir, addContentToFile, readContentFromFile to check perms before proceeding. Perms can be { owner, group, rwx, ... } — just one more field on each Node.",
+      "hints": [
+        "Where are the seams? Point at them: removeChild on Directory, a new Link subclass, a Perms field on Node.",
+        "Deletion is clean if Directory.children is well-encapsulated. What breaks if you expose it directly?",
+        "Symbolic links: what's the minimal contract you add to Node to make Link work? Just getTarget()?"
+      ]
+    }
+  ],
+  "deepDives": [
+    {
+      "slug": "dd-path-resolution",
+      "title": "Path resolution and edge cases",
+      "questionPrompt": "How do you safely resolve a path like /a/b/c when some intermediate components are files? What exceptions do you throw and when?",
+      "sampleAnswer": "Path resolution is a walk from root, splitting by '/' and validating at each step. If you encounter a File node in the middle (e.g., /a/file.txt/b), you throw NotADirectoryException — you can't descend into a file. For mkdir and addContentToFile, you auto-create missing Directory nodes. For read operations (ls, readContentFromFile), if any component is missing, throw FileNotFoundException. The key is: validate type at each step and decide whether to auto-create or fail based on the operation.",
+      "rubric": {
+        "must": [
+          "Detect file-in-path and throw NotADirectoryException",
+          "Differentiate between missing components (auto-create for write, error for read) and invalid types",
+          "Consistent exception types across all operations"
+        ],
+        "should": [
+          "Note empty path (root) as special case",
+          "Mention what happens when path ends in '/' (canonical form)"
+        ],
+        "avoid": [
+          "Silently returning None or null — always throw or return Optional",
+          "Allowing traversal through a File"
+        ]
+      },
+      "hints": [
+        "When you split /a/b/c by '/', you get [a, b, c]. How do you handle the case where a is actually a File?",
+        "Trace one concrete error: call mkdir('/file.txt/subdir') where /file.txt exists and is a file.",
+        "What's the minimal set of exceptions you need? FileNotFoundException, NotADirectoryException, NotAFileException?"
+      ]
+    },
+    {
+      "slug": "dd-concurrency",
+      "title": "Thread safety",
+      "questionPrompt": "If multiple threads call mkdir, ls, and addContentToFile concurrently, where are the race conditions? How would you fix them?",
+      "sampleAnswer": "The FileSystem.root and all subtrees are shared mutable state. Two threads calling mkdir('/a'), both checking if 'a' exists and both creating it, is a classic race condition. Similarly, concurrent addContentToFile and readContentFromFile on the same file can tear the content string. The fix: wrap the entire FileSystem in a single ReentrantReadWriteLock. ls and readContentFromFile use read locks (multiple readers, no writers). mkdir, addContentToFile, and rm use write locks. Alternatively, lock at the node level (per-directory lock), but that's complex for path-wide atomicity.",
+      "rubric": {
+        "must": [
+          "Identify the shared state (tree structure and File.content)",
+          "Describe at least 2 race conditions (mkdir collision, content tear)"
+        ],
+        "should": [
+          "Propose a concrete synchronization mechanism (single lock, RWLock, per-node locks)",
+          "Discuss read vs write lock granularity"
+        ],
+        "avoid": [
+          "Sprinkling synchronized everywhere without justification",
+          "Ignoring content appends as a mutation"
+        ]
+      },
+      "hints": [
+        "Two threads both trying to mkdir('/a') for the first time — what goes wrong without locking?",
+        "One thread reads File.content while another appends. What do you see?",
+        "Is a read lock enough for ls? What about for reading a file that's being appended to?"
+      ]
+    },
+    {
+      "slug": "dd-deletion-semantics",
+      "title": "Recursive deletion",
+      "questionPrompt": "How would you implement rm(path) to delete a file or directory? What about cascading delete for nested directories?",
+      "sampleAnswer": "rm(path) traverses to the parent directory and calls parent.removeChild(name). For a File, this is trivial — the node is garbage-collected. For a Directory, removeChild just removes it from the parent's children map, rendering its entire subtree unreachable in one step. Java and Python automatically garbage-collect the unreachable subtree. There's no explicit recursive deletion needed — the design naturally handles it. Optionally, return boolean (true if deleted, false if not found) or return the deleted node for use in undo/redo.",
+      "rubric": {
+        "must": [
+          "Implement rm by calling parent.removeChild(name)",
+          "Explain why cascading deletion happens implicitly"
+        ],
+        "should": [
+          "Distinguish between rm /file (remove File) and rm /dir (remove Directory + children)",
+          "Return a useful value (boolean success, deleted node, or throw)"
+        ],
+        "avoid": [
+          "Implementing a recursive walk to manually delete each child",
+          "Silently failing on non-existent paths"
+        ]
+      },
+      "hints": [
+        "After removing a Directory from its parent's children map, what happens to all nodes inside it?",
+        "Should rm fail on a non-empty directory, or succeed with cascading delete?",
+        "What return type makes sense: bool, the deleted Node, or an exception?"
+      ]
+    }
+  ]
+}
