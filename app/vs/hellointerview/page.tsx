@@ -195,16 +195,7 @@ export default function VsHelloInterviewPage() {
           <p className="mt-3 max-w-2xl text-xs text-muted-foreground/80">
             DesignDojo is not endorsed by or derived from {HI}. {HI}&apos;s
             features and pricing change over time — verify current details
-            on{" "}
-            <a
-              href="https://www.hellointerview.com"
-              target="_blank"
-              rel="noreferrer noopener nofollow"
-              className="underline-offset-2 hover:underline"
-            >
-              their site
-            </a>
-            .
+            on their official site before relying on the comparison below.
           </p>
         </header>
 
