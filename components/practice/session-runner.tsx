@@ -1,11 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { toast } from "sonner";
-import { GraduationCap, KeyRound, LogOut, RotateCcw, Trash2 } from "lucide-react";
+import {
+  GraduationCap,
+  KeyRound,
+  LogOut,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +21,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { clearConfig } from "@/lib/storage/keys";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight } from "lucide-react";
@@ -26,8 +32,11 @@ import {
 import type { ImperativePanelHandle } from "react-resizable-panels";
 import { StageNav } from "@/components/practice/stage-nav";
 import { PromptPanel } from "@/components/practice/prompt-panel";
+import { DeepDiveView } from "@/components/practice/deep-dive-view";
+import { ReportView, type ReportItem } from "@/components/practice/report-view";
 import { KeyDialog } from "@/components/practice/key-dialog";
 import { MobileBlocker } from "@/components/practice/mobile-blocker";
+import { TutorPanel } from "@/components/practice/tutor-panel";
 import {
   Whiteboard,
   type WhiteboardHandle,
@@ -43,6 +52,7 @@ import { extractAnswerForStage } from "@/lib/excalidraw/extract";
 import { extractAnswerForStageInCode } from "@/lib/code/extract";
 import { buildSeedCode, transformLineComments, type CodeLanguage } from "@/lib/code/seed";
 import {
+  deleteSession,
   loadSession,
   saveCanvas,
   saveClarifications,
@@ -51,17 +61,47 @@ import {
   type ClarifyMessage,
   type StageState,
 } from "@/lib/storage/sessions";
-import { loadConfig } from "@/lib/storage/keys";
-import type { ByokConfig } from "@/lib/ai/types";
 import { gradeAnswer } from "@/lib/ai/grade-client";
-import type { Framework, Question, QuestionType } from "@/lib/content/schema";
+import type {
+  DeepDive,
+  Framework,
+  Question,
+  QuestionType,
+  StageContent,
+} from "@/lib/content/schema";
 import { getStageMeta } from "@/lib/content/meta";
 import { buildSeedScene, SEED_VERSION } from "@/lib/excalidraw/seed";
 import { StageTimer } from "@/components/practice/timer";
+import {
+  SessionStoreProvider,
+  useSessionStore,
+  useSessionStoreApi,
+} from "@/lib/store/session-store";
+import { useConfigStore } from "@/lib/store/config-store";
 
 const SAVE_DEBOUNCE_MS = 600;
+const REPORT_SLUG = "__report__";
 
-export function SessionRunner({
+type SessionItem =
+  | { kind: "stage"; stage: StageContent; slug: string; title: string }
+  | { kind: "deepDive"; deepDive: DeepDive; slug: string; title: string };
+
+export function SessionRunner(props: {
+  type: QuestionType;
+  question: Question;
+  framework: Framework;
+}) {
+  return (
+    <SessionStoreProvider
+      key={`${props.type}:${props.question.id}`}
+      init={{ type: props.type, questionId: props.question.id }}
+    >
+      <SessionRunnerInner {...props} />
+    </SessionStoreProvider>
+  );
+}
+
+function SessionRunnerInner({
   type,
   question,
   framework,
@@ -76,38 +116,77 @@ export function SessionRunner({
   const themeKey: "light" | "dark" =
     resolvedTheme === "dark" ? "dark" : "light";
   const stages = question.stages;
+  const deepDives = question.deepDives ?? [];
   const isLLD = type === "low-level-design";
   const stageTitles = useMemo(() => stages.map((s) => s.title), [stages]);
 
-  const slugFromUrl = params.get("q");
-  const activeIndex = useMemo(() => {
-    const i = stages.findIndex((s) => s.slug === slugFromUrl);
-    return i === -1 ? 0 : i;
-  }, [slugFromUrl, stages]);
-  const stage = stages[activeIndex];
+  const items = useMemo<SessionItem[]>(
+    () => [
+      ...stages.map<SessionItem>((s) => ({
+        kind: "stage",
+        stage: s,
+        slug: s.slug,
+        title: s.title,
+      })),
+      ...deepDives.map<SessionItem>((d) => ({
+        kind: "deepDive",
+        deepDive: d,
+        slug: d.slug,
+        title: d.title,
+      })),
+    ],
+    [stages, deepDives],
+  );
 
-  const [stageMap, setStageMap] = useState<Record<string, StageState>>({});
-  const [clarifyHistory, setClarifyHistory] = useState<ClarifyMessage[]>([]);
-  // Pre-question intro: on first hydrate, show the whole canvas as an
-  // overview and gate stage focus behind a Start click. Once started, the
-  // session behaves normally. We also persist this in sessionStorage so
-  // refreshing during the session doesn't replay the intro.
+  const slugFromUrl = params.get("q");
+  const isReport = slugFromUrl === REPORT_SLUG;
+  const activeIndex = useMemo(() => {
+    if (isReport) return -1;
+    const i = items.findIndex((s) => s.slug === slugFromUrl);
+    return i === -1 ? 0 : i;
+  }, [slugFromUrl, items, isReport]);
+  const activeItem = activeIndex >= 0 ? items[activeIndex] : null;
+  const stage = activeItem?.kind === "stage" ? activeItem.stage : stages[0];
+
+  // Session store: per-question state (stages, chats, gating, tutor panel)
+  const storeApi = useSessionStoreApi();
+  const stageMap = useSessionStore((s) => s.stages);
+  const clarifyHistory = useSessionStore((s) => s.clarify);
+  const sessionHydrated = useSessionStore((s) => s.hydrated);
+  const started = useSessionStore((s) => s.started);
+  const hasProgress = useSessionStore((s) => s.hasProgress);
+  const isGrading = useSessionStore((s) => s.isGrading);
+  const hydrateFromSession = useSessionStore((s) => s.hydrateFromSession);
+  const patchStage = useSessionStore((s) => s.patchStage);
+  const resetStages = useSessionStore((s) => s.resetStages);
+  const appendClarifyStore = useSessionStore((s) => s.appendClarify);
+  const setClarify = useSessionStore((s) => s.setClarify);
+  const setStarted = useSessionStore((s) => s.setStarted);
+  const setIsGrading = useSessionStore((s) => s.setIsGrading);
+  const setTutorOpen = useSessionStore((s) => s.setTutorOpen);
+
+  // Global config store: BYOK + key dialog
+  const byok = useConfigStore((s) => s.byok);
+  const configHydrated = useConfigStore((s) => s.hydrated);
+  const keyDialogOpen = useConfigStore((s) => s.keyDialogOpen);
+  const setByok = useConfigStore((s) => s.setByok);
+  const clearByok = useConfigStore((s) => s.clearByok);
+  const setKeyDialogOpen = useConfigStore((s) => s.setKeyDialogOpen);
+  const openKeyDialog = useConfigStore((s) => s.openKeyDialog);
+  const hydrateConfig = useConfigStore((s) => s.hydrate);
+
+  useEffect(() => {
+    if (!configHydrated) hydrateConfig();
+  }, [configHydrated, hydrateConfig]);
+
+  // Workspace UI state stays local — DOM/lifecycle-coupled.
   const introKey = `designdojo:started:${type}:${question.id}`;
-  const [started, setStarted] = useState<boolean>(false);
-  // Excalidraw's API arrives async (dynamic import + mount). Hold the focus
-  // effect until both data hydration and API mount have happened, otherwise
-  // scrollToContent runs against a null api and the canvas stays at the
-  // seed's default scroll/zoom.
   const [whiteboardReady, setWhiteboardReady] = useState(false);
   const [initialCanvas, setInitialCanvas] = useState<WhiteboardScene | undefined>(
     undefined,
   );
   const [initialCode, setInitialCode] = useState<string>("");
   const [codeLanguage, setCodeLanguage] = useState<CodeLanguage>("pseudocode");
-  const [hydrated, setHydrated] = useState(false);
-  const [isGrading, setIsGrading] = useState(false);
-  const [byok, setByok] = useState<ByokConfig | null>(null);
-  const [keyDialogOpen, setKeyDialogOpen] = useState(false);
 
   const canvasRef = useRef<WhiteboardScene | undefined>(undefined);
   const codeRef = useRef<string>("");
@@ -126,8 +205,7 @@ export function SessionRunner({
     let alive = true;
     loadSession(type, question.id).then((s) => {
       if (!alive) return;
-      setStageMap(s?.stages ?? {});
-      setClarifyHistory(s?.clarifications ?? []);
+      hydrateFromSession(s);
       if (isLLD) {
         const lang = (s?.codeLanguage ?? "pseudocode") as CodeLanguage;
         setCodeLanguage(lang);
@@ -152,51 +230,86 @@ export function SessionRunner({
           void saveCanvas(type, question.id, seed);
         }
       }
-      // Skip the intro for LLD (no canvas overview to show), or when the
-      // user has any progress on this question, or after a same-tab restart.
-      const hasProgress = Object.values(s?.stages ?? {}).some(
-        (st) => st?.feedback || (st?.answer?.trim().length ?? 0) > 0,
+      // Gate logic on revisit:
+      //  - Has progress (any kind): show Resume / Start Over (started=false)
+      //  - Fresh + LLD: jump straight in (started=true) — no canvas overview
+      //  - Fresh + HLD: show Start gate so the user sees the canvas overview
+      const progress = Object.values(s?.stages ?? {}).some(
+        (st) => st?.feedback || st?.skipped || (st?.answer?.trim().length ?? 0) > 0,
       );
-      const startedFlag =
+      const stickyStarted =
         typeof window !== "undefined" &&
         window.sessionStorage.getItem(introKey) === "1";
-      setStarted(isLLD || hasProgress || startedFlag);
-      setHydrated(true);
+      // Sticky bit beats every derivation: once the user has clicked through
+      // the gate this session, don't ask again.
+      setStarted(stickyStarted || (isLLD && !progress));
     });
-    const cfg = loadConfig();
-    setByok(cfg);
-    if (!cfg && typeof window !== "undefined") {
-      const seen = window.localStorage.getItem("designdojo:seen-keydialog");
-      if (!seen) {
-        setKeyDialogOpen(true);
-        window.localStorage.setItem("designdojo:seen-keydialog", "1");
-      }
-    }
+
+    if (typeof window !== "undefined" && !configHydrated) hydrateConfig();
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, question.id, question, isLLD, themeKey, introKey]);
 
-  // Default URL to first stage
+  // First-time visitor onboarding for the key dialog.
   useEffect(() => {
-    if (!slugFromUrl && stages[0]) {
+    if (!configHydrated) return;
+    if (byok) return;
+    if (typeof window === "undefined") return;
+    const seen = window.localStorage.getItem("designdojo:seen-keydialog");
+    if (seen) return;
+    setKeyDialogOpen(true);
+    window.localStorage.setItem("designdojo:seen-keydialog", "1");
+  }, [configHydrated, byok, setKeyDialogOpen]);
+
+  // Default URL to first item; clamp unknown slugs back to the first stage.
+  useEffect(() => {
+    if (!slugFromUrl && items[0]) {
       router.replace(
-        `/practice/${type}/${question.id}?q=${stages[0].slug}`,
+        `/practice/${type}/${question.id}?q=${items[0].slug}`,
+        { scroll: false },
+      );
+      return;
+    }
+    if (
+      slugFromUrl &&
+      !isReport &&
+      !items.some((it) => it.slug === slugFromUrl) &&
+      items[0]
+    ) {
+      router.replace(
+        `/practice/${type}/${question.id}?q=${items[0].slug}`,
         { scroll: false },
       );
     }
-  }, [slugFromUrl, stages, router, type, question.id]);
+  }, [slugFromUrl, items, isReport, router, type, question.id]);
 
   const goToStage = useCallback(
     (i: number) => {
-      const s = stages[i];
+      const s = items[i];
       if (!s) return;
       router.replace(`/practice/${type}/${question.id}?q=${s.slug}`, {
         scroll: false,
       });
     },
-    [router, stages, type, question.id],
+    [router, items, type, question.id],
   );
+
+  const goToReport = useCallback(() => {
+    router.replace(
+      `/practice/${type}/${question.id}?q=${REPORT_SLUG}`,
+      { scroll: false },
+    );
+  }, [router, type, question.id]);
+
+  const goToLastItem = useCallback(() => {
+    const last = items[items.length - 1];
+    if (!last) return;
+    router.replace(`/practice/${type}/${question.id}?q=${last.slug}`, {
+      scroll: false,
+    });
+  }, [router, items, type, question.id]);
 
   const flush = useCallback(() => {
     const pending = pendingRef.current;
@@ -227,47 +340,90 @@ export function SessionRunner({
 
   const updateStage = useCallback(
     (slug: string, patch: Partial<StageState>) => {
-      setStageMap((m) => ({
-        ...m,
-        [slug]: {
-          ...(m[slug] ?? { answer: "", updatedAt: Date.now() }),
-          ...patch,
-          updatedAt: Date.now(),
-        },
-      }));
+      patchStage(slug, patch);
       persist(slug, patch);
     },
-    [persist],
+    [patchStage, persist],
   );
 
-  // On stage change: focus + highlight on whichever surface is active. For
-  // the canvas surface, hold off until the user clicks Start so the initial
-  // view shows the entire canvas as an overview.
+  // On stage change: focus + highlight on whichever surface is active.
   useEffect(() => {
-    if (!hydrated) return;
+    if (!sessionHydrated) return;
+    const onDesignStage = activeItem?.kind === "stage";
     if (isLLD) {
       const ed = codeEditorRef.current;
-      ed?.setActiveStage(stage.title);
-      ed?.focusStage(stage.title);
+      if (onDesignStage) {
+        ed?.setActiveStage(activeItem.stage.title);
+        ed?.focusStage(activeItem.stage.title);
+      } else {
+        ed?.setActiveStage("");
+      }
       return;
     }
     if (!whiteboardReady) return;
-    if (started) {
-      const id = `anchor-${stage.slug}`;
+    if (started && onDesignStage) {
+      const id = `anchor-${activeItem.stage.slug}`;
       const wb = whiteboardRef.current;
       wb?.setActiveAnchor(id);
       wb?.focusAnchor(id);
     } else {
+      whiteboardRef.current?.setActiveAnchor("");
       whiteboardRef.current?.fitAll();
     }
-  }, [stage.slug, stage.title, hydrated, isLLD, started, whiteboardReady]);
+  }, [activeItem, sessionHydrated, isLLD, started, whiteboardReady]);
 
   const handleStart = useCallback(() => {
     setStarted(true);
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem(introKey, "1");
     }
-  }, [introKey]);
+  }, [introKey, setStarted]);
+
+  const handleStartOver = useCallback(async () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    pendingRef.current = {};
+    await deleteSession(type, question.id);
+    resetStages();
+    setClarify([]);
+    storeApi.getState().resetTutor();
+    if (isLLD) {
+      const fresh = buildSeedCode(question, codeLanguage);
+      codeRef.current = fresh;
+      setInitialCode(fresh);
+    } else {
+      const fresh = buildSeedScene(question, themeKey);
+      canvasRef.current = fresh;
+      setInitialCanvas(fresh);
+    }
+    setResetCounter((n) => n + 1);
+    setWhiteboardReady(false);
+    if (items[0]) {
+      router.replace(
+        `/practice/${type}/${question.id}?q=${items[0].slug}`,
+        { scroll: false },
+      );
+    }
+    setStarted(isLLD);
+    if (typeof window !== "undefined") {
+      if (isLLD) window.sessionStorage.setItem(introKey, "1");
+      else window.sessionStorage.removeItem(introKey);
+    }
+    toast.success("Session reset.");
+  }, [
+    type,
+    question.id,
+    isLLD,
+    question,
+    codeLanguage,
+    themeKey,
+    items,
+    router,
+    introKey,
+    resetStages,
+    setClarify,
+    storeApi,
+    setStarted,
+  ]);
 
   // Canvas save (HLD)
   const canvasSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -299,11 +455,7 @@ export function SessionRunner({
     (lang: CodeLanguage) => {
       const prev = codeLanguage;
       if (prev === lang) return;
-      // Pull current buffer from the editor (user's freshest edits), fall back
-      // to our ref if the editor isn't mounted yet.
       const current = codeEditorRef.current?.getValue() ?? codeRef.current;
-      // Translate line-leading comment markers (// ↔ #) so the seeded headers
-      // match the new language. User code on non-comment lines is untouched.
       const translated = transformLineComments(current, prev, lang);
       codeRef.current = translated;
       setInitialCode(translated);
@@ -315,14 +467,23 @@ export function SessionRunner({
 
   const handleSubmit = useCallback(async () => {
     if (!byok) {
-      setKeyDialogOpen(true);
+      openKeyDialog();
       return;
     }
+    if (!activeItem) return;
 
     let answer = "";
     let canvas: WhiteboardScene | undefined;
+    const scene = whiteboardRef.current?.getScene() ?? canvasRef.current;
+    if (!isLLD) canvas = scene;
 
-    if (isLLD) {
+    if (activeItem.kind === "deepDive") {
+      answer = (stageMap[activeItem.slug]?.answer ?? "").trim();
+      if (answer.length < 5) {
+        toast.warning("Type your answer in the box first.");
+        return;
+      }
+    } else if (isLLD) {
       const code = codeEditorRef.current?.getValue() ?? codeRef.current;
       answer = extractAnswerForStageInCode(code, stage.title, stageTitles);
       if (!answer || answer.length < 5) {
@@ -335,8 +496,6 @@ export function SessionRunner({
         return;
       }
     } else {
-      const scene = whiteboardRef.current?.getScene() ?? canvasRef.current;
-      canvas = scene;
       answer = extractAnswerForStage(scene, `anchor-${stage.slug}`);
       if (!answer || answer.length < 5) {
         toast.warning("Type your answer in the highlighted block first.", {
@@ -347,38 +506,80 @@ export function SessionRunner({
       }
     }
 
-    updateStage(stage.slug, { answer });
+    const slug = activeItem.slug;
+    const stageForGrader =
+      activeItem.kind === "deepDive"
+        ? {
+            slug: activeItem.deepDive.slug,
+            title: activeItem.deepDive.title,
+            questionPrompt: activeItem.deepDive.questionPrompt,
+            howToAnswer: activeItem.deepDive.hints[0] ?? "",
+            hints: activeItem.deepDive.hints,
+            rubric: activeItem.deepDive.rubric,
+          }
+        : stage;
+
+    updateStage(slug, { answer, skipped: false });
     setIsGrading(true);
     try {
       const feedback = await gradeAnswer({
         byok,
         question: { title: question.title, prompt: question.prompt, type },
-        stage,
+        stage: stageForGrader,
         answer,
         canvas,
       });
-      updateStage(stage.slug, { feedback });
+      updateStage(slug, { feedback });
     } catch (e) {
       const msg = (e as Error).message ?? "Grading failed";
       toast.error("Grading failed", { description: msg, duration: 8000 });
     } finally {
       setIsGrading(false);
     }
-  }, [byok, isLLD, stage, stageTitles, question, type, updateStage]);
+  }, [
+    byok,
+    isLLD,
+    activeItem,
+    stage,
+    stageTitles,
+    stageMap,
+    question,
+    type,
+    updateStage,
+    openKeyDialog,
+    setIsGrading,
+  ]);
 
   const handleTryAgain = useCallback(() => {
-    updateStage(stage.slug, { feedback: undefined });
-  }, [stage.slug, updateStage]);
+    if (!activeItem) return;
+    updateStage(activeItem.slug, { feedback: undefined });
+  }, [activeItem, updateStage]);
+
+  const handleDeepDiveChange = useCallback(
+    (slug: string, value: string) => {
+      updateStage(slug, { answer: value });
+    },
+    [updateStage],
+  );
+
+  const handleSkipDeepDive = useCallback(
+    (slug: string, isLast: boolean) => {
+      flushSync(() => {
+        updateStage(slug, { skipped: true, feedback: undefined });
+      });
+      if (isLast) goToReport();
+      else goToStage(activeIndex + 1);
+    },
+    [updateStage, goToReport, goToStage, activeIndex],
+  );
 
   const handleAppendClarify = useCallback(
     (msgs: ClarifyMessage[]) => {
-      setClarifyHistory((h) => {
-        const next = [...h, ...msgs];
-        void saveClarifications(type, question.id, next);
-        return next;
-      });
+      appendClarifyStore(msgs);
+      const next = [...storeApi.getState().clarify];
+      void saveClarifications(type, question.id, next);
     },
-    [type, question.id],
+    [appendClarifyStore, storeApi, type, question.id],
   );
 
   const handleResetWorkspace = useCallback(() => {
@@ -398,13 +599,39 @@ export function SessionRunner({
     toast.success(isLLD ? "Editor reset" : "Whiteboard reset");
   }, [isLLD, question, codeLanguage, type, themeKey]);
 
-  const stageState = stageMap[stage.slug];
-  const stageMeta = getStageMeta(framework, stage.slug);
-  const dotStages = stages.map((s) => ({
-    slug: s.slug,
-    title: s.title,
-    done: Boolean(stageMap[s.slug]?.feedback),
+  const stageState = activeItem ? stageMap[activeItem.slug] : undefined;
+  const stageMeta =
+    activeItem?.kind === "stage"
+      ? getStageMeta(framework, activeItem.stage.slug)
+      : null;
+  const dotStages = items.map((it) => ({
+    slug: it.slug,
+    title: it.kind === "deepDive" ? `Deep Dive · ${it.title}` : it.title,
+    done:
+      Boolean(stageMap[it.slug]?.feedback) ||
+      Boolean(stageMap[it.slug]?.skipped),
   }));
+  const isLastItem = activeIndex === items.length - 1;
+  const reportItems: ReportItem[] = items.map((it) => ({
+    slug: it.slug,
+    title: it.title,
+    kind: it.kind,
+    state: stageMap[it.slug],
+  }));
+
+  // Tutor context — accessor closures so the panel always sends the
+  // freshest answer/canvas at send time.
+  const getCanvasText = useCallback(() => {
+    const scene = whiteboardRef.current?.getScene() ?? canvasRef.current;
+    if (!scene || !activeItem || activeItem.kind !== "stage") return undefined;
+    return extractAnswerForStage(scene, `anchor-${activeItem.stage.slug}`);
+  }, [activeItem]);
+
+  const getCodeAnswer = useCallback(() => {
+    const code = codeEditorRef.current?.getValue() ?? codeRef.current;
+    if (!activeItem || activeItem.kind !== "stage") return undefined;
+    return extractAnswerForStageInCode(code, activeItem.stage.title, stageTitles);
+  }, [activeItem, stageTitles]);
 
   return (
     <div className="flex h-[100dvh] flex-col">
@@ -413,7 +640,7 @@ export function SessionRunner({
         <div className="flex items-center gap-3">
           <StageNav
             stages={dotStages}
-            activeIndex={activeIndex}
+            activeIndex={isReport ? -1 : activeIndex}
             onSelect={goToStage}
           />
           <div className="hidden items-center gap-2 pl-3 sm:flex">
@@ -481,8 +708,7 @@ export function SessionRunner({
                 <DropdownMenuItem
                   onSelect={(e) => {
                     e.preventDefault();
-                    clearConfig();
-                    setByok(null);
+                    clearByok();
                     toast.success("Key removed from this device");
                   }}
                 >
@@ -503,9 +729,9 @@ export function SessionRunner({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Tutor</DropdownMenuLabel>
-              <DropdownMenuItem disabled>
+              <DropdownMenuItem onSelect={() => setTutorOpen(true)}>
                 <GraduationCap className="size-3.5" />
-                Tutor mode (soon)
+                Open tutor
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -529,7 +755,65 @@ export function SessionRunner({
           className="flex min-h-0 flex-col overflow-hidden bg-background"
         >
           <aside className="flex min-h-0 flex-1 flex-col overflow-hidden p-5">
-            {hydrated ? (
+            {!sessionHydrated ? (
+              <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                Loading session…
+              </div>
+            ) : !started ? (
+              <PromptPanel
+                stage={stages[0]}
+                question={{
+                  title: question.title,
+                  prompt: question.prompt,
+                  type,
+                }}
+                index={0}
+                total={items.length}
+                onSubmit={handleSubmit}
+                onTryAgain={handleTryAgain}
+                onNext={() => goToStage(1)}
+                isGrading={false}
+                hasNext={items.length > 1}
+                questionTitle={question.title}
+                stageMeta={getStageMeta(framework, stages[0]?.slug ?? "")}
+                surface={isLLD ? "code" : "canvas"}
+                byok={byok}
+                clarifyHistory={clarifyHistory}
+                onAppendClarify={handleAppendClarify}
+                onCollapse={() => promptPanelRef.current?.collapse()}
+                started={false}
+                onStart={handleStart}
+                onStartOver={handleStartOver}
+                hasProgress={hasProgress}
+              />
+            ) : isReport ? (
+              <ReportView
+                questionTitle={question.title}
+                type={type}
+                items={reportItems}
+                onJumpTo={(slug) => {
+                  const i = items.findIndex((it) => it.slug === slug);
+                  if (i >= 0) goToStage(i);
+                }}
+                onBackToLast={goToLastItem}
+              />
+            ) : activeItem?.kind === "deepDive" ? (
+              <DeepDiveView
+                deepDive={activeItem.deepDive}
+                value={stageMap[activeItem.slug]?.answer ?? ""}
+                onChange={(v) => handleDeepDiveChange(activeItem.slug, v)}
+                onSubmit={handleSubmit}
+                onSkip={() => handleSkipDeepDive(activeItem.slug, isLastItem)}
+                isLast={isLastItem}
+                isGrading={isGrading}
+                feedback={stageState?.feedback}
+                onTryAgain={handleTryAgain}
+                onNext={() => goToStage(activeIndex + 1)}
+                onFinish={isLastItem ? goToReport : undefined}
+                onCollapse={() => promptPanelRef.current?.collapse()}
+                questionTitle={question.title}
+              />
+            ) : (
               <PromptPanel
                 stage={stage}
                 question={{
@@ -538,13 +822,13 @@ export function SessionRunner({
                   type,
                 }}
                 index={activeIndex}
-                total={stages.length}
+                total={items.length}
                 onSubmit={handleSubmit}
                 onTryAgain={handleTryAgain}
                 onNext={() => goToStage(activeIndex + 1)}
                 feedback={stageState?.feedback}
                 isGrading={isGrading}
-                hasNext={activeIndex < stages.length - 1}
+                hasNext={activeIndex < items.length - 1}
                 questionTitle={question.title}
                 stageMeta={stageMeta}
                 surface={isLLD ? "code" : "canvas"}
@@ -554,11 +838,8 @@ export function SessionRunner({
                 onCollapse={() => promptPanelRef.current?.collapse()}
                 started={started}
                 onStart={handleStart}
+                onFinish={isLastItem ? goToReport : undefined}
               />
-            ) : (
-              <div className="grid h-full place-items-center text-sm text-muted-foreground">
-                Loading session…
-              </div>
             )}
           </aside>
         </ResizablePanel>
@@ -583,7 +864,7 @@ export function SessionRunner({
         ) : null}
         <ResizablePanel defaultSize={70} minSize={50}>
           <main className="relative flex h-full min-w-0 flex-col gap-2 p-3">
-            {hydrated ? (
+            {sessionHydrated ? (
               isLLD ? (
                 <>
                   <EditorHeader title={question.title} prompt={question.prompt} />
@@ -617,6 +898,13 @@ export function SessionRunner({
           setByok(cfg);
           toast.success(`Connected to ${cfg.label ?? "provider"}`);
         }}
+      />
+      <TutorPanel
+        type={type}
+        question={question}
+        activeStage={activeItem?.kind === "stage" ? activeItem.stage : undefined}
+        getCanvasText={getCanvasText}
+        getCodeAnswer={getCodeAnswer}
       />
     </div>
   );
