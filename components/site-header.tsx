@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 const GITHUB_URL = "https://github.com/adityaongit/design-dojo";
 
 const NAV_LINKS: Array<{ href: string; label: string }> = [
-  { href: "/practice/system-design", label: "System Design" },
-  { href: "/practice/low-level-design", label: "Low-Level Design" },
+  { href: "/learn", label: "Learn" },
+  { href: "/practice", label: "Practice" },
+  { href: "/practice/lists", label: "Lists" },
   { href: "/faq", label: "FAQ" },
 ];
 

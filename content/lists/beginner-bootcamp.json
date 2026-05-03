@@ -1,0 +1,18 @@
+{
+  "slug": "beginner-bootcamp",
+  "title": "Beginner Bootcamp",
+  "tagline": "Your first week",
+  "description": "If you've never done a system-design interview before, do these in order. Each one introduces one new primitive — sharding, caching, fan-out, geospatial — without piling them up at once.",
+  "icon": "Sprout",
+  "accent": "emerald",
+  "estimateMinutes": 240,
+  "items": [
+    { "type": "system-design", "slug": "bitly", "rank": 1, "note": "Read-heavy, sharding, base62 ids" },
+    { "type": "low-level-design", "slug": "parking-lot", "rank": 2, "note": "Pure OOP, no scale" },
+    { "type": "system-design", "slug": "rate-limiter", "rank": 3, "note": "Token bucket, distributed counters" },
+    { "type": "low-level-design", "slug": "connect-four", "rank": 4, "note": "State machine + win-detection" },
+    { "type": "system-design", "slug": "distributed-cache", "rank": 5, "note": "LRU + consistent hashing" },
+    { "type": "system-design", "slug": "fb-news-feed", "rank": 6, "note": "Fan-out + timeline" },
+    { "type": "system-design", "slug": "uber", "rank": 7, "note": "Geospatial + real-time matching" }
+  ]
+}

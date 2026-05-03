@@ -1,0 +1,26 @@
+{
+  "slug": "top-20-must-know",
+  "title": "Top 20 Must-Know",
+  "tagline": "The canonical Pradeep set",
+  "description": "Twenty problems that cover most of what FAANG actually asks. Curated by Pradeep from years of running live cohorts. Start here if you have a week, not a month.",
+  "icon": "Star",
+  "accent": "amber",
+  "estimateMinutes": 600,
+  "source": "https://livecohortbypradeep.com",
+  "items": [
+    { "type": "system-design", "slug": "bitly", "rank": 1, "note": "URL Shortener fundamentals" },
+    { "type": "system-design", "slug": "fb-news-feed", "rank": 2, "note": "Fan-out, ranking, timeline" },
+    { "type": "system-design", "slug": "whatsapp", "rank": 3, "note": "Messaging, delivery receipts, presence" },
+    { "type": "system-design", "slug": "youtube", "rank": 4, "note": "Video pipeline + CDN" },
+    { "type": "system-design", "slug": "rate-limiter", "rank": 5, "note": "Token bucket, distributed coordination" },
+    { "type": "system-design", "slug": "dropbox", "rank": 6, "note": "File sync, metadata, conflict resolution" },
+    { "type": "system-design", "slug": "distributed-cache", "rank": 9, "note": "LRU + consistent hashing" },
+    { "type": "low-level-design", "slug": "parking-lot", "rank": 11, "note": "Classic OOP design" },
+    { "type": "low-level-design", "slug": "elevator", "rank": 12, "note": "State machine + scheduler" },
+    { "type": "system-design", "slug": "ticketmaster", "rank": 15, "note": "Inventory + concurrency" },
+    { "type": "system-design", "slug": "uber", "rank": 16, "note": "Geospatial matching + real-time" },
+    { "type": "system-design", "slug": "instagram", "rank": 17, "note": "Photo storage + feed" },
+    { "type": "system-design", "slug": "local-delivery", "rank": 19, "note": "Logistics, ETAs, dispatch" },
+    { "type": "system-design", "slug": "payment-system", "rank": 20, "note": "Idempotency, ACID, audit" }
+  ]
+}

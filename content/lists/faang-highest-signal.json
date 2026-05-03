@@ -1,0 +1,23 @@
+{
+  "slug": "faang-highest-signal",
+  "title": "FAANG Highest-Signal",
+  "tagline": "Where the loop overlap is",
+  "description": "The dozen problems that show up most often across Meta, Google, Amazon, and Apple loops in our community-reported data. If you only have time for 12, do these.",
+  "icon": "Target",
+  "accent": "rose",
+  "estimateMinutes": 360,
+  "items": [
+    { "type": "system-design", "slug": "fb-news-feed", "note": "Meta · Amazon · Google" },
+    { "type": "system-design", "slug": "instagram", "note": "Meta · Amazon · Google" },
+    { "type": "system-design", "slug": "whatsapp", "note": "Meta · Amazon · Google" },
+    { "type": "system-design", "slug": "leetcode", "note": "Google · Meta · Amazon" },
+    { "type": "system-design", "slug": "ad-click-aggregator", "note": "Google · Meta · Amazon" },
+    { "type": "system-design", "slug": "fb-live-comments", "note": "Meta · Apple · Amazon" },
+    { "type": "system-design", "slug": "distributed-cache", "note": "Meta · Google · Amazon" },
+    { "type": "system-design", "slug": "google-docs", "note": "Google · Meta · Notion" },
+    { "type": "system-design", "slug": "fb-post-search", "note": "Meta · Google" },
+    { "type": "system-design", "slug": "web-crawler", "note": "Google · Bing" },
+    { "type": "system-design", "slug": "dropbox", "note": "Apple · Google · Dropbox" },
+    { "type": "system-design", "slug": "job-scheduler", "note": "Amazon · Stripe · DoorDash" }
+  ]
+}

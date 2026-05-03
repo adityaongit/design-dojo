@@ -1,0 +1,17 @@
+{
+  "slug": "cache-mastery",
+  "title": "Cache Mastery",
+  "tagline": "Read-heavy & cache-shaped",
+  "description": "Six problems that all hinge on getting the read path right — what to cache, where to cache it, when to invalidate, and what happens when your cache fleet adds or loses a node mid-traffic.",
+  "icon": "Layers",
+  "accent": "sky",
+  "estimateMinutes": 180,
+  "items": [
+    { "type": "system-design", "slug": "distributed-cache", "note": "The mechanism itself" },
+    { "type": "system-design", "slug": "bitly", "note": "Read-heavy redirects" },
+    { "type": "system-design", "slug": "fb-news-feed", "note": "Precomputed timelines" },
+    { "type": "system-design", "slug": "fb-post-search", "note": "Inverted-index caching" },
+    { "type": "system-design", "slug": "instagram", "note": "Hot-feed caching" },
+    { "type": "system-design", "slug": "youtube-top-k", "note": "Approximate counts at scale" }
+  ]
+}
