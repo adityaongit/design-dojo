@@ -145,36 +145,57 @@ export default async function Page({
                     <li key={a.slug}>
                       <Link
                         href={`/learn/${type}/${a.slug}`}
-                        className="flex items-start justify-between gap-4 px-4 py-4 transition hover:bg-foreground/5 sm:px-5"
+                        className="group grid grid-cols-[1fr_auto] items-center gap-x-4 px-4 py-3.5 transition hover:bg-foreground/5 sm:px-5 sm:py-4"
                       >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                            <span className="text-base font-medium tracking-tight">
+                        <div className="min-w-0">
+                          <div className="flex items-baseline gap-2">
+                            <span className="truncate text-base font-medium tracking-tight">
                               {a.title}
                             </span>
                             {a.focusTag ? (
-                              <span className="text-xs text-muted-foreground">
+                              <span className="hidden shrink-0 truncate text-xs text-muted-foreground sm:inline">
                                 · {a.focusTag}
                               </span>
                             ) : null}
                           </div>
-                          {a.askedAt.length ? (
-                            <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
-                              <span className="opacity-60">Asked at</span>
-                              {a.askedAt.slice(0, 5).map((co) => (
-                                <span
-                                  key={co}
-                                  className="rounded border border-border/60 bg-background/40 px-1.5 py-0.5"
-                                >
-                                  {co}
+                          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] leading-none text-muted-foreground">
+                            {a.focusTag ? (
+                              <span className="rounded-full bg-emerald-500/10 px-2 py-1 font-medium text-emerald-500 sm:hidden">
+                                {a.focusTag}
+                              </span>
+                            ) : null}
+                            {a.askedAt.length ? (
+                              <>
+                                <span className="text-muted-foreground/70">
+                                  Asked at
                                 </span>
-                              ))}
-                            </div>
-                          ) : null}
+                                {a.askedAt.slice(0, 5).map((co) => (
+                                  <span
+                                    key={co}
+                                    className="text-foreground/70"
+                                  >
+                                    {co}
+                                  </span>
+                                )).reduce<React.ReactNode[]>((acc, el, i) => {
+                                  if (i > 0) acc.push(
+                                    <span key={`sep-${i}`} className="text-muted-foreground/40">
+                                      ·
+                                    </span>,
+                                  );
+                                  acc.push(el);
+                                  return acc;
+                                }, [])}
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground/60">
+                                Common interview problem
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <div className="hidden shrink-0 items-center gap-2 text-xs text-muted-foreground sm:flex">
+                        <div className="flex shrink-0 items-center gap-2.5 text-xs text-muted-foreground">
                           {a.updatedAt ? (
-                            <span className="inline-flex items-center gap-1">
+                            <span className="hidden items-center gap-1 sm:inline-flex">
                               <Clock className="size-3" />
                               {new Date(a.updatedAt).toLocaleDateString(
                                 undefined,
@@ -182,7 +203,7 @@ export default async function Page({
                               )}
                             </span>
                           ) : null}
-                          <ArrowRight className="size-3.5 opacity-60" />
+                          <ArrowRight className="size-3.5 opacity-60 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
                         </div>
                       </Link>
                     </li>

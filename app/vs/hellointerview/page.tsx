@@ -4,7 +4,7 @@ import {
   ArrowRight,
   CheckCircle2,
   CircleDashed,
-  Info,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
@@ -167,28 +167,19 @@ export default function VsHelloInterviewPage() {
       />
       <SiteHeader />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 pt-8 pb-20 sm:px-6 sm:pt-12">
-        {/* Disclaimer */}
-        <div className="mb-8 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-foreground/80">
-          <Info className="mt-0.5 size-4 shrink-0 text-amber-500" />
-          <div>
-            <strong className="font-semibold">Not affiliated.</strong>{" "}
-            DesignDojo is an independent, open-source project. We are not
-            affiliated with, endorsed by, or derived from {HI}. Nothing on
-            this page should be taken as their official position — verify
-            current pricing and features on{" "}
-            <a
-              href="https://www.hellointerview.com"
-              target="_blank"
-              rel="noreferrer noopener nofollow"
-              className="underline-offset-2 hover:underline"
-            >
-              their site
-            </a>
-            .
-          </div>
-        </div>
-
         <header className="mb-10">
+          {/* Quiet disclaimer pill */}
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 py-1 pl-1.5 pr-3 text-xs">
+            <span className="grid size-5 place-items-center rounded-full bg-emerald-500/15 text-emerald-500">
+              <ShieldCheck className="size-3" />
+            </span>
+            <span className="text-foreground/80">Independent project</span>
+            <span className="text-muted-foreground/50">·</span>
+            <span className="text-muted-foreground">
+              not affiliated with {HI}
+            </span>
+          </div>
+
           <div className="text-xs font-semibold uppercase tracking-widest text-emerald-500">
             Comparison
           </div>
@@ -200,6 +191,20 @@ export default function VsHelloInterviewPage() {
             {HI} is the most polished paid product in the system-design
             interview space. DesignDojo is a free, open-source, bring-your-own-key
             alternative. Same problem domain — different tradeoffs.
+          </p>
+          <p className="mt-3 max-w-2xl text-xs text-muted-foreground/80">
+            DesignDojo is not endorsed by or derived from {HI}. {HI}&apos;s
+            features and pricing change over time — verify current details
+            on{" "}
+            <a
+              href="https://www.hellointerview.com"
+              target="_blank"
+              rel="noreferrer noopener nofollow"
+              className="underline-offset-2 hover:underline"
+            >
+              their site
+            </a>
+            .
           </p>
         </header>
 

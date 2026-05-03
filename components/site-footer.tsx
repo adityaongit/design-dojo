@@ -122,28 +122,17 @@ export function SiteFooter() {
           ))}
         </div>
         <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border/40 pt-6 text-xs text-muted-foreground">
-          <div>© {year} DesignDojo</div>
-          <div className="flex items-center gap-4">
-            <Link href="/faq" className="transition hover:text-foreground">
-              FAQ
-            </Link>
-            <a
-              href="/sitemap.xml"
-              target="_blank"
-              rel="noreferrer"
-              className="transition hover:text-foreground"
-            >
-              Sitemap
-            </a>
-            <a
-              href={GITHUB_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="transition hover:text-foreground"
-            >
-              GitHub
-            </a>
-          </div>
+          <div>© {year} DesignDojo · Free &amp; open source</div>
+          <a
+            href="/llms.txt"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 transition hover:text-foreground"
+            title="Machine-readable site index for AI agents"
+          >
+            <span className="size-1.5 rounded-full bg-emerald-500/70" />
+            For AI agents
+          </a>
         </div>
       </div>
     </footer>
