@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -5,6 +6,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
+import { ProblemBrowser } from "@/components/problem-browser";
 import {
   ARTICLE_CATEGORIES_BY_TYPE,
   ArticleCategory,
@@ -15,9 +17,9 @@ import {
   type ArticleFrontmatter,
 } from "@/lib/content/articles";
 import { navSlugs } from "@/lib/content/learn-nav";
-import type { Difficulty, QuestionType } from "@/lib/content/schema";
+import { buildProblemRows } from "@/lib/content/problem-rows";
+import type { QuestionType } from "@/lib/content/schema";
 import { SITE } from "@/lib/site";
-import { cn } from "@/lib/utils";
 
 type Params = { type: string };
 
@@ -46,12 +48,6 @@ const CATEGORY_BLURB: Record<ArticleCategory, string> = {
   "key-technologies": "Redis, Kafka, Postgres, DynamoDB — what each is good at.",
   "design-patterns": "Strategy, Observer, Factory — the OOP patterns LLD leans on.",
   breakdown: "Senior-level walkthroughs of real interview problems.",
-};
-
-const DIFF_TEXT: Record<Difficulty, string> = {
-  easy: "text-emerald-500",
-  medium: "text-amber-500",
-  hard: "text-rose-500",
 };
 
 export function generateStaticParams() {
@@ -118,6 +114,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
     (c) => c !== "breakdown" && orderedByBucket[c].length === 0,
   );
   const breakdownArticles = orderedByBucket["breakdown"] ?? [];
+  const problemRows = await buildProblemRows(t);
 
   return (
     <>
@@ -202,75 +199,31 @@ export default async function Page({ params }: { params: Promise<Params> }) {
           </section>
         ) : null}
 
-        {/* Problem walkthroughs — numbered curriculum order, NOT a filterable browser */}
+        {/* Problem walkthroughs — filterable, but section-scoped within the curriculum */}
         {breakdownArticles.length > 0 ? (
           <section className="mb-10">
-            <header className="mb-3 flex items-baseline justify-between gap-3">
+            <header className="mb-4 flex items-baseline justify-between gap-3">
               <div>
                 <h2 className="text-[18px] font-semibold tracking-tight">
                   Problem walkthroughs
                 </h2>
                 <p className="mt-0.5 text-[13px] text-muted-foreground">
-                  Senior-level breakdowns in pedagogical order — read them as
-                  one curriculum.
+                  Senior-level breakdowns. Filter by company, focus, or
+                  difficulty.
                 </p>
               </div>
               <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
                 {breakdownArticles.length} problems
               </span>
             </header>
-            <ol
-              role="list"
-              className="overflow-hidden rounded-xl border border-border/50 bg-card/30 divide-y divide-border/40"
-            >
-              {breakdownArticles.map((a, idx) => (
-                <li key={a.slug}>
-                  <Link
-                    href={`/learn/${type}/breakdown/${a.slug}`}
-                    className="group grid grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-3.5 transition-colors hover:bg-foreground/[0.025] sm:px-5 sm:py-4"
-                  >
-                    <span className="font-[family-name:var(--font-mono)] text-[11px] tabular-nums text-muted-foreground/55">
-                      {String(idx + 1).padStart(2, "0")}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <span className="truncate text-[15px] font-medium tracking-tight">
-                          {a.title}
-                        </span>
-                        {a.focusTag ? (
-                          <span className="hidden truncate text-[11px] text-muted-foreground/70 sm:inline">
-                            · {a.focusTag}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.12em] leading-none">
-                        <span
-                          className={cn(
-                            "font-medium",
-                            DIFF_TEXT[a.difficulty] ?? "",
-                          )}
-                        >
-                          {a.difficulty}
-                        </span>
-                      </div>
-                    </div>
-                    <ArrowRight className="size-3.5 text-muted-foreground/50 transition group-hover:translate-x-0.5 group-hover:text-foreground" />
-                  </Link>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-5 flex items-center justify-between gap-3 rounded-md border border-dashed border-border/50 bg-card/[0.18] px-4 py-3">
-              <p className="text-[13px] text-muted-foreground">
-                Want to filter, search, or track read state? Use the practice
-                library instead.
-              </p>
-              <Button asChild variant="ghost" size="sm" className="h-8 shrink-0">
-                <Link href={`/practice/${type}`}>
-                  Practice these
-                  <ArrowRight className="size-3.5" />
-                </Link>
-              </Button>
-            </div>
+            <Suspense fallback={null}>
+              <ProblemBrowser
+                type={t}
+                rows={problemRows}
+                mode="learn"
+                showSoon={false}
+              />
+            </Suspense>
           </section>
         ) : null}
 
