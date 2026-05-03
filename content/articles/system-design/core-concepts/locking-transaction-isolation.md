@@ -1,0 +1,247 @@
+---
+slug: locking-transaction-isolation
+title: 5\. Locking & Transaction Isolation
+type: system-design
+category: core-concepts
+difficulty: medium
+askedAt: []
+videoUrl: ''
+updatedAt: 2026-05-03T00:00:00.000Z
+author: Arjun Surendra (gitorko)
+focusTag: ''
+prerequisites: []
+seeAlso: []
+originalSource: 'https://gitorko.github.io/post/grokking-the-system-design-interview/'
+originalAnchor: '#5-locking-transaction-isolation'
+originalAuthor: Arjun Surendra
+importedAt: 2026-05-03T00:00:00.000Z
+licenseNote: >-
+  Imported with explicit collaboration permission. Site migrating into
+  DesignDojo.
+---
+## 5\. Locking & Transaction Isolation
+
+Locking ensures that the row is not concurrently updated by 2 different threads which might corrupt the data.
+
+**Problem:**
+
+Thread A: Reads row with amount 100$ in Transaction T1 Thread B: Reads row with amount 100$ in Transaction T2 Thread A: Adds 10$, new amount is 110$ Thread B: Adds 10$, new amount is still 110$ instead of 120$.
+
+**Solution 1 (Optimistic Locking):**
+
+Thread A: Reads row with amount 100$ in Transaction T1 Thread B: Reads row with amount 100$ in Transaction T2 Thread A: Adds 10$, new amount is 110$ Thread B: Adds 10$ and tries to save but sees that the record is not the same record that it read. So fails & does retry.
+
+**Solution 2 (Pessimistic Locking):**
+
+Thread A: Reads row with amount 100$ in Transaction T1, it holds a row level lock. Thread B: Reads row in Transaction T2 but is blocked as T1 holds a lock, So it waits till timeout happens & retry. Thread A: Adds 10$, new amount is 110$ Thread B: Reads row with updated amount 110$ and updates to 120$
+
+**Types of locking**
+
+1.  Pessimistic Locking - Locks held at row level or table level. Not ideal of high performance & cant scale.
+2.  Optimistic Locking - Version field is added to the table, JPA ensures that version check is done before saving data, if the version has changed then update will throw Error. Ideal for high performance & can scale.
+
+**Pessimistic locking**
+
+1.  `LockModeType.PESSIMISTIC_READ` - Rows are locked and can be read by other transactions, but they cannot be deleted or modified. PESSIMISTIC\_READ guarantees repeatable reads.
+2.  `LockModeType.PESSIMISTIC_WRITE` - Rows are locked and cannot be read, modified or deleted by other transactions. For PESSIMISTIC\_WRITE no phantom reads can occur and access to data must be serialized.
+3.  `LockModeType.PESSIMISTIC_FORCE_INCREMENT` - Rows are locked and cannot be read, modified or deleted by other transactions. it forces an increment of the version attribute
+
+Lock the row being read to avoid the same row from being updated by 2 different transactions
+
+`select * from table FOR SHARE` - This clause locks the selected rows for read, other threads can read but cant modify. `select * from table FOR UPDATE` - This clause locks the selected rows for update. This prevents other transactions from reading/modifying these rows until the current transaction is completed (committed or rolled back) `select * from table FOR UPDATE SKIP LOCKED` clause - This clause tells the database to skip rows that are already locked by another transaction. Instead of waiting for the lock to be released
+
+**Optimistic locking**
+
+1.  `LockModeType.OPTIMISTIC` - Checks the version attribute of the entity before committing the transaction to ensure no other transaction has modified the entity.
+2.  `LockModeType.OPTIMISTIC_FORCE_INCREMENT` - Forces a version increment of the entity, even if the entity has not been modified during the update.
+
+**Transaction Isolation**
+
+Transaction isolation levels in JPA define the degree to which the operations within a transaction are isolated from the operations in other concurrent transactions JPA, typically using the underlying database and JDBC settings
+
+1.  `Isolation.READ_UNCOMMITTED` Read Uncommitted - The lowest level of isolation. Transactions can read uncommitted changes made by other transactions.
+2.  `Isolation.READ_COMMITTED` Read Committed - Transactions can only read committed changes made by other transactions.
+3.  `Isolation.REPEATABLE_READ` Repeatable Read - If a transaction reads a row, it will get the same data if it reads the row again within the same transaction.
+4.  `Isolation.SERIALIZABLE` Serializable - The highest level of isolation. Transactions are completely isolated from one another.
+
+**Data Consistency**
+
+1.  Dirty reads: read UNCOMMITED data from another transaction.
+2.  Non-repeatable reads: read COMMITTED data from an UPDATE query from another transaction.
+3.  Phantom reads: read COMMITTED data from an INSERT or DELETE query from another transaction.
+
+**Dirty Read**
+
+NAME
+
+AGE
+
+Bob
+
+35
+
+TRANSACTION T1
+
+TRANSACTION T2
+
+select age from table where name = 'Bob'; (35)
+
+update table set age = 40 where name = 'Bob';
+
+select age from table where name = 'Bob'; (40)
+
+commit;
+
+**Non-Repeatable Read**
+
+NAME
+
+AGE
+
+Bob
+
+35
+
+TRANSACTION T1
+
+TRANSACTION T2
+
+select age from table where name = 'Bob'; (35)
+
+update table set age = 40 where name = 'Bob';
+
+commit;
+
+select age from table where name = 'Bob'; (40)
+
+**Phantom Read**
+
+NAME
+
+AGE
+
+Bob
+
+35
+
+TRANSACTION T1
+
+TRANSACTION T2
+
+select count(\*) from table where age = 35; (1)
+
+insert into table values ('jack', 35);
+
+commit;
+
+select count(\*) from table where age = 35; (2)
+
+Behaviour of Isolation Levels
+
+Isolation Level
+
+Dirty
+
+Non-Repeatable Reads
+
+Phantom Reads
+
+Read Uncommitted
+
+Yes
+
+Yes
+
+Yes
+
+Read Committed
+
+No
+
+Yes
+
+Yes
+
+Read Committed
+
+No
+
+No
+
+Yes
+
+Serializable
+
+No
+
+No
+
+No
+
+```yaml
+1spring:
+2  jpa:
+3    properties:
+4      hibernate:
+5        connection:
+6          isolation: 2
+```
+
+```bash
+1@Transactional(isolation = Isolation.SERIALIZABLE)
+```
+
+```sql
+1SHOW default_transaction_isolation;
+```
+
+**Transaction Propagation**
+
+When one transaciton functions calls another in the same class boundary then the parent transaction level is applied. You need to move the function to a different public class if you want its transaction to be enforced. When nested calls happen on transaction boundary then the transaction is suspended.
+
+1.  `@Transactional(readOnly = true)` - transaction is readonly and now updates can happen.
+2.  `@Transactional(propagation = Propagation.REQUIRES_NEW)` - creates a new transaction.
+3.  `@Transactional(propagation = Propagation.REQUIRED)` - default, spring will create a new transaction if not present.
+4.  `@Transactional(propagation = Propagation.MANDATORY)` - will throw exception if transaction doesn't exist.
+5.  `@Transactional(propagation = Propagation.SUPPORTS)` - if existing transaction present then it will be used, else operation will happen without any transaction.
+6.  `@Transactional(propagation = Propagation.NOT_SUPPORTED)` - operation will have with no transaction.
+7.  `@Transactional(propagation = Propagation.NOT_SUPPORTED)` - will throw an exception if transaction present.
+
+You can define which exception call the rollback and which don't.
+
+```bash
+1@Transactional(noRollbackFor = {CustomException.class}, rollbackFor = {RuntimeException.class})
+```
+
+To track transactions
+
+```yaml
+1logging:
+2  level:
+3    root: info
+4    org.springframework.orm.jpa.JpaTransactionManager: DEBUG
+```
+
+Spring keeps the transaction open till the controller returns the response. This is because it thinks that the object may be accessed later in the HTML (web mvc templates). We don't use this, so we will set the below property to false that way transaction is closed after `@Transactional` function ends.
+
+```yaml
+1spring:
+2  jpa:
+3    open-in-view: false
+```
+
+By setting auto-commit to false spring won't commit immediately but will commit when the transaction ends.
+
+```yaml
+1spring:
+2  datasource:
+3    hikari:
+4      auto-commit: false
+```
+
+You can also use `TransactionTemplate` to control transactions if you dont want to use `@Transactional` and want more control. Try to the transaction boundary small. External calls need to be done outside the transaction context.
+
+```bash
+1transactionTemplate.executeWithoutResult()
+2transactionTemplate.execute()
+```
