@@ -6,7 +6,7 @@ difficulty: hard
 askedAt: [Stripe, Square, Block]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: "Idempotency & Reconciliation"
 ---
 

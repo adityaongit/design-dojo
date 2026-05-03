@@ -6,7 +6,7 @@ difficulty: medium
 askedAt: [Ticketmaster, AirBnB, Uber]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: "Preventing Double-Booking"
 ---
 

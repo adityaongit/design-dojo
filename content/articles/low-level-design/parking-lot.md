@@ -6,7 +6,7 @@ difficulty: medium
 askedAt: [Amazon, Google, Microsoft]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: "Hierarchies & Strategy Pattern"
 ---
 

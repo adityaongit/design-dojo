@@ -6,7 +6,7 @@ difficulty: medium
 askedAt: [Meta, Amazon, Google]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: DesignDojo
+author: "Aditya Jindal"
 focusTag: Fan-out Strategies
 ---
 

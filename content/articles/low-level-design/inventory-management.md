@@ -6,7 +6,7 @@ difficulty: hard
 askedAt: [Amazon, Flipkart, Shopify]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: "Reservation Pattern"
 ---
 

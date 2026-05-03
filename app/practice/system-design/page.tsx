@@ -1,12 +1,34 @@
+import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
 import { QuestionTable } from "@/components/question-table";
 import { QuestionStats } from "@/components/question-stats";
 import { loadIndex } from "@/lib/content";
 import { listArticleSlugs } from "@/lib/content/articles";
+import { SITE } from "@/lib/site";
 
-export const metadata = {
-  title: "System Design Practice — DesignDojo",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const index = await loadIndex();
+  const ready = index["system-design"].filter((q) => q.ready).length;
+  const url = `${SITE.url}/practice/system-design`;
+  const description = `Free system design (HLD) interview practice — ${ready} FAANG-level problems with stage-by-stage AI feedback. Bring your own key or run a local model.`;
+  const ogDesc = `Free, unlimited HLD interview practice. ${ready} real interview problems with AI tutor feedback.`;
+  return {
+    title: "System Design Interview Practice",
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      url,
+      title: "System Design Interview Practice — DesignDojo",
+      description: ogDesc,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "System Design Interview Practice — DesignDojo",
+      description: ogDesc,
+    },
+  };
+}
 
 export default async function Page() {
   const [index, articleSlugs] = await Promise.all([

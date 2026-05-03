@@ -6,7 +6,7 @@ difficulty: medium
 askedAt: [Meta, Google, Amazon]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: DesignDojo
+author: "Aditya Jindal"
 focusTag: "Message Ordering & Group Fan-out"
 ---
 

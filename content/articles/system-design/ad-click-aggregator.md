@@ -6,7 +6,7 @@ difficulty: hard
 askedAt: [Google, Meta, Amazon]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: "Real-Time Streaming"
 ---
 

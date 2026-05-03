@@ -6,7 +6,7 @@ difficulty: easy
 askedAt: []
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: "State Machines"
 ---
 

@@ -6,7 +6,7 @@ difficulty: medium
 askedAt: [Match Group, Bumble]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: Geo-Proximity Sharding
 ---
 

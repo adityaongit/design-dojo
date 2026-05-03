@@ -6,7 +6,7 @@ difficulty: hard
 askedAt: [Google, Meta]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: DesignDojo
+author: "Aditya Jindal"
 focusTag: Video Processing Pipeline
 ---
 

@@ -6,7 +6,7 @@ difficulty: hard
 askedAt: [Uber, Lyft, Amazon Logistics]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: DesignDojo
+author: "Aditya Jindal"
 focusTag: Real-Time Dispatch
 ---
 

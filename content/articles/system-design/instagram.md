@@ -6,7 +6,7 @@ difficulty: hard
 askedAt: [Meta, Amazon, Google]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: DesignDojo
+author: "Aditya Jindal"
 focusTag: Hybrid Feed Fan-Out
 ---
 

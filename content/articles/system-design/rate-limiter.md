@@ -6,7 +6,7 @@ difficulty: medium
 askedAt: [Stripe, Lyft, Uber]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: DesignDojo
+author: "Aditya Jindal"
 focusTag: Algorithm & Consistency
 ---
 

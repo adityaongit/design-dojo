@@ -1,8 +1,17 @@
 import Link from "next/link";
-import { ArrowRight, KeyRound, Server, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  Boxes,
+  Bot,
+  KeyRound,
+  Server,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/site-header";
 import { loadIndex } from "@/lib/content";
+import { jsonLd, organizationLd, websiteLd } from "@/lib/seo/jsonld";
 
 export default async function Home() {
   const index = await loadIndex();
@@ -11,6 +20,14 @@ export default async function Home() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(organizationLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(websiteLd) }}
+      />
       <SiteHeader />
       <main className="flex-1">
         {/* Hero */}
@@ -70,7 +87,13 @@ export default async function Home() {
         </section>
 
         {/* Quick stats */}
-        <section className="mx-auto max-w-5xl px-6 pb-20">
+        <section
+          aria-labelledby="library-heading"
+          className="mx-auto max-w-5xl px-6 pb-16"
+        >
+          <h2 id="library-heading" className="sr-only">
+            Question library
+          </h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Stat
               label="System Design questions"
@@ -84,6 +107,102 @@ export default async function Home() {
               label="Cost per session"
               value="≈ $0.0001"
               hint="on OpenRouter / DeepSeek"
+            />
+          </div>
+        </section>
+
+        {/* Why */}
+        <section
+          aria-labelledby="why-heading"
+          className="mx-auto max-w-5xl px-6 pb-16"
+        >
+          <h2
+            id="why-heading"
+            className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl"
+          >
+            Why DesignDojo
+          </h2>
+          <p className="mt-3 max-w-2xl text-muted-foreground">
+            Most interview prep tools paywall the practice and lock you into
+            their model. DesignDojo flips both: the app is free and open
+            source, and you decide which AI runs the feedback loop.
+          </p>
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Card
+              icon={<BookOpen className="size-4" />}
+              title="Real interview problems"
+              desc="35+ HLD and LLD problems pulled from the questions FAANG and unicorns actually ask."
+            />
+            <Card
+              icon={<Bot className="size-4" />}
+              title="AI tutor, not a chatbot"
+              desc="Stage-by-stage coaching that pushes back when your answer is shallow — like a real interviewer."
+            />
+            <Card
+              icon={<Boxes className="size-4" />}
+              title="Whiteboard built in"
+              desc="Excalidraw canvas for diagrams, Monaco for code. No screen-sharing dance."
+            />
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section
+          aria-labelledby="how-heading"
+          className="mx-auto max-w-5xl px-6 pb-16"
+        >
+          <h2
+            id="how-heading"
+            className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl"
+          >
+            How it works
+          </h2>
+          <ol className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Step
+              n={1}
+              title="Pick a problem"
+              desc="Browse the HLD or LLD library. Start with Bitly, news feed, or a chess game."
+            />
+            <Step
+              n={2}
+              title="Bring your AI key"
+              desc="Plug in OpenAI, Anthropic, Gemini, Groq, OpenRouter — or point it at a local Ollama / LM Studio."
+            />
+            <Step
+              n={3}
+              title="Practice stage-by-stage"
+              desc="Requirements → estimation → API → data → deep dives. The tutor grades each stage."
+            />
+          </ol>
+        </section>
+
+        {/* Topics */}
+        <section
+          aria-labelledby="topics-heading"
+          className="mx-auto max-w-5xl px-6 pb-24"
+        >
+          <h2
+            id="topics-heading"
+            className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl"
+          >
+            Practice topics
+          </h2>
+          <p className="mt-3 max-w-2xl text-muted-foreground">
+            Two libraries, one workflow. Read the breakdown, then practice it
+            live.
+          </p>
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <TopicCard
+              type="system-design"
+              title="System Design (HLD)"
+              desc="Distributed systems, scaling, storage, queues, caching. Build URL shorteners, news feeds, ride-sharing, ad aggregators."
+              count={sdReady}
+            />
+            <TopicCard
+              type="low-level-design"
+              title="Low-Level Design (LLD)"
+              desc="Object-oriented design, class diagrams, design patterns. Build parking lots, chess, vending machines, file systems."
+              count={lldReady}
             />
           </div>
         </section>
@@ -133,5 +252,75 @@ function Stat({
         <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>
       ) : null}
     </div>
+  );
+}
+
+function Card({
+  icon,
+  title,
+  desc,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-card/30 p-5">
+      <div className="mb-2 inline-flex items-center gap-2 text-sm font-medium">
+        <span className="grid size-7 place-items-center rounded-md bg-emerald-500/10 text-emerald-500">
+          {icon}
+        </span>
+        {title}
+      </div>
+      <p className="text-sm text-muted-foreground">{desc}</p>
+    </div>
+  );
+}
+
+function Step({
+  n,
+  title,
+  desc,
+}: {
+  n: number;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <li className="rounded-lg border border-border/60 bg-card/30 p-5">
+      <div className="mb-2 inline-flex size-7 items-center justify-center rounded-full bg-emerald-500/10 text-sm font-semibold text-emerald-500">
+        {n}
+      </div>
+      <h3 className="text-sm font-medium">{title}</h3>
+      <p className="mt-1 text-sm text-muted-foreground">{desc}</p>
+    </li>
+  );
+}
+
+function TopicCard({
+  type,
+  title,
+  desc,
+  count,
+}: {
+  type: "system-design" | "low-level-design";
+  title: string;
+  desc: string;
+  count: number;
+}) {
+  return (
+    <Link
+      href={`/practice/${type}`}
+      className="group rounded-xl border border-border/60 bg-card/30 p-6 transition hover:border-emerald-500/50 hover:bg-card/50"
+    >
+      <div className="flex items-start justify-between">
+        <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
+        <ArrowRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground" />
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">{desc}</p>
+      <div className="mt-4 text-xs text-muted-foreground">
+        {count} questions ready
+      </div>
+    </Link>
   );
 }

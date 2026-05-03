@@ -6,7 +6,7 @@ difficulty: easy
 askedAt: [Apple, Dropbox, Google]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: "Sync & Durability"
 ---
 

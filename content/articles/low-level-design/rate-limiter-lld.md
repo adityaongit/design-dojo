@@ -6,7 +6,7 @@ difficulty: hard
 askedAt: [Google, Amazon, Meta, Stripe]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: "Algorithms & Concurrency"
 ---
 

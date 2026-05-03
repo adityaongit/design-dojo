@@ -6,7 +6,7 @@ difficulty: easy
 askedAt: [DoorDash, Lyft]
 videoUrl: ""
 updatedAt: 2026-05-02
-author: DesignDojo
+author: "Aditya Jindal"
 focusTag: Scaling Reads
 ---
 

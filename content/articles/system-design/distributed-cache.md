@@ -6,7 +6,7 @@ difficulty: hard
 askedAt: [Meta, Google, Amazon]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: DesignDojo
+author: "Aditya Jindal"
 focusTag: Consistent Hashing & Replication
 ---
 

@@ -6,7 +6,7 @@ difficulty: hard
 askedAt: [Google, Bing, DuckDuckGo]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: DesignDojo
+author: "Aditya Jindal"
 focusTag: Politeness at Scale
 ---
 

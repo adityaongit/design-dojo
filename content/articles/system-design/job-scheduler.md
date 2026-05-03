@@ -6,7 +6,7 @@ difficulty: hard
 askedAt: [Amazon, Stripe, DoorDash]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: "Exactly-Once Execution"
 ---
 

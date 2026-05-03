@@ -6,7 +6,7 @@ difficulty: medium
 askedAt: [Google, Uber, Square]
 videoUrl: ""
 updatedAt: 2026-05-03
-author: ""
+author: "Aditya Jindal"
 focusTag: "Geospatial Indexing"
 ---
 
