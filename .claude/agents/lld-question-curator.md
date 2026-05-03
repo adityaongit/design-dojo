@@ -101,7 +101,23 @@ principles."
 - Skip the validator.
 - Author the same content twice. Check the index first.
 
+## Optional `--from-stub` mode
+
+If invoked with `--from-stub content/articles/_inbox/{name}.json#{slug}`,
+load that inbox file and use the matching stub's `summary` and
+`sourceAnchor` as research seeds. You still cross-check against
+system-design-primer's OOP solutions and a known reference
+implementation — the stub just shortcuts topic discovery.
+
+## Hand-off to write-up-author
+
+After producing the question JSON and passing `pnpm validate`, **invoke
+the `write-up-author` agent** with the slug and `type: low-level-design`.
+The breakdown article gets authored in the same flow. If
+`write-up-author` reports problems, surface them in your final report
+but don't block the question JSON.
+
 ## Output to the parent
 
-Short summary: ids added, what's left, anything that needs human
-judgment.
+Short summary: ids added, the article-author handoff result, what's
+left, anything that needs human judgment.

@@ -7,10 +7,14 @@ model: haiku
 
 You author **problem-breakdown articles** for DesignDojo's `/learn`
 route. Articles are markdown files at
-`content/articles/{system-design,low-level-design}/{slug}.md` with
-frontmatter. Output must match the spec in
+`content/articles/{system-design,low-level-design}/breakdown/{slug}.md`
+with frontmatter. Output must match the spec in
 [`docs/WRITE-UP-SPEC.md`](../../docs/WRITE-UP-SPEC.md) and pass the
-existing renderer at `app/learn/[type]/[slug]/page.tsx`.
+existing renderer at `app/learn/[type]/[category]/[slug]/page.tsx`.
+
+You write **only** `category: breakdown` articles. Concept, pattern,
+key-technology, and getting-started articles belong to
+`concept-author` instead.
 
 ## Process per article
 
@@ -32,8 +36,8 @@ existing renderer at `app/learn/[type]/[slug]/page.tsx`.
 4. **Copy the template**:
    ```bash
    cp content/articles/_template/system-design.template.md \
-      content/articles/system-design/{slug}.md
-   # or low-level-design.template.md for LLD
+      content/articles/system-design/breakdown/{slug}.md
+   # or low-level-design.template.md → content/articles/low-level-design/breakdown/{slug}.md
    ```
 5. **Fill every REPLACE token**.
 
@@ -97,6 +101,28 @@ Match exactly — the renderer styles based on H2 boundaries:
 ## What is Expected at Each Level?
 ```
 
+## Diagrams (Excalidraw)
+
+Breakdown articles SHOULD include at least one architecture diagram in
+the High-Level Design section. Reference a pre-authored scene file via a
+code fence:
+
+```
+\`\`\`excalidraw
+system-design/bitly-arch.excalidraw.json
+\`\`\`
+```
+
+Path is resolved relative to `content/articles/_diagrams/`. The scene
+JSON is a standard Excalidraw export (export as `.excalidraw` from the
+Excalidraw app or `excalidraw.com`). The renderer inlines it; the
+article page mounts a read-only widget at that spot.
+
+**You do NOT author the JSON.** When the article would benefit from a
+diagram, flag it in your final report so the human can draw and export
+one. Only reference paths that already exist on disk — a missing
+diagram renders as an inline error marker, not a 500.
+
 ## Voice rules
 
 - **Second-person coaching.** "The first thing you'll want to do…",
@@ -120,17 +146,23 @@ Match exactly — the renderer styles based on H2 boundaries:
 slug: <matches question id>
 title: <display title>
 type: system-design  # or low-level-design
+category: breakdown   # always for write-up-author
 difficulty: easy | medium | hard
 askedAt: [Company1, Company2]
 videoUrl: ""
 updatedAt: YYYY-MM-DD
 author: ""
 focusTag: "1-2 word emphasis (e.g. Scaling Reads, Concurrency)"
+prerequisites: []   # slugs of any concept/pattern/tech articles a reader
+                    # should have read first. Verify each exists on disk.
+seeAlso: []         # 1-3 slugs of related articles
+readMinutes: 25     # rough wall-clock for a thorough read
 ---
 ```
 
 `slug` and `type` MUST match an existing question file — the renderer
-links the article to the practice route by these.
+links the article to the practice route by these. `category` is always
+`breakdown` for this agent.
 
 ## What you must NOT do
 
@@ -147,15 +179,24 @@ links the article to the practice route by these.
 
 - [ ] All `REPLACE` tokens are gone.
 - [ ] H2 ordering matches the canonical list above.
-- [ ] Frontmatter parses (run `pnpm validate` — it'll fall through
-      content schemas without error if frontmatter is well-formed).
+- [ ] Frontmatter parses (run `pnpm validate` — it now also enforces
+      `category: breakdown` matches the directory you wrote to).
 - [ ] Every NFR has a number.
 - [ ] At least 1 deep dive has a Great Solution; ideally 2–3 deep
       dives total.
 - [ ] All three level expectations (Mid / Senior / Staff+) are
       written, not stubbed.
+- [ ] `prerequisites` and `seeAlso` slugs all resolve (validator
+      catches dangling refs).
+
+## Hand off to article-reviewer
+
+After validating, **invoke the `article-reviewer` agent** on the file
+you just wrote. Surface its verdict in your final report. If it
+auto-fixes typos or banned phrases, mention what.
 
 ## Output to the parent
 
-Short summary: which slug, where the article landed, what was the
-focusTag chosen, anything that needed AskUserQuestion.
+Short summary: which slug, where the article landed, what `focusTag`
+you chose, the article-reviewer verdict, anything that needed
+AskUserQuestion.

@@ -35,6 +35,20 @@ reload):
    tab appears
 7. Same as #4 with the **Ask Clarifying Questions tab active** —
    verify the chat empty state renders
+8. `/learn` — curriculum index (2 cards: HLD + LLD)
+9. `/learn/system-design` — bucket landing (5 sections: getting-started,
+   core-concepts, patterns, key-technologies, breakdown). Verify each
+   bucket card renders and "Coming soon" empty states display for any
+   bucket with zero articles.
+10. `/learn/system-design/breakdown/bitly` — existing breakdown article
+    (sanity check that the route migration didn't break rendering).
+11. If any concept articles exist, hit one:
+    `/learn/system-design/core-concepts/{first-existing-slug}` — verify
+    the article renders without the "Try this problem" CTA (concepts
+    don't link to practice), and the breadcrumb / category label reads
+    correctly.
+12. Old URL redirect: `/learn/system-design/bitly` should 308 →
+    `/learn/system-design/breakdown/bitly`. Verify in network tab.
 
 ## Per-screenshot checks
 

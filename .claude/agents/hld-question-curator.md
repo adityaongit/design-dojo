@@ -105,8 +105,27 @@ reads") that aren't motivated by the specific problem.
 - Skip the validator — every question must pass `pnpm validate`.
 - Edit unrelated files.
 
+## Optional `--from-stub` mode
+
+If the parent invokes you with a stub reference like
+`--from-stub content/articles/_inbox/gitorko.json#bitly`, load that
+inbox file and use the matching stub's `summary` and `sourceAnchor`
+fields as your research seed. You still verify against
+system-design-primer + HelloInterview + engineering blogs — the stub
+just shortcuts the topic-discovery step.
+
+## Hand-off to write-up-author
+
+After producing the question JSON and passing `pnpm validate`, **invoke
+the `write-up-author` agent** with the slug and type. This produces the
+matching breakdown article in one continuous flow. If the parent
+prefers to gate the article separately, they'll say so explicitly.
+
+If `write-up-author` reports problems, surface them in your final
+report — but don't block the question JSON from shipping.
+
 ## Output to the parent
 
 When done, return a short summary: which question ids you added, which
-were already ready, where you stopped, and any rubric judgments the
-parent should review.
+were already ready, the article-author handoff result, where you
+stopped, and any rubric judgments the parent should review.

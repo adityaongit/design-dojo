@@ -1,0 +1,459 @@
+{
+  "fetchedAt": "2026-05-03T00:00:00Z",
+  "source": "https://gitorko.github.io/sitemap.xml",
+  "totalPosts": 70,
+  "summary": {
+    "import": 14,
+    "skip": 56,
+    "existingOverlap": 0,
+    "multiTopic": 2
+  },
+  "decisions": [
+    {
+      "url": "https://gitorko.github.io/post/distributed-system-essentials/",
+      "slug": "distributed-system-essentials",
+      "decision": "import",
+      "type": "system-design",
+      "category": "core-concepts",
+      "multiTopic": true,
+      "rationale": "Multi-topic primer on distributed-systems primitives. Split by H2 after scrape."
+    },
+    {
+      "url": "https://gitorko.github.io/post/grokking-the-system-design-interview/",
+      "slug": "grokking-the-system-design-interview",
+      "decision": "import",
+      "type": "system-design",
+      "category": "core-concepts",
+      "multiTopic": true,
+      "rationale": "Massive multi-topic post (~73 concepts + ~10 walkthroughs). Split aggressively after scrape."
+    },
+    {
+      "url": "https://gitorko.github.io/post/optimistic-pessimistic-locking/",
+      "slug": "optimistic-pessimistic-locking",
+      "decision": "import",
+      "type": "system-design",
+      "category": "core-concepts",
+      "rationale": "Core concurrency-control concept; relevant to both HLD and LLD interview prep."
+    },
+    {
+      "url": "https://gitorko.github.io/post/distributed-locking-postgres/",
+      "slug": "distributed-locking-postgres",
+      "decision": "import",
+      "type": "system-design",
+      "category": "patterns",
+      "rationale": "Distributed locking pattern using Postgres advisory locks."
+    },
+    {
+      "url": "https://gitorko.github.io/post/distributed-locking-apache-ignite/",
+      "slug": "distributed-locking-apache-ignite",
+      "decision": "import",
+      "type": "system-design",
+      "category": "patterns",
+      "rationale": "Distributed locking pattern via Apache Ignite."
+    },
+    {
+      "url": "https://gitorko.github.io/post/message-queue-postgres/",
+      "slug": "message-queue-postgres",
+      "decision": "import",
+      "type": "system-design",
+      "category": "patterns",
+      "rationale": "Queue-on-Postgres pattern; useful pragmatic pattern article."
+    },
+    {
+      "url": "https://gitorko.github.io/post/scatter-gather-pattern/",
+      "slug": "scatter-gather-pattern",
+      "decision": "import",
+      "type": "system-design",
+      "category": "patterns",
+      "rationale": "Classic distributed pattern."
+    },
+    {
+      "url": "https://gitorko.github.io/post/producer-consumer/",
+      "slug": "producer-consumer",
+      "decision": "import",
+      "type": "system-design",
+      "category": "patterns",
+      "rationale": "Foundational concurrency pattern."
+    },
+    {
+      "url": "https://gitorko.github.io/post/state-machine/",
+      "slug": "state-machine",
+      "decision": "import",
+      "type": "low-level-design",
+      "category": "design-patterns",
+      "rationale": "FSM design pattern; classic LLD topic."
+    },
+    {
+      "url": "https://gitorko.github.io/post/design-patterns/",
+      "slug": "design-patterns",
+      "decision": "import",
+      "type": "low-level-design",
+      "category": "design-patterns",
+      "rationale": "GoF design patterns overview; LLD foundational content. May be multi-topic — review after scrape for splits."
+    },
+    {
+      "url": "https://gitorko.github.io/post/stock-exchange/",
+      "slug": "stock-exchange",
+      "decision": "import",
+      "type": "system-design",
+      "category": "breakdown",
+      "rationale": "Matching-engine breakdown. Adjacent to robinhood/online-auction; flag for human compare."
+    },
+    {
+      "url": "https://gitorko.github.io/post/voting-system/",
+      "slug": "voting-system",
+      "decision": "import",
+      "type": "system-design",
+      "category": "breakdown",
+      "rationale": "Polling/voting system breakdown."
+    },
+    {
+      "url": "https://gitorko.github.io/post/flash-sale-system/",
+      "slug": "flash-sale-system",
+      "decision": "import",
+      "type": "system-design",
+      "category": "breakdown",
+      "rationale": "High-contention sale system; useful breakdown. Adjacent to ticketmaster — flag for compare."
+    },
+    {
+      "url": "https://gitorko.github.io/post/chat-server/",
+      "slug": "chat-server",
+      "decision": "import",
+      "type": "system-design",
+      "category": "breakdown",
+      "rationale": "Chat backend breakdown. Adjacent to whatsapp — flag for compare."
+    },
+    {
+      "url": "https://gitorko.github.io/post/ticket-booking-system/",
+      "slug": "ticket-booking-system",
+      "decision": "import",
+      "type": "system-design",
+      "category": "breakdown",
+      "rationale": "Ticket-booking breakdown. Adjacent to ticketmaster and movie-booking (LLD) — flag for compare."
+    },
+    {
+      "url": "https://gitorko.github.io/post/arduino/",
+      "slug": "arduino",
+      "decision": "skip",
+      "rationale": "Hardware/IoT tinkering, not interview content."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-ai-ollama/",
+      "slug": "spring-ai-ollama",
+      "decision": "skip",
+      "rationale": "Spring framework + LLM tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/watermarking-text/",
+      "slug": "watermarking-text",
+      "decision": "skip",
+      "rationale": "Niche text-watermarking how-to, not SD/LLD."
+    },
+    {
+      "url": "https://gitorko.github.io/post/apache-spark/",
+      "slug": "apache-spark",
+      "decision": "skip",
+      "rationale": "Spark tutorial; framework-specific."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-apache-kafka/",
+      "slug": "spring-apache-kafka",
+      "decision": "skip",
+      "rationale": "Spring + Kafka tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-modulith/",
+      "slug": "spring-modulith",
+      "decision": "skip",
+      "rationale": "Spring framework tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/multi-tenancy-routing/",
+      "slug": "multi-tenancy-routing",
+      "decision": "skip",
+      "rationale": "Spring multi-tenancy routing tutorial; framework-specific."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-postgres-text-search/",
+      "slug": "spring-postgres-text-search",
+      "decision": "skip",
+      "rationale": "Spring + Postgres tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-postgres-cqrs/",
+      "slug": "spring-postgres-cqrs",
+      "decision": "skip",
+      "rationale": "Spring CQRS tutorial; framework-heavy. Could revisit if we want a CQRS pattern article — needs human call."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-ehcache/",
+      "slug": "spring-ehcache",
+      "decision": "skip",
+      "rationale": "Spring + EhCache tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-batch-orchestration/",
+      "slug": "spring-batch-orchestration",
+      "decision": "skip",
+      "rationale": "Spring Batch tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-rsocket/",
+      "slug": "spring-rsocket",
+      "decision": "skip",
+      "rationale": "Spring + RSocket tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-apache-ignite/",
+      "slug": "spring-apache-ignite",
+      "decision": "skip",
+      "rationale": "Spring + Ignite framework tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-data-jpa-basics/",
+      "slug": "spring-data-jpa-basics",
+      "decision": "skip",
+      "rationale": "Spring Data JPA basics tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-observability/",
+      "slug": "spring-observability",
+      "decision": "skip",
+      "rationale": "Spring observability tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-virtual-threads/",
+      "slug": "spring-virtual-threads",
+      "decision": "skip",
+      "rationale": "Spring + Java virtual threads tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/open-jdk/",
+      "slug": "open-jdk",
+      "decision": "skip",
+      "rationale": "OpenJDK setup notes."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-jobrunr/",
+      "slug": "spring-jobrunr",
+      "decision": "skip",
+      "rationale": "Spring + JobRunr tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-webflux-r2dbc/",
+      "slug": "spring-webflux-r2dbc",
+      "decision": "skip",
+      "rationale": "Spring WebFlux tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/machine-learning-deeplearning4j/",
+      "slug": "machine-learning-deeplearning4j",
+      "decision": "skip",
+      "rationale": "ML library tutorial; not interview SD/LLD."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-webflux-reactive-jdbc/",
+      "slug": "spring-webflux-reactive-jdbc",
+      "decision": "skip",
+      "rationale": "Spring WebFlux tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/grokking-the-coding-interview/",
+      "slug": "grokking-the-coding-interview",
+      "decision": "skip",
+      "rationale": "Coding-interview patterns (DSA), out of scope for sd-play (HLD/LLD only). Human may want to reconsider."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-kotlin/",
+      "slug": "spring-kotlin",
+      "decision": "skip",
+      "rationale": "Spring + Kotlin tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-integration-basics/",
+      "slug": "spring-integration-basics",
+      "decision": "skip",
+      "rationale": "Spring Integration tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-graphql/",
+      "slug": "spring-graphql",
+      "decision": "skip",
+      "rationale": "Spring + GraphQL tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/learn-morse-code/",
+      "slug": "learn-morse-code",
+      "decision": "skip",
+      "rationale": "Off-topic."
+    },
+    {
+      "url": "https://gitorko.github.io/post/rabbitmq-stream/",
+      "slug": "rabbitmq-stream",
+      "decision": "skip",
+      "rationale": "RabbitMQ Streams tutorial; tech-tutorial flavored."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-traefik-rate-limit/",
+      "slug": "spring-traefik-rate-limit",
+      "decision": "skip",
+      "rationale": "Spring + Traefik tutorial; we already have a rate-limiter breakdown."
+    },
+    {
+      "url": "https://gitorko.github.io/post/java-puzzles/",
+      "slug": "java-puzzles",
+      "decision": "skip",
+      "rationale": "Java language puzzles."
+    },
+    {
+      "url": "https://gitorko.github.io/post/kubernetes-basics/",
+      "slug": "kubernetes-basics",
+      "decision": "skip",
+      "rationale": "K8s basics; infra tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-reactjs/",
+      "slug": "spring-reactjs",
+      "decision": "skip",
+      "rationale": "Spring + React tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/apache-superset/",
+      "slug": "apache-superset",
+      "decision": "skip",
+      "rationale": "Superset BI tool tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/jenkins-data-processing/",
+      "slug": "jenkins-data-processing",
+      "decision": "skip",
+      "rationale": "Jenkins pipeline tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-webflux-angular/",
+      "slug": "spring-webflux-angular",
+      "decision": "skip",
+      "rationale": "Spring WebFlux + Angular tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/clarity-server-driven-datagrid/",
+      "slug": "clarity-server-driven-datagrid",
+      "decision": "skip",
+      "rationale": "VMware Clarity datagrid tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/completable-future-basics/",
+      "slug": "completable-future-basics",
+      "decision": "skip",
+      "rationale": "Java CompletableFuture API tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/model-mapper/",
+      "slug": "model-mapper",
+      "decision": "skip",
+      "rationale": "ModelMapper Java library tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-reactor-basics/",
+      "slug": "spring-reactor-basics",
+      "decision": "skip",
+      "rationale": "Spring Reactor tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-redis/",
+      "slug": "spring-redis",
+      "decision": "skip",
+      "rationale": "Spring + Redis tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/functional-programming-basics/",
+      "slug": "functional-programming-basics",
+      "decision": "skip",
+      "rationale": "Java FP basics."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-angular/",
+      "slug": "spring-angular",
+      "decision": "skip",
+      "rationale": "Spring + Angular tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-thymeleaf/",
+      "slug": "spring-thymeleaf",
+      "decision": "skip",
+      "rationale": "Spring + Thymeleaf tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/vscode-java/",
+      "slug": "vscode-java",
+      "decision": "skip",
+      "rationale": "Editor setup notes."
+    },
+    {
+      "url": "https://gitorko.github.io/post/jasper-reports-spring/",
+      "slug": "jasper-reports-spring",
+      "decision": "skip",
+      "rationale": "Spring + JasperReports tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/freemarker-reports/",
+      "slug": "freemarker-reports",
+      "decision": "skip",
+      "rationale": "Freemarker reports tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-querydsl/",
+      "slug": "spring-querydsl",
+      "decision": "skip",
+      "rationale": "Spring + QueryDSL tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-vault/",
+      "slug": "spring-vault",
+      "decision": "skip",
+      "rationale": "Spring + Vault tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-cloud-sleuth-zipkin/",
+      "slug": "spring-cloud-sleuth-zipkin",
+      "decision": "skip",
+      "rationale": "Spring tracing tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-rabbitmq/",
+      "slug": "spring-rabbitmq",
+      "decision": "skip",
+      "rationale": "Spring + RabbitMQ tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-jpa-n-plus-1/",
+      "slug": "spring-jpa-n-plus-1",
+      "decision": "skip",
+      "rationale": "Spring JPA N+1 perf tutorial; framework-specific."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-micrometer/",
+      "slug": "spring-micrometer",
+      "decision": "skip",
+      "rationale": "Spring metrics tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/github-blog-with-hugo/",
+      "slug": "github-blog-with-hugo",
+      "decision": "skip",
+      "rationale": "Meta — Hugo blog setup."
+    },
+    {
+      "url": "https://gitorko.github.io/post/spring-drools/",
+      "slug": "spring-drools",
+      "decision": "skip",
+      "rationale": "Spring + Drools tutorial."
+    },
+    {
+      "url": "https://gitorko.github.io/post/xenon-rest-service-framework/",
+      "slug": "xenon-rest-service-framework",
+      "decision": "skip",
+      "rationale": "VMware Xenon framework tutorial."
+    }
+  ]
+}

@@ -1,0 +1,3249 @@
+{
+  "source": "/Users/adityajindal/Downloads/pradeep_system_design_final.xlsx",
+  "sheets": [
+    {
+      "name": "🏠 Home",
+      "rows": [
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Pradeep's All in One Resource for System Design",
+          "1",
+          ""
+        ],
+        [
+          "",
+          "",
+          "2",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Description",
+          "Questions"
+        ],
+        [
+          "",
+          "⭐ Top 20 Must-Know",
+          "Most important SD questions across all levels",
+          "20"
+        ],
+        [
+          "",
+          "📋 All Questions",
+          "Complete list of 40 LLD + HLD questions with difficulty & tags",
+          "40"
+        ],
+        [
+          "",
+          "🏢 Company-Wise",
+          "Questions mapped to Amazon, Google, Meta, Microsoft, Netflix...",
+          "35+"
+        ],
+        [
+          "",
+          "🔧 LLD Deep Dive",
+          "Low Level Design - OOP, Design Patterns, Class Diagrams",
+          "15"
+        ],
+        [
+          "",
+          "🌐 HLD Deep Dive",
+          "High Level Design - Distributed Systems, Scalability",
+          "20"
+        ],
+        [
+          "",
+          "📈 My Progress",
+          "Track your prep progress, status, and revision dates",
+          "—"
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "22",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "https://livecohortbypradeep.com/",
+          "",
+          ""
+        ],
+        [
+          "",
+          "24",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "https://livecohortbypradeep.com/",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Enroll Now Limited Seats only",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Batch Information:",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Weekend Batch Starting 18 May",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Weekday Batch Starting 1 June",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Enroll Using this Link:",
+          "",
+          ""
+        ],
+        [
+          "",
+          "https://livecohortbypradeep.com/",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Register for Free Masterclass Every Week, you will be notified",
+          "",
+          ""
+        ],
+        [
+          "",
+          "https://forms.gle/NCw4YfhSYvSosxvC7",
+          "",
+          ""
+        ]
+      ]
+    },
+    {
+      "name": "🏢 Company-Wise",
+      "rows": [
+        [
+          "",
+          "PradeepLiveCohort Sheet for Company-Wise System Design Questions",
+          "34",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Question",
+          "Type",
+          "Difficulty",
+          "Focus Area"
+        ],
+        [
+          "",
+          "Amazon 🛒",
+          "Design Amazon Order Management System",
+          "HLD",
+          "Hard",
+          "Microservices, ACID, Idempotency"
+        ],
+        [
+          "",
+          "Amazon 🛒",
+          "Design a Rate Limiter for AWS API Gateway",
+          "HLD",
+          "Medium",
+          "Token bucket, Redis, Distributed"
+        ],
+        [
+          "",
+          "Amazon 🛒",
+          "Design Amazon Warehouse Management",
+          "HLD",
+          "Hard",
+          "Inventory, Routing, Workers"
+        ],
+        [
+          "",
+          "Amazon 🛒",
+          "Design a Distributed Cache (ElastiCache)",
+          "HLD",
+          "Hard",
+          "LRU, Consistent hash, Eviction"
+        ],
+        [
+          "",
+          "Amazon 🛒",
+          "Design Parking Lot System",
+          "LLD",
+          "Easy",
+          "OOP, State, Strategy pattern"
+        ],
+        [
+          "",
+          "Google 🔍",
+          "Design Google Search",
+          "HLD",
+          "Hard",
+          "Crawling, Indexing, PageRank"
+        ],
+        [
+          "",
+          "Google 🔍",
+          "Design Google Maps",
+          "HLD",
+          "Hard",
+          "Graph, Geo, Live traffic"
+        ],
+        [
+          "",
+          "Google 🔍",
+          "Design Google Drive",
+          "HLD",
+          "Hard",
+          "Chunking, Sync, Versioning"
+        ],
+        [
+          "",
+          "Google 🔍",
+          "Design YouTube",
+          "HLD",
+          "Hard",
+          "CDN, Encoding, Recommendation"
+        ],
+        [
+          "",
+          "Google 🔍",
+          "Design Search Autocomplete",
+          "HLD",
+          "Medium",
+          "Trie, Ranking, Cache"
+        ],
+        [
+          "",
+          "Meta 👍",
+          "Design Facebook News Feed",
+          "HLD",
+          "Hard",
+          "Fan-out, Cache, Ranking"
+        ],
+        [
+          "",
+          "Meta 👍",
+          "Design Instagram",
+          "HLD",
+          "Hard",
+          "CDN, Sharding, Feed gen"
+        ],
+        [
+          "",
+          "Meta 👍",
+          "Design WhatsApp",
+          "HLD",
+          "Hard",
+          "WebSockets, E2E Encrypt, Queue"
+        ],
+        [
+          "",
+          "Meta 👍",
+          "Design a Notification System",
+          "HLD",
+          "Medium",
+          "Push/Pull, FCM, APNs, Retry"
+        ],
+        [
+          "",
+          "Meta 👍",
+          "Design Facebook Messenger",
+          "HLD",
+          "Hard",
+          "Messaging, Presence, Group chat"
+        ],
+        [
+          "",
+          "Microsoft 🪟",
+          "Design Distributed File System (OneDrive)",
+          "HLD",
+          "Hard",
+          "Chunking, Delta sync, Conflict"
+        ],
+        [
+          "",
+          "Microsoft 🪟",
+          "Design a Teams-like Chat System",
+          "HLD",
+          "Hard",
+          "WebSockets, Presence, Video call"
+        ],
+        [
+          "",
+          "Microsoft 🪟",
+          "Design Chess Game",
+          "LLD",
+          "Hard",
+          "OOP, Strategy, Command, MVC"
+        ],
+        [
+          "",
+          "Microsoft 🪟",
+          "Design an Elevator System",
+          "LLD",
+          "Medium",
+          "State machine, Scheduler"
+        ],
+        [
+          "",
+          "Microsoft 🪟",
+          "Design Azure Service Bus (Kafka-like)",
+          "HLD",
+          "Hard",
+          "Partitions, Replication, DLQ"
+        ],
+        [
+          "",
+          "Netflix 🎬",
+          "Design Netflix Video Streaming",
+          "HLD",
+          "Hard",
+          "CDN, Adaptive streaming, Cache"
+        ],
+        [
+          "",
+          "Netflix 🎬",
+          "Design Recommendation System",
+          "HLD",
+          "Hard",
+          "Collaborative filter, Embed"
+        ],
+        [
+          "",
+          "Netflix 🎬",
+          "Design Netflix API Gateway (Zuul)",
+          "HLD",
+          "Medium",
+          "Auth, Rate limit, Circuit breaker"
+        ],
+        [
+          "",
+          "Netflix 🎬",
+          "Design a Distributed Job Scheduler",
+          "HLD",
+          "Hard",
+          "CRON, Leader election, Queue"
+        ],
+        [
+          "",
+          "Uber 🚗",
+          "Design Uber Ride Matching",
+          "HLD",
+          "Hard",
+          "Geo-index, Matching, ETA"
+        ],
+        [
+          "",
+          "Uber 🚗",
+          "Design Real-time Driver Tracking",
+          "HLD",
+          "Hard",
+          "WebSockets, Geo, Pub-Sub"
+        ],
+        [
+          "",
+          "Uber 🚗",
+          "Design Surge Pricing System",
+          "HLD",
+          "Hard",
+          "Supply/Demand, ML, Real-time"
+        ],
+        [
+          "",
+          "Uber 🚗",
+          "Design Ride Booking LLD",
+          "LLD",
+          "Hard",
+          "OOP, Strategy, Observer, Location"
+        ],
+        [
+          "",
+          "Flipkart 🛍️",
+          "Design Flash Sale System",
+          "HLD",
+          "Hard",
+          "Concurrency, Queue, Rate limit"
+        ],
+        [
+          "",
+          "Flipkart 🛍️",
+          "Design Product Search & Filter",
+          "HLD",
+          "Medium",
+          "Elasticsearch, Faceting, Cache"
+        ],
+        [
+          "",
+          "Flipkart 🛍️",
+          "Design a Shopping Cart",
+          "LLD",
+          "Easy",
+          "OOP, Factory, Strategy, Observer"
+        ],
+        [
+          "",
+          "LinkedIn 💼",
+          "Design LinkedIn Feed",
+          "HLD",
+          "Hard",
+          "Fan-out, Social graph, Cache"
+        ],
+        [
+          "",
+          "LinkedIn 💼",
+          "Design Kafka (Message Queue)",
+          "HLD",
+          "Hard",
+          "Partitions, Consumer groups"
+        ],
+        [
+          "",
+          "LinkedIn 💼",
+          "Design People You May Know",
+          "HLD",
+          "Hard",
+          "Graph traversal, ML, Cache"
+        ],
+        [
+          "",
+          "Swiggy 🍔",
+          "Design Food Delivery App",
+          "HLD",
+          "Hard",
+          "Location, Matching, ETA, Payment"
+        ],
+        [
+          "",
+          "Swiggy 🍔",
+          "Design Live Order Tracking",
+          "HLD",
+          "Medium",
+          "WebSockets, Geo, Pub-Sub"
+        ]
+      ]
+    },
+    {
+      "name": "⭐ Top 20 Must-Know",
+      "rows": [
+        [
+          "",
+          "PradeepLiveCohort Sheet for  Cracking System Design Interviews",
+          "125",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "126",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Question",
+          "Type",
+          "Difficulty",
+          "Key Concepts"
+        ],
+        [
+          "",
+          "1.0",
+          "Design a URL Shortener (TinyURL / Bitly)",
+          "HLD",
+          "Medium",
+          "Hashing, DB sharding, Caching, Analytics"
+        ],
+        [
+          "",
+          "2.0",
+          "Design Twitter / X Feed",
+          "HLD",
+          "Hard",
+          "Fan-out, Timeline, Pub-Sub, Ranking, CDN"
+        ],
+        [
+          "",
+          "3.0",
+          "Design WhatsApp / Messaging System",
+          "HLD",
+          "Hard",
+          "WebSockets, Message Queue, Delivery receipts"
+        ],
+        [
+          "",
+          "4.0",
+          "Design YouTube / Netflix",
+          "HLD",
+          "Hard",
+          "CDN, Adaptive streaming, Storage, Encoding"
+        ],
+        [
+          "",
+          "5.0",
+          "Design a Rate Limiter",
+          "HLD",
+          "Medium",
+          "Token bucket, Sliding window, Redis, Distributed"
+        ],
+        [
+          "",
+          "6.0",
+          "Design Google Drive / Dropbox",
+          "HLD",
+          "Hard",
+          "Chunking, Sync, Versioning, Conflict resolution"
+        ],
+        [
+          "",
+          "7.0",
+          "Design a Notification System",
+          "HLD",
+          "Medium",
+          "Push/Pull, FCM, APNs, Retry, Deduplication"
+        ],
+        [
+          "",
+          "8.0",
+          "Design a Search Autocomplete",
+          "HLD",
+          "Medium",
+          "Trie, Caching, Ranking, Real-time indexing"
+        ],
+        [
+          "",
+          "9.0",
+          "Design a Distributed Cache (Redis)",
+          "HLD",
+          "Hard",
+          "LRU, Consistent hashing, Replication, Eviction"
+        ],
+        [
+          "",
+          "10.0",
+          "Design an API Gateway",
+          "HLD",
+          "Medium",
+          "Auth, Rate limiting, Load balancing, Circuit breaker"
+        ],
+        [
+          "",
+          "11.0",
+          "Design a Parking Lot System",
+          "LLD",
+          "Easy",
+          "OOP, State machine, Strategy pattern, Concurrency"
+        ],
+        [
+          "",
+          "12.0",
+          "Design an Elevator System",
+          "LLD",
+          "Medium",
+          "State machine, Scheduling, Observer pattern"
+        ],
+        [
+          "",
+          "13.0",
+          "Design a Library Management System",
+          "LLD",
+          "Easy",
+          "OOP, Repository pattern, Search, Catalog"
+        ],
+        [
+          "",
+          "14.0",
+          "Design a Chess Game",
+          "LLD",
+          "Hard",
+          "OOP, MVC, Strategy, Command pattern, Validation"
+        ],
+        [
+          "",
+          "15.0",
+          "Design BookMyShow / Ticketmaster",
+          "HLD",
+          "Hard",
+          "Concurrency, ACID, Seat locking, Payment flow"
+        ],
+        [
+          "",
+          "16.0",
+          "Design Uber / Lyft",
+          "HLD",
+          "Hard",
+          "Geo-indexing, Matching, Real-time tracking, ETA"
+        ],
+        [
+          "",
+          "17.0",
+          "Design Instagram / Photo Sharing",
+          "HLD",
+          "Hard",
+          "CDN, Sharding, Feed generation, Image resizing"
+        ],
+        [
+          "",
+          "18.0",
+          "Design a Key-Value Store (DynamoDB)",
+          "HLD",
+          "Hard",
+          "LSM tree, Consistent hashing, CAP theorem"
+        ],
+        [
+          "",
+          "19.0",
+          "Design a Food Delivery App (Swiggy/Zomato)",
+          "HLD",
+          "Hard",
+          "Location, Matching, ETA, Order tracking, Payment"
+        ],
+        [
+          "",
+          "20.0",
+          "Design a Payment System (Stripe/Razorpay)",
+          "HLD",
+          "Hard",
+          "Idempotency, ACID, Fraud detection, Retry logic"
+        ]
+      ]
+    },
+    {
+      "name": "📋 All Questions",
+      "rows": [
+        [
+          "",
+          " PradeepLiveCohort Sheet for Complete System Design Question Bank — 40 Questions",
+          "126",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Question",
+          "Type",
+          "Difficulty",
+          "Category",
+          "Key Concepts",
+          "Asked At"
+        ],
+        [
+          "",
+          "1.0",
+          "Design a Parking Lot System",
+          "LLD",
+          "Easy",
+          "Object Design",
+          "OOP, State machine, Strategy, Singleton",
+          "Amazon, Uber, Microsoft"
+        ],
+        [
+          "",
+          "2.0",
+          "Design an Elevator Control System",
+          "LLD",
+          "Medium",
+          "Concurrency",
+          "State machine, Scheduler, Observer",
+          "Amazon, Apple"
+        ],
+        [
+          "",
+          "3.0",
+          "Design a Library Management System",
+          "LLD",
+          "Easy",
+          "CRUD Design",
+          "OOP, Repository, Search",
+          "Infosys, TCS, Wipro"
+        ],
+        [
+          "",
+          "4.0",
+          "Design a Chess Game",
+          "LLD",
+          "Hard",
+          "Game Design",
+          "OOP, Strategy, Command, MVC",
+          "Google, Microsoft"
+        ],
+        [
+          "",
+          "5.0",
+          "Design a Vending Machine",
+          "LLD",
+          "Medium",
+          "State Machine",
+          "State pattern, Command, OOP",
+          "Amazon, Flipkart"
+        ],
+        [
+          "",
+          "6.0",
+          "Design a Snake & Ladder Game",
+          "LLD",
+          "Easy",
+          "Game Design",
+          "OOP, Factory, Strategy",
+          "Infosys, Accenture"
+        ],
+        [
+          "",
+          "7.0",
+          "Design an ATM Machine",
+          "LLD",
+          "Medium",
+          "State Machine",
+          "State, Command, OOP, Transaction",
+          "JPMC, Goldman Sachs"
+        ],
+        [
+          "",
+          "8.0",
+          "Design a Hotel Booking System",
+          "LLD",
+          "Medium",
+          "Booking System",
+          "OOP, Repository, Availability, Pricing",
+          "Airbnb, Booking.com"
+        ],
+        [
+          "",
+          "9.0",
+          "Design a Ride Booking System (mini Uber)",
+          "LLD",
+          "Hard",
+          "Matching System",
+          "Strategy, Observer, OOP, Location",
+          "Uber, Ola"
+        ],
+        [
+          "",
+          "10.0",
+          "Design a Movie Ticket System (mini BMS)",
+          "LLD",
+          "Hard",
+          "Concurrency",
+          "OOP, Lock, Seat management, Payment",
+          "BookMyShow, Paytm"
+        ],
+        [
+          "",
+          "11.0",
+          "Design a Logger / Logging Framework",
+          "LLD",
+          "Medium",
+          "Framework",
+          "Singleton, Strategy, Chain of Resp.",
+          "Google, Amazon"
+        ],
+        [
+          "",
+          "12.0",
+          "Design a File System",
+          "LLD",
+          "Hard",
+          "Tree Design",
+          "Composite, Observer, OOP, Permission",
+          "Google, Dropbox"
+        ],
+        [
+          "",
+          "13.0",
+          "Design a Cache (LRU/LFU)",
+          "LLD",
+          "Medium",
+          "Data Structures",
+          "HashMap + DLL, OOP, Generics",
+          "Amazon, Adobe"
+        ],
+        [
+          "",
+          "14.0",
+          "Design an Online Shopping Cart",
+          "LLD",
+          "Easy",
+          "E-commerce",
+          "OOP, Factory, Strategy, Observer",
+          "Flipkart, Myntra"
+        ],
+        [
+          "",
+          "15.0",
+          "Design a Splitwise / Bill Splitting App",
+          "LLD",
+          "Hard",
+          "Finance Logic",
+          "OOP, Graph, Strategy, Simplification",
+          "Splitwise, JPMC"
+        ],
+        [
+          "",
+          "16.0",
+          "Design URL Shortener (TinyURL)",
+          "HLD",
+          "Medium",
+          "CRUD + Scale",
+          "Hashing, Caching, DB sharding, Analytics",
+          "Amazon, Microsoft"
+        ],
+        [
+          "",
+          "17.0",
+          "Design Twitter / X",
+          "HLD",
+          "Hard",
+          "Social Media",
+          "Fan-out, Timeline, Pub-Sub, CDN, Cache",
+          "Twitter, Google"
+        ],
+        [
+          "",
+          "18.0",
+          "Design WhatsApp Messenger",
+          "HLD",
+          "Hard",
+          "Messaging",
+          "WebSockets, MQ, E2E Encrypt, Delivery",
+          "Meta, Apple"
+        ],
+        [
+          "",
+          "19.0",
+          "Design YouTube",
+          "HLD",
+          "Hard",
+          "Video Platform",
+          "CDN, Encoding, Adaptive streaming, Rec",
+          "Google, Netflix"
+        ],
+        [
+          "",
+          "20.0",
+          "Design Netflix",
+          "HLD",
+          "Hard",
+          "Streaming",
+          "CDN, Microservices, A/B testing, Cache",
+          "Netflix, Amazon"
+        ],
+        [
+          "",
+          "21.0",
+          "Design Instagram",
+          "HLD",
+          "Hard",
+          "Photo Platform",
+          "CDN, Sharding, Feed gen, Image resizing",
+          "Meta, Pinterest"
+        ],
+        [
+          "",
+          "22.0",
+          "Design Uber / Lyft",
+          "HLD",
+          "Hard",
+          "Geo System",
+          "Geo-index, Matching, ETA, Real-time track",
+          "Uber, Lyft, Ola"
+        ],
+        [
+          "",
+          "23.0",
+          "Design Swiggy / DoorDash",
+          "HLD",
+          "Hard",
+          "Delivery",
+          "Location, Matching, ETA, Order tracking",
+          "Swiggy, Zomato"
+        ],
+        [
+          "",
+          "24.0",
+          "Design Google Drive / Dropbox",
+          "HLD",
+          "Hard",
+          "Storage",
+          "Chunking, Sync, Versioning, Delta sync",
+          "Google, Dropbox"
+        ],
+        [
+          "",
+          "25.0",
+          "Design Google Maps",
+          "HLD",
+          "Hard",
+          "Geo / Graph",
+          "Graph, Dijkstra, Geo sharding, Live traffic",
+          "Google, Apple"
+        ],
+        [
+          "",
+          "26.0",
+          "Design BookMyShow / Ticketmaster",
+          "HLD",
+          "Hard",
+          "Booking",
+          "Concurrency, ACID, Seat locking, Payment",
+          "BMS, Paytm"
+        ],
+        [
+          "",
+          "27.0",
+          "Design a Rate Limiter",
+          "HLD",
+          "Medium",
+          "Infrastructure",
+          "Token bucket, Sliding window, Redis, Dist.",
+          "Amazon, Cloudflare"
+        ],
+        [
+          "",
+          "28.0",
+          "Design a Distributed Cache",
+          "HLD",
+          "Hard",
+          "Infrastructure",
+          "LRU, Consistent hash, Replication, Eviction",
+          "Amazon, Redis"
+        ],
+        [
+          "",
+          "29.0",
+          "Design a Notification System",
+          "HLD",
+          "Medium",
+          "Infrastructure",
+          "Push/Pull, FCM, APNs, Retry, Dedup",
+          "Meta, Amazon"
+        ],
+        [
+          "",
+          "30.0",
+          "Design Search Autocomplete / Typeahead",
+          "HLD",
+          "Medium",
+          "Search",
+          "Trie, Cache, Ranking, Real-time index",
+          "Google, Amazon"
+        ],
+        [
+          "",
+          "31.0",
+          "Design Web Crawler",
+          "HLD",
+          "Hard",
+          "Data Pipeline",
+          "BFS/DFS, Politeness, Dedup, URL frontier",
+          "Google, Common Crawl"
+        ],
+        [
+          "",
+          "32.0",
+          "Design a Payment System (Stripe)",
+          "HLD",
+          "Hard",
+          "Fintech",
+          "Idempotency, ACID, Fraud detect, Retry",
+          "Stripe, PayPal, Razorpay"
+        ],
+        [
+          "",
+          "33.0",
+          "Design an API Gateway",
+          "HLD",
+          "Medium",
+          "Infrastructure",
+          "Auth, Rate limit, LB, Circuit breaker",
+          "AWS, Netflix, Uber"
+        ],
+        [
+          "",
+          "34.0",
+          "Design a Key-Value Store (DynamoDB)",
+          "HLD",
+          "Hard",
+          "Storage",
+          "LSM, Consistent hash, Bloom filter, CAP",
+          "Amazon, Cassandra"
+        ],
+        [
+          "",
+          "35.0",
+          "Design a Distributed Message Queue (Kafka)",
+          "HLD",
+          "Hard",
+          "Messaging",
+          "Partitions, Replication, Consumer groups",
+          "LinkedIn, Uber"
+        ],
+        [
+          "",
+          "36.0",
+          "Design a Recommendation System",
+          "HLD",
+          "Hard",
+          "ML System",
+          "Collaborative filter, Embed, Feature store",
+          "Netflix, Amazon"
+        ],
+        [
+          "",
+          "37.0",
+          "Design Google Search",
+          "HLD",
+          "Hard",
+          "Search",
+          "Crawling, Indexing, Ranking, Spellcheck",
+          "Google"
+        ],
+        [
+          "",
+          "38.0",
+          "Design a Live Streaming System (Twitch)",
+          "HLD",
+          "Hard",
+          "Streaming",
+          "RTMP, HLS, CDN, Chat, Monetization",
+          "Twitch, YouTube"
+        ],
+        [
+          "",
+          "39.0",
+          "Design a Distributed Job Scheduler",
+          "HLD",
+          "Hard",
+          "Infrastructure",
+          "CRON, Leader election, Idempotency, Queue",
+          "LinkedIn, Airbnb"
+        ],
+        [
+          "",
+          "40.0",
+          "Design a Fraud Detection System",
+          "HLD",
+          "Hard",
+          "ML System",
+          "Rules engine, ML, Real-time scoring, Graph",
+          "PayPal, Stripe, JPMC"
+        ]
+      ]
+    },
+    {
+      "name": "🔧 LLD Deep Dive",
+      "rows": [
+        [
+          "",
+          "PradeepLiveCohort Sheet for  Low Level Design (LLD) — Deep Dive",
+          "298",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "299",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "300",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Type",
+          "When to Use",
+          "Real LLD Example",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Singleton",
+          "Creational",
+          "One instance needed globally",
+          "Logger, Configuration, Cache",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Factory / Abstract Factory",
+          "Creational",
+          "Object creation without specifying class",
+          "Vending machine items, Shapes",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Builder",
+          "Creational",
+          "Complex object construction step-by-step",
+          "HTTP Request, SQL Query",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Observer",
+          "Behavioral",
+          "Event-driven, notify multiple subscribers",
+          "Notification, Stock ticker, UI events",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Strategy",
+          "Behavioral",
+          "Switch algorithms at runtime",
+          "Sorting, Payment, Discount, Routing",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Command",
+          "Behavioral",
+          "Encapsulate actions, support undo/redo",
+          "ATM transactions, Chess moves",
+          "",
+          ""
+        ],
+        [
+          "",
+          "State",
+          "Behavioral",
+          "Object behavior changes based on state",
+          "Elevator, Vending machine, ATM",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Composite",
+          "Structural",
+          "Tree structure for part-whole hierarchy",
+          "File system, UI components, Org chart",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Decorator",
+          "Structural",
+          "Add behavior dynamically without subclass",
+          "Pizza toppings, IO streams",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Chain of Responsibility",
+          "Behavioral",
+          "Pass request along handler chain",
+          "Logger levels, Auth middleware",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "PradeepLiveCohort Sheet for  LLD QUESTIONS — DETAILED APPROACH",
+          "126",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Question",
+          "Difficulty",
+          "Patterns Used",
+          "Key Classes to Design",
+          "Interview Focus"
+        ],
+        [
+          "",
+          "1.0",
+          "Parking Lot System",
+          "Easy",
+          "State, Strategy, Singleton",
+          "ParkingLot, Spot, Vehicle, Ticket",
+          "OOP design, inheritance"
+        ],
+        [
+          "",
+          "2.0",
+          "Elevator Control System",
+          "Medium",
+          "State, Observer, Strategy",
+          "Elevator, Request, Controller, Door",
+          "Concurrency, scheduling"
+        ],
+        [
+          "",
+          "3.0",
+          "Library Management System",
+          "Easy",
+          "Repository, Factory",
+          "Book, Member, Catalog, Loan, Search",
+          "CRUD, search logic"
+        ],
+        [
+          "",
+          "4.0",
+          "Chess Game",
+          "Hard",
+          "Strategy, Command, Observer",
+          "Board, Piece, Move, Player, Game",
+          "Validation, move history"
+        ],
+        [
+          "",
+          "5.0",
+          "Vending Machine",
+          "Medium",
+          "State, Command, Factory",
+          "Machine, Item, State, Coin, Dispenser",
+          "State transitions"
+        ],
+        [
+          "",
+          "6.0",
+          "ATM Machine",
+          "Medium",
+          "State, Command, Strategy",
+          "ATM, Card, Account, Transaction, Pin",
+          "Transaction integrity"
+        ],
+        [
+          "",
+          "7.0",
+          "Hotel Booking System",
+          "Medium",
+          "Repository, Strategy, Observer",
+          "Hotel, Room, Booking, Guest, Pricing",
+          "Availability, pricing"
+        ],
+        [
+          "",
+          "8.0",
+          "LRU Cache Design",
+          "Medium",
+          "Composite (DLL+Map)",
+          "Cache, Node, CacheEntry, Eviction",
+          "Data structure design"
+        ],
+        [
+          "",
+          "9.0",
+          "Logger Framework",
+          "Medium",
+          "Singleton, Strategy, Chain",
+          "Logger, LogLevel, Appender, Formatter",
+          "Extensibility"
+        ],
+        [
+          "",
+          "10.0",
+          "Splitwise Bill Splitting",
+          "Hard",
+          "Strategy, Graph, Observer",
+          "Expense, User, Group, Split, Settle",
+          "Debt simplification"
+        ],
+        [
+          "",
+          "11.0",
+          "Online Shopping Cart",
+          "Easy",
+          "Strategy, Observer, Factory",
+          "Cart, Item, Discount, Payment, Order",
+          "Discount strategies"
+        ],
+        [
+          "",
+          "12.0",
+          "File System Design",
+          "Hard",
+          "Composite, Observer",
+          "File, Directory, Permission, Path",
+          "Tree structure, permissions"
+        ],
+        [
+          "",
+          "13.0",
+          "Ride Booking System (mini)",
+          "Hard",
+          "Strategy, Observer, Factory",
+          "Driver, Rider, Ride, Matcher, Location",
+          "Matching logic"
+        ],
+        [
+          "",
+          "14.0",
+          "Movie Ticket Booking (mini)",
+          "Hard",
+          "Strategy, State, Observer",
+          "Theater, Show, Seat, Booking, Payment",
+          "Concurrency, locking"
+        ],
+        [
+          "",
+          "15.0",
+          "Snake & Ladder Game",
+          "Easy",
+          "Strategy, Factory, Observer",
+          "Board, Player, Snake, Ladder, Dice",
+          "Game loop, polymorphism"
+        ]
+      ]
+    },
+    {
+      "name": "🌐 HLD Deep Dive",
+      "rows": [
+        [
+          "",
+          "PradeepLiveCohort Sheet for High Level Design (HLD) — Deep Dive",
+          "400",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "401",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "402",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Use When",
+          "Trade-offs",
+          "Real Example",
+          "",
+          ""
+        ],
+        [
+          "",
+          "CDN",
+          "Serve static content globally",
+          "Cost vs Latency; Cache invalidation",
+          "Netflix, Instagram images",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Load Balancer",
+          "Distribute traffic across servers",
+          "L4 vs L7; Sticky sessions",
+          "NGINX, AWS ELB, HAProxy",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Caching (Redis)",
+          "Reduce DB load, speed up reads",
+          "Stale data; Cache invalidation",
+          "Twitter timeline, rate limit",
+          "",
+          ""
+        ],
+        [
+          "",
+          "DB Sharding",
+          "Scale horizontally beyond single DB",
+          "Cross-shard joins; Rebalancing",
+          "Instagram, WhatsApp",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Message Queue (Kafka)",
+          "Async processing, decouple services",
+          "Ordering; At-least-once delivery",
+          "Notification, order system",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Read Replicas",
+          "Scale read-heavy workloads",
+          "Replication lag; Consistency",
+          "Amazon, Booking.com",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Consistent Hashing",
+          "Distribute load evenly, minimize reshuffling",
+          "Virtual nodes; Hot spots",
+          "DynamoDB, Cassandra",
+          "",
+          ""
+        ],
+        [
+          "",
+          "CAP Theorem",
+          "Choose CP or AP for distributed systems",
+          "Availability vs Consistency",
+          "Cassandra (AP), HBase (CP)",
+          "",
+          ""
+        ],
+        [
+          "",
+          "API Gateway",
+          "Single entry point for microservices",
+          "SPOF; Latency overhead",
+          "AWS API GW, Zuul, Kong",
+          "",
+          ""
+        ],
+        [
+          "",
+          "Circuit Breaker",
+          "Prevent cascade failures",
+          "Tuning thresholds; False positives",
+          "Netflix Hystrix, Resilience4j",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "PradeepLiveCohort Sheet for HLD QUESTIONS — APPROACH GUIDE",
+          "126",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Question",
+          "Difficulty",
+          "Must-Cover Components",
+          "Key Challenges",
+          "Scale Target"
+        ],
+        [
+          "",
+          "1.0",
+          "URL Shortener (TinyURL)",
+          "Medium",
+          "API, Hashing, DB, Cache, Analytics",
+          "Collision, Scale, Analytics",
+          "100M URLs"
+        ],
+        [
+          "",
+          "2.0",
+          "Twitter / X Feed",
+          "Hard",
+          "Feed gen, Cache, Pub-Sub, CDN",
+          "Fan-out, Ranking, Hot users",
+          "1B users"
+        ],
+        [
+          "",
+          "3.0",
+          "WhatsApp Messenger",
+          "Hard",
+          "WebSockets, MQ, DB, Encryption",
+          "Delivery guarantee, Groups",
+          "2B users"
+        ],
+        [
+          "",
+          "4.0",
+          "YouTube",
+          "Hard",
+          "CDN, Encoder, Recommender, DB",
+          "Storage, Encoding at scale",
+          "500hr/min upload"
+        ],
+        [
+          "",
+          "5.0",
+          "Uber Ride Sharing",
+          "Hard",
+          "Geo-index, Matching, ETA, Tracking",
+          "Real-time location, Surge",
+          "5M rides/day"
+        ],
+        [
+          "",
+          "6.0",
+          "Google Drive",
+          "Hard",
+          "Chunking, Storage, Sync, Conflict",
+          "Delta sync, Offline mode",
+          "1B files"
+        ],
+        [
+          "",
+          "7.0",
+          "Rate Limiter",
+          "Medium",
+          "Token bucket, Redis, API Gateway",
+          "Distributed coordination",
+          "100K req/s"
+        ],
+        [
+          "",
+          "8.0",
+          "Notification System",
+          "Medium",
+          "FCM, APNs, Queue, Dedup, Retry",
+          "Delivery guarantee, Fanout",
+          "1B/day notifs"
+        ],
+        [
+          "",
+          "9.0",
+          "Search Autocomplete",
+          "Medium",
+          "Trie, Cache, Ranker, Index",
+          "Freshness, Personalization",
+          "10K QPS"
+        ],
+        [
+          "",
+          "10.0",
+          "Web Crawler",
+          "Hard",
+          "URL Frontier, Fetcher, Parser, Store",
+          "Politeness, Dedup, Traps",
+          "1B pages"
+        ],
+        [
+          "",
+          "11.0",
+          "BookMyShow",
+          "Hard",
+          "Seat locking, Payment, Cache, DB",
+          "Concurrency, Overbooking",
+          "1M tickets/hr"
+        ],
+        [
+          "",
+          "12.0",
+          "Distributed Cache",
+          "Hard",
+          "LRU, Consistent hash, Replication",
+          "Eviction, Rebalancing",
+          "10TB data"
+        ],
+        [
+          "",
+          "13.0",
+          "Payment System (Stripe)",
+          "Hard",
+          "Idempotency, ACID, Fraud, Retry",
+          "Exactly-once processing",
+          "1M txn/day"
+        ],
+        [
+          "",
+          "14.0",
+          "Key-Value Store (DynamoDB)",
+          "Hard",
+          "LSM, Bloom filter, Replication",
+          "Consistency, Read repair",
+          "100M ops/s"
+        ],
+        [
+          "",
+          "15.0",
+          "Kafka (Message Queue)",
+          "Hard",
+          "Partitions, Replication, Consumer",
+          "Ordering, At-least-once",
+          "Trillions/day"
+        ],
+        [
+          "",
+          "16.0",
+          "Recommendation System",
+          "Hard",
+          "Collab filter, Feature store, Serving",
+          "Cold start, Freshness",
+          "Netflix/Amazon"
+        ],
+        [
+          "",
+          "17.0",
+          "Google Maps",
+          "Hard",
+          "Graph, Geo-sharding, Live traffic",
+          "ETA accuracy, Routing",
+          "1B users"
+        ],
+        [
+          "",
+          "18.0",
+          "Instagram",
+          "Hard",
+          "CDN, Sharding, Feed, Image resize",
+          "Feed freshness, Storage",
+          "500M DAU"
+        ],
+        [
+          "",
+          "19.0",
+          "Distributed Job Scheduler",
+          "Hard",
+          "CRON, Leader election, Idempotency",
+          "Exactly-once execution",
+          "1M jobs/day"
+        ],
+        [
+          "",
+          "20.0",
+          "Food Delivery (Swiggy)",
+          "Hard",
+          "Geo, Matching, ETA, Payment, Track",
+          "Dynamic ETA, Surge",
+          "10M orders/day"
+        ]
+      ]
+    },
+    {
+      "name": "📈 My Progress",
+      "rows": [
+        [
+          "",
+          "📈 My System Design Progress",
+          "530",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "531",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "532",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "✅ Done",
+          "🔄 Doing",
+          "⭐ Revise",
+          "❌ Pending",
+          "Avg Conf",
+          "% Done"
+        ],
+        [
+          "",
+          "40",
+          "0",
+          "0",
+          "0",
+          "40",
+          "—",
+          "0.0%"
+        ],
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "🎯  OVERALL COMPLETION",
+          "░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  0.0% Complete",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "540",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "░░░░░░░░░░░░░░░░░░░░  0/25",
+          "",
+          "541",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "░░░░░░░░░░░░░░░░░░░░  0/15",
+          "",
+          "126",
+          "",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Question",
+          "Type",
+          "Status",
+          "Date Done",
+          "Confidence (1–5) ⭐",
+          "My Notes / Key Learnings"
+        ],
+        [
+          "",
+          "1.0",
+          "Design URL Shortener (TinyURL / Bitly)",
+          "HLD",
+          "❌ Not Started",
+          "2.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Twitter / X Feed",
+          "HLD",
+          "❌ Not Started",
+          "3.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design WhatsApp Messenger",
+          "HLD",
+          "❌ Not Started",
+          "4.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design YouTube",
+          "HLD",
+          "❌ Not Started",
+          "5.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design a Rate Limiter",
+          "HLD",
+          "❌ Not Started",
+          "6.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Google Drive / Dropbox",
+          "HLD",
+          "❌ Not Started",
+          "7.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Notification System",
+          "HLD",
+          "❌ Not Started",
+          "8.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Search Autocomplete / Typeahead",
+          "HLD",
+          "❌ Not Started",
+          "9.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Distributed Cache (Redis)",
+          "HLD",
+          "❌ Not Started",
+          "10.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design an API Gateway",
+          "HLD",
+          "❌ Not Started",
+          "11.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design BookMyShow / Ticketmaster",
+          "HLD",
+          "❌ Not Started",
+          "12.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Uber / Lyft",
+          "HLD",
+          "❌ Not Started",
+          "13.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Instagram",
+          "HLD",
+          "❌ Not Started",
+          "14.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Key-Value Store (DynamoDB)",
+          "HLD",
+          "❌ Not Started",
+          "15.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Food Delivery App (Swiggy/Zomato)",
+          "HLD",
+          "❌ Not Started",
+          "16.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Payment System (Stripe/Razorpay)",
+          "HLD",
+          "❌ Not Started",
+          "17.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Netflix Streaming",
+          "HLD",
+          "❌ Not Started",
+          "18.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Google Maps",
+          "HLD",
+          "❌ Not Started",
+          "19.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Web Crawler",
+          "HLD",
+          "❌ Not Started",
+          "20.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Kafka / Distributed Message Queue",
+          "HLD",
+          "❌ Not Started",
+          "21.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Recommendation System",
+          "HLD",
+          "❌ Not Started",
+          "22.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Google Search",
+          "HLD",
+          "❌ Not Started",
+          "23.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Live Streaming (Twitch/YouTube Live)",
+          "HLD",
+          "❌ Not Started",
+          "24.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Distributed Job Scheduler",
+          "HLD",
+          "❌ Not Started",
+          "25.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Fraud Detection System",
+          "HLD",
+          "❌ Not Started",
+          "26.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design a Parking Lot System",
+          "LLD",
+          "❌ Not Started",
+          "27.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design an Elevator Control System",
+          "LLD",
+          "❌ Not Started",
+          "28.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design a Library Management System",
+          "LLD",
+          "❌ Not Started",
+          "29.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design a Chess Game",
+          "LLD",
+          "❌ Not Started",
+          "30.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design a Vending Machine",
+          "LLD",
+          "❌ Not Started",
+          "31.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design an ATM Machine",
+          "LLD",
+          "❌ Not Started",
+          "32.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design a Hotel Booking System (LLD)",
+          "LLD",
+          "❌ Not Started",
+          "33.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design LRU Cache (LLD)",
+          "LLD",
+          "❌ Not Started",
+          "34.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design a Logger Framework (LLD)",
+          "LLD",
+          "❌ Not Started",
+          "35.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Splitwise Bill Splitting (LLD)",
+          "LLD",
+          "❌ Not Started",
+          "36.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Ride Booking System (mini Uber LLD)",
+          "LLD",
+          "❌ Not Started",
+          "37.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Movie Ticket Booking (mini BMS LLD)",
+          "LLD",
+          "❌ Not Started",
+          "38.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Online Shopping Cart (LLD)",
+          "LLD",
+          "❌ Not Started",
+          "39.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design Snake & Ladder Game (LLD)",
+          "LLD",
+          "❌ Not Started",
+          "40.0",
+          "",
+          ""
+        ],
+        [
+          "",
+          "",
+          "Design File System (LLD)",
+          "LLD",
+          "❌ Not Started",
+          "567",
+          "",
+          ""
+        ]
+      ]
+    }
+  ]
+}
