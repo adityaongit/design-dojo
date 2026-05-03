@@ -1,6 +1,6 @@
 ---
 slug: design-a-large-scale-file-de-duplication-service
-title: 5\. Design a large scale file de-duplication service
+title: Design a large scale file de-duplication service
 type: system-design
 category: breakdown
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 5\. Design a large scale file de-duplication service
+## Design a large scale file de-duplication service
 
 You will receive a number of files (customer records) in a folder once a day, the file sizes range from 10GB-50GB that need to be de-duplicated based on few columns eg: Name & phone number column.
 
@@ -31,7 +31,7 @@ You will receive a number of files (customer records) in a folder once a day, th
 -   Bloom filter bit array resides in memory hence ensure that the file is processed by the same service. If the bit array needs to be shared, use redis in-memory BITFIELD
 -   If false positive can not be avoided despite the large hash range, we can rely upon db unique constraints check as the 2nd level check to verify only records that are identified as duplicate.
 
-![](/post/grokking-the-system-design-interview/file-dedupe.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/file-dedupe.png)
 
 Tip
 

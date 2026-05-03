@@ -1,6 +1,6 @@
 ---
 slug: load-balancer-routing-algorithms
-title: 25\. Load Balancer Routing Algorithms
+title: Load Balancer Routing Algorithms
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 25\. Load Balancer Routing Algorithms
+## Load Balancer Routing Algorithms
 
 1.  Round-robin - traffic distributed in round-robin fashion.
 2.  Weighted Round-robin - traffic distributed by weight, some servers may be able to process more load hence their weight is more compared to smaller configuration machines.

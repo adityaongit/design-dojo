@@ -1,6 +1,6 @@
 ---
 slug: flyweight-pattern
-title: 4\. Flyweight Pattern
+title: Flyweight Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 4\. Flyweight Pattern
+## Flyweight Pattern
 
 Flyweight pattern is used when we need to create a lot of Objects of a class eg 100,000 objects. Reduce cost of storage for large objects by sharing. When we share objects we need to determine what is intrinsic and extrinsic attributes. Here beeType is an intrinsic state and will be shared by all bees. The (x,y) coordinates are the extrinsic properties which will vary for each object. Notice that a factory pattern is also seen in the flyweight example below.
 
-![](/post/design-patterns/flyweight-pattern-visual.png)
+![](https://gitorko.github.io/post/design-patterns/flyweight-pattern-visual.png)
 
 ```java
  1package com.demo.basics.designpatterns._09_flyweight;

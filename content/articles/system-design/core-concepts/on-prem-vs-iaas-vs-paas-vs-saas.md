@@ -1,6 +1,6 @@
 ---
 slug: on-prem-vs-iaas-vs-paas-vs-saas
-title: 70\. On-Prem vs IAAS vs PAAS vs SAAS
+title: On-Prem vs IAAS vs PAAS vs SAAS
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 70\. On-Prem vs IAAS vs PAAS vs SAAS
+## On-Prem vs IAAS vs PAAS vs SAAS
 
 **Cloud models**
 

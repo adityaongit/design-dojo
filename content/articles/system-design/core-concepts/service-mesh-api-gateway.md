@@ -1,6 +1,6 @@
 ---
 slug: service-mesh-api-gateway
-title: 51\. Service Mesh & API Gateway
+title: Service Mesh & API Gateway
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 51\. Service Mesh & API Gateway
+## Service Mesh & API Gateway
 
 API gateway is a component sits between clients and services and provides centralized handling of API communication between them. API Gateway authenticates all traffic before routing it to the called service
 
@@ -44,4 +44,4 @@ Functions of API gateway
 
 API gateways can be augmented with web application firewall (WAF) and denial of service (DoS) protection. Depending on the system architecture and app delivery requirements, an API gateway can be deployed in front of the Kubernetes cluster as a load balancer (multi-cluster level), at its edge as an Ingress controller (cluster-level), or within it as a service mesh (service-level).
 
-![](/post/grokking-the-system-design-interview/api-gateway.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/api-gateway.png)

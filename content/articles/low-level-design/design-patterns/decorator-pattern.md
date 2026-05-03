@@ -1,6 +1,6 @@
 ---
 slug: decorator-pattern
-title: 7\. Decorator Pattern
+title: Decorator Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 7\. Decorator Pattern
+## Decorator Pattern
 
 Decorator design pattern is used to add the functionality by wrapping another class around the core class without modifying the core class. Disadvantage of decorator pattern is that it uses a lot of similar kind of objects.
 
-![](/post/design-patterns/decorator-pattern-visual.png)
+![](https://gitorko.github.io/post/design-patterns/decorator-pattern-visual.png)
 
 ```java
  1package com.demo.basics.designpatterns._12_decorator;
@@ -96,7 +96,7 @@ Decorator design pattern is used to add the functionality by wrapping another cl
 
 UML of Decorator Pattern
 
-![](/post/design-patterns/decorator.png)
+![](https://gitorko.github.io/post/design-patterns/decorator.png)
 
 ## Behavioral Design Patterns
 

@@ -1,6 +1,6 @@
 ---
 slug: iterator-pattern
-title: 10\. Iterator Pattern
+title: Iterator Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 10\. Iterator Pattern
+## Iterator Pattern
 
 Iterator pattern is used to provide standard way to traverse through group of objects. In the example below we provide 2 types of iterators over the fruit collection, we could have let the user write his own iterator but if there are many clients using the iterator then it would be difficult to maintain. Notice that FruitIterator is private and inner class, this hides the implementation details from the client. Logic of iteration is internal to the collection.
 

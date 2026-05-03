@@ -47,11 +47,11 @@ Invoke this rest api that creates a memory leak in the jvm.
 
 This causes a memory spike, the pod will be killed (OOMKilled) and a new pod brought up.
 
-![](/post/distributed-system-essentials/img01.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/img01.png)
 
-![](/post/distributed-system-essentials/img03.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/img03.png)
 
-![](/post/distributed-system-essentials/img04.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/img04.png)
 
 Note
 

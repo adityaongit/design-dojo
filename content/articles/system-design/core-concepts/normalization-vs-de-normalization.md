@@ -1,6 +1,6 @@
 ---
 slug: normalization-vs-de-normalization
-title: 73\. Normalization vs De-Normalization
+title: Normalization vs De-Normalization
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 73\. Normalization vs De-Normalization
+## Normalization vs De-Normalization
 
 1.  Normalization - focuses on reducing redundancy and ensuring data integrity by organizing data into related tables.
 2.  De-Normalization introduces redundancy to improve read performance and simplify queries by combining related tables.

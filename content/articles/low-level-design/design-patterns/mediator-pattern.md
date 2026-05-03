@@ -1,6 +1,6 @@
 ---
 slug: mediator-pattern
-title: 2\. Mediator Pattern
+title: Mediator Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 2\. Mediator Pattern
+## Mediator Pattern
 
 Mediator pattern is used to provide a centralized communication medium between different objects.
 

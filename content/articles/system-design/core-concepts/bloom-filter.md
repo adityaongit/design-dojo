@@ -1,6 +1,6 @@
 ---
 slug: bloom-filter
-title: 33\. Bloom filter
+title: Bloom filter
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 33\. Bloom filter
+## Bloom filter
 
 Bloom filter is a probabilistic algorithm. Determines if given element is present in a set or not (**member of set**). In some cases it can give false positive, but will never give a false negative. More hash functions you use lesser the collisions, wider the bit array lesser the collisions. It is space efficient as it uses less memory.
 
@@ -28,7 +28,7 @@ Bloom filter is a probabilistic algorithm. Determines if given element is presen
 3.  Less memory used, entire bloom filter result can be sent over wire.
 4.  Probabilistic algorithm
 
-![](/post/grokking-the-system-design-interview/bloom-filter.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/bloom-filter.png)
 
 **Bloom Filter Use-Cases**
 

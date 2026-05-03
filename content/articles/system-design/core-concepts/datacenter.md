@@ -1,6 +1,6 @@
 ---
 slug: datacenter
-title: 8\. Datacenter
+title: Datacenter
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 8\. Datacenter
+## Datacenter
 
 Overview of a datacenter layout
 
@@ -38,4 +38,4 @@ Outages:
 -   If there is a fire in one-floor/one-building of the datacenter then one zone is down, other floors/building in same region are isolated hence remain operational.
 -   If there is a hurricane in the region cutting all power then all zones in that region are down.
 
-![](/post/grokking-the-system-design-interview/datacenter.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/datacenter.png)

@@ -1,6 +1,6 @@
 ---
 slug: redis
-title: 20\. Redis
+title: Redis
 type: system-design
 category: key-technologies
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 20\. Redis
+## Redis
 
 Redis is an in-memory data store. Reading/writing to RAM is always faster than disk, hence it has high throughput and low latency. Redis employs a **single-threaded** architecture. Redis supports Non-blocking IO. Redis can deliver up to 1 million requests per second when run on an average Linux system.
 
@@ -40,7 +40,7 @@ Datastructures supported
 9.  Hyperlog
 10.  Stream
 
-![](/post/grokking-the-system-design-interview/redis.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/redis.png)
 
 **Redis Persistence**
 

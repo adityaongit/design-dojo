@@ -27,7 +27,7 @@ Thread pools are shared, a runway function is occupying the thread pool 100% and
 
 Bulkhead defines maximum number of concurrent calls allowed to be executed in a given timeframe. This prevents failures in a system/API from affecting other systems/APIs
 
-![](/post/distributed-system-essentials/img05.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/img05.png)
 
 The `@Bulkhead` is the annotation used to enable bulkhead on an API call. This can be applied at the method level or a class level. If applied at the class level, it applies to all public methods.
 

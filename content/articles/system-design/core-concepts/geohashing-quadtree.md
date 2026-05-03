@@ -1,6 +1,6 @@
 ---
 slug: geohashing-quadtree
-title: 53\. GeoHashing & Quadtree
+title: GeoHashing & Quadtree
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 53\. GeoHashing & Quadtree
+## GeoHashing & Quadtree
 
 **GeoHashing**
 
@@ -31,7 +31,7 @@ eg: Geohashes `af3bdmcef` and `af3bdmcfg` are spatially closer as they share the
 2.  Easier to share in URL.
 3.  Easier to find nearest neighbour based on string match.
 
-![](/post/grokking-the-system-design-interview/geo-hashing.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/geo-hashing.png)
 
 **QuadTree**
 
@@ -39,4 +39,4 @@ A quadtree is an in-memory tree data structure that is commonly used to partitio
 
 Eg: Identify all restaurants/cabs in the 1.5 miles/km range from given point. If there are no restaurants/cabs in the grid/node then add neighbouring grids/nodes.
 
-![](/post/grokking-the-system-design-interview/quad-tree.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/quad-tree.png)

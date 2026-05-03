@@ -22,7 +22,7 @@ licenseNote: >-
 
 calendar Jun 15, 2024 · 6 min read · [ignite](https://gitorko.github.io/tags/ignite/ "ignite") [distributed-lock](https://gitorko.github.io/tags/distributed-lock/ "distributed-lock") [k8s](https://gitorko.github.io/tags/k8s/ "k8s") [kubernetes](https://gitorko.github.io/tags/kubernetes/ "kubernetes")  ·
 
-Share on: [twitter](https://twitter.com/intent/tweet?text=Distributed%20Locking%20-%20Apache%20Ignite&url=https%3a%2f%2fgitorko.github.io%2fpost%2fdistributed-locking-apache-ignite%2f&tw_p=tweetbutton "Share on Twitter") [facebook](https://www.facebook.com/sharer.php?u=https%3a%2f%2fgitorko.github.io%2fpost%2fdistributed-locking-apache-ignite%2f&t=Distributed%20Locking%20-%20Apache%20Ignite "Share on Facebook") [linkedin](#linkedinshare "Share on LinkedIn") [copy](https://gitorko.github.io/post/distributed-locking-apache-ignite/ "Copy Link")
+Share on: [twitter](https://twitter.com/intent/tweet?text=Distributed%20Locking%20-%20Apache%20Ignite&url=https%3a%2f%2fgitorko.github.io%2fpost%2fdistributed-locking-apache-ignite%2f&tw_p=tweetbutton "Share on Twitter") [facebook](https://www.facebook.com/sharer.php?u=https%3a%2f%2fgitorko.github.io%2fpost%2fdistributed-locking-apache-ignite%2f&t=Distributed%20Locking%20-%20Apache%20Ignite "Share on Facebook") [linkedin](#linkedinshare "Share on LinkedIn") [copy](/learn/system-design/patterns/distributed-locking-apache-ignite "Copy Link")
 
 ## Overview
 
@@ -40,7 +40,7 @@ Github: [https://github.com/gitorko/project04](https://github.com/gitorko/projec
 
 Apache Ignite is a distributed database. It supports distributed locking mechanism.
 
-![](/post/distributed-locking-apache-ignite/logo.png)
+![](https://gitorko.github.io/post/distributed-locking-apache-ignite/logo.png)
 
 ### Code
 
@@ -347,7 +347,7 @@ Apache Ignite is a distributed database. It supports distributed locking mechani
 
 ### Postman
 
-![](/post/distributed-locking-apache-ignite/img01.png)
+![](https://gitorko.github.io/post/distributed-locking-apache-ignite/img01.png)
 
 Import the postman collection to postman
 
@@ -484,7 +484,7 @@ Import the postman collection to postman
 
 [https://ignite.apache.org/](https://ignite.apache.org/)
 
-window.disqus\_config=function(){},function(){if(\["localhost","127.0.0.1"\].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
+window.disqus\_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
 
 Please enable JavaScript to view the [comments powered by Disqus.](https://disqus.com/?ref_noscript)
 

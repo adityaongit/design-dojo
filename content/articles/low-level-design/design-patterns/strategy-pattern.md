@@ -1,6 +1,6 @@
 ---
 slug: strategy-pattern
-title: 5\. Strategy Pattern
+title: Strategy Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 5\. Strategy Pattern
+## Strategy Pattern
 
 Strategy pattern is used when we have multiple algorithm for a specific task and client decides the actual implementation to be used at runtime. This is also known as Policy Pattern.
 
-![](/post/design-patterns/strategy-pattern-visual.png)
+![](https://gitorko.github.io/post/design-patterns/strategy-pattern-visual.png)
 
 ```java
  1package com.demo.basics.designpatterns._17_stategy;

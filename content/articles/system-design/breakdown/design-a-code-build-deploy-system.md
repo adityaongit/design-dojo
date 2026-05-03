@@ -1,6 +1,6 @@
 ---
 slug: design-a-code-build-deploy-system
-title: 4\. Design a Code Build & Deploy System
+title: Design a Code Build & Deploy System
 type: system-design
 category: breakdown
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 4\. Design a Code Build & Deploy System
+## Design a Code Build & Deploy System
 
 Build the code when someone commits code to a branch and deploy it to a machine.
 
@@ -28,7 +28,7 @@ Build the code when someone commits code to a branch and deploy it to a machine.
 -   Builds can take time, so we dont want the manager service constantly polling workers. Once the worker completes it will push an event that will be consumed by manager service to continue the deployment flow.
 -   If workers die during the build then heartbeat will not be updated and a scheduler can restart the job. If the build nodes make a direct connection for heart beat this can overwhelm the manager service as there will be many worker nodes.
 
-![](/post/grokking-the-system-design-interview/code-deployment.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/code-deployment.png)
 
 -   We maintain dedicated queues for each region. If one region is under heavy load we can add more consumers/workers to address that region.
 -   A periodic job checks for worker node heartbeat, if the TTL has expired then will restart the job.

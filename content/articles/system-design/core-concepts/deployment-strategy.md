@@ -1,6 +1,6 @@
 ---
 slug: deployment-strategy
-title: 52\. Deployment Strategy
+title: Deployment Strategy
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 52\. Deployment Strategy
+## Deployment Strategy
 
 **Guidelines for deployment**
 
@@ -33,4 +33,4 @@ licenseNote: >-
 2.  Blue Green - Few services are upgraded and test teams validate and signoff before all services are upgraded.
 3.  Canary - Few services are upgraded and part of the traffic hits these new instances.
 
-![](/post/grokking-the-system-design-interview/deployment-model.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/deployment-model.png)

@@ -1,6 +1,6 @@
 ---
 slug: event-sourcing
-title: 54\. Event sourcing
+title: Event sourcing
 type: system-design
 category: patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 54\. Event sourcing
+## Event sourcing
 
 1.  Event Notification - Only informs something changed. Upto client to look at data and pick the new changes
 2.  Event Carried State Transfer - Event itself carries the data on what changed.
@@ -29,7 +29,7 @@ Instead of storing the update to an object/record, change the db to append only.
 
 Eg: A customer record, each time address of customer changes instead of updating existing column, just insert new row with the new address. A materialized view can be generated from this data to get the latest customer record. Combining all the records gives latest customer record.
 
-![](/post/grokking-the-system-design-interview/event-sourcing.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/event-sourcing.png)
 
 1.  Updates can come from multiple sources, there is no contention to update.
 2.  Consistency for transactional data based on the time the event was processed.

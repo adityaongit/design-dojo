@@ -1,6 +1,6 @@
 ---
 slug: abstract-factory-pattern
-title: 3\. Abstract Factory Pattern
+title: Abstract Factory Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 3\. Abstract Factory Pattern
+## Abstract Factory Pattern
 
 Abstract factory pattern is similar to Factory pattern and it’s factory of factories. In factory pattern we used switch statement to decide which object to return in abstract factory we remove the if-else/switch block and have a factory class for each sub-class.
 

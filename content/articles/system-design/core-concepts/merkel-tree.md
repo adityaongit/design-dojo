@@ -1,6 +1,6 @@
 ---
 slug: merkel-tree
-title: 59\. Merkel Tree
+title: Merkel Tree
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 59\. Merkel Tree
+## Merkel Tree
 
 Merkle tree also known as **hash tree** is a data structure used for data verification and synchronization. It's a tree data structure where each non-leaf node is a hash of its child nodes.
 
@@ -29,4 +29,4 @@ If the file is 100 GB then its chunked into 4 parts, A hash is calculated for ea
 2.  If we want to know where data change has occurred then we will not have to traverse the whole structure but only a small part of the structure.
 3.  The root hash is used as the fingerprint for the entire data. If root hash doesn't match then some data below has changed.
 
-![](/post/grokking-the-system-design-interview/merkel-tree.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/merkel-tree.png)

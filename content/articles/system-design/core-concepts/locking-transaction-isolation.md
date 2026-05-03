@@ -1,6 +1,6 @@
 ---
 slug: locking-transaction-isolation
-title: 5\. Locking & Transaction Isolation
+title: Locking & Transaction Isolation
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 5\. Locking & Transaction Isolation
+## Locking & Transaction Isolation
 
 Locking ensures that the row is not concurrently updated by 2 different threads which might corrupt the data.
 

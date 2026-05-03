@@ -1,6 +1,6 @@
 ---
 slug: caching-points
-title: 10\. Caching Points
+title: Caching Points
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 10\. Caching Points
+## Caching Points
 
 Advantages of Caching
 

@@ -1,6 +1,6 @@
 ---
 slug: consistent-hashing
-title: 45\. Consistent Hashing
+title: Consistent Hashing
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 45\. Consistent Hashing
+## Consistent Hashing
 
 Nodes keep dying in a distributed system. To scale new nodes can be added as well. Consistent hashing lets you distribute traffic among the nodes uniformly.
 
@@ -31,6 +31,6 @@ If you just hash the request and map it to a server then if the node count chang
 
 The distribution of servers in a hash ring may not be uniform hence you can use **virtual servers**. With more virtual servers the distribution is more balanced. Eg: if there are 60K user requests and there are 6 servers each server can distribute and handle 10K. Do note that if one node goes down then all the requests flood the next node causing it to go down thus causing a full outage. Virtual servers will avoid this to some extent.
 
-![](/post/grokking-the-system-design-interview/consistent-hashing.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/consistent-hashing.png)
 
 [https://youtu.be/UF9Iqmg94tk](https://youtu.be/UF9Iqmg94tk)

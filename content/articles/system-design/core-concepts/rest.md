@@ -1,6 +1,6 @@
 ---
 slug: rest
-title: 63\. REST
+title: REST
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 63\. REST
+## REST
 
 1.  POST is always for creating a resource (does not matter if it was duplicated)
 2.  PUT is for checking if resource exists then update, else create new resource.

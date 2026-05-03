@@ -1,6 +1,6 @@
 ---
 slug: virtual-thread-jdk21
-title: 14\. Virtual Thread JDK21
+title: Virtual Thread JDK21
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 14\. Virtual Thread JDK21
+## Virtual Thread JDK21
 
 Virtual threads aim to improve the concurrency model in Java by introducing lightweight, user-mode threads that can efficiently handle a large number of concurrent tasks.
 
@@ -52,4 +52,4 @@ If your code calls a blocking I/O operation in a virtual thread, the runtime sus
 13});
 ```
 
-![](/post/distributed-system-essentials/virtual-threads-jvm.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/virtual-threads-jvm.png)

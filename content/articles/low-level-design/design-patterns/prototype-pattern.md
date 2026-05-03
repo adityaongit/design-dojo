@@ -1,6 +1,6 @@
 ---
 slug: prototype-pattern
-title: 5\. Prototype Pattern
+title: Prototype Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 5\. Prototype Pattern
+## Prototype Pattern
 
 Prototype pattern is used when the object creation is expensive. Instead of creating a new object you can copy the original object using clone and then modify it according to your needs. Prototype design pattern mandates that the object which you are copying should provide the copying feature, it should not be done by any other class. Decision to use shallow or deep copy of the object attributes is a design decision a shallow copy just copies immediate property and deep copy copies all object references as well. Notice we dont use new to create prototype objects after the first instance is created. Prototype avoid subclassing.
 

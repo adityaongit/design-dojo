@@ -1,6 +1,6 @@
 ---
 slug: template-pattern
-title: 1\. Template Pattern
+title: Template Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 1\. Template Pattern
+## Template Pattern
 
 Template Pattern used to create a method stub and deferring some of the steps of implementation to the subclasses. Template method defines the steps to execute an algorithm and it can provide default implementation that might be common for all or some of the subclasses.
 
-![](/post/design-patterns/template-pattern-visual.png)
+![](https://gitorko.github.io/post/design-patterns/template-pattern-visual.png)
 
 ```java
  1package com.demo.basics.designpatterns._13_template;

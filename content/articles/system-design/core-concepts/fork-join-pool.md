@@ -1,6 +1,6 @@
 ---
 slug: fork-join-pool
-title: 2\. Fork Join Pool
+title: Fork Join Pool
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 2\. Fork Join Pool
+## Fork Join Pool
 
 Fork Join is suited for tasks that create sub-tasks. Fork/Join framework uses work-stealing algorithm. Work stealing is a scheduling strategy where worker threads that have finished their own tasks can steal pending tasks from other threads. Uses a deque (double ended queue), main thread picks task from the front of the queue, other threads steal tasks from the back of the queue.
 
-![](/post/grokking-the-system-design-interview/fork-join.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/fork-join.png)
 
 ```java
  1

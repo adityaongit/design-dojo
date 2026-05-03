@@ -691,7 +691,7 @@ Distributed system can fail at various points, other areas of failure that can h
 
 ## Postman
 
-![](/post/distributed-system-essentials/img02.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/img02.png)
 
 Import the postman collection to postman
 
@@ -802,7 +802,7 @@ Import the postman collection to postman
 
 [https://www.fluentd.org/](https://www.fluentd.org/)
 
-window.disqus\_config=function(){},function(){if(\["localhost","127.0.0.1"\].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
+window.disqus\_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
 
 Please enable JavaScript to view the [comments powered by Disqus.](https://disqus.com/?ref_noscript)
 

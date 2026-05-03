@@ -50,4 +50,4 @@ Tune your JVM and enable logging and monitoring (actuator + prometheus) on the G
 10'-Xlog:gc*=info:file=project57-gc.log:time,uptime,level,tags:filecount=5,filesize=100m
 ```
 
-![](/post/distributed-system-essentials/img08.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/img08.png)

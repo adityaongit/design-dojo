@@ -1,6 +1,6 @@
 ---
 slug: visitor-pattern
-title: 8\. Visitor Pattern
+title: Visitor Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 8\. Visitor Pattern
+## Visitor Pattern
 
 Visitor pattern is used to add methods to different types of classes without altering those classes. Here we have moved the tax calculation outside each item.
 

@@ -1,6 +1,6 @@
 ---
 slug: attack-surfaces
-title: 55\. Attack surfaces
+title: Attack surfaces
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 55\. Attack surfaces
+## Attack surfaces
 
 To avoid security breaches, the objective of all systems must be to reduce the number of attack surfaces. More the components in your system, more the attack surfaces that need to be hardened.
 

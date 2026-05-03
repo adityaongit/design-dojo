@@ -1,6 +1,6 @@
 ---
 slug: interpreter-pattern
-title: 9\. Interpreter Pattern
+title: Interpreter Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 9\. Interpreter Pattern
+## Interpreter Pattern
 
 Interpreter pattern provides a way to evaluate language grammar or expression.
 

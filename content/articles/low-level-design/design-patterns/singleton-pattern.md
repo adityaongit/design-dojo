@@ -1,6 +1,6 @@
 ---
 slug: singleton-pattern
-title: 1\. Singleton Pattern
+title: Singleton Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 1\. Singleton Pattern
+## Singleton Pattern
 
 Singleton pattern ensures that only one instance of the class exists in the java virtual machine.
 
@@ -248,7 +248,7 @@ How volatile works in java? The volatile keyword in Java is used as an indicator
 
 If we do not make the instance variable volatile than the Thread which is creating instance of Singleton is not able to communicate to the other thread, that the instance has been created until it comes out of the Singleton block, so if Thread A is creating Singleton instance and just after creation lost the CPU, all other thread will not be able to see value of instance as not null and they will believe its still null. By adding volatile java will not read the variable into thread context local memory and instead read it from the main memory each time.
 
-![](/post/design-patterns/volatile-memory-model.png)
+![](https://gitorko.github.io/post/design-patterns/volatile-memory-model.png)
 
 ```java
  1package com.demo.basics.designpatterns._01_singleton;

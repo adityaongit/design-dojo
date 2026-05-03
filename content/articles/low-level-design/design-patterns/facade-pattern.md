@@ -1,6 +1,6 @@
 ---
 slug: facade-pattern
-title: 5\. Facade Pattern
+title: Facade Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 5\. Facade Pattern
+## Facade Pattern
 
 Facade pattern is used to give unified interface to a set of interfaces in a subsystem.
 

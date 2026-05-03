@@ -1,6 +1,6 @@
 ---
 slug: memento-pattern
-title: 11\. Memento Pattern
+title: Memento Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 11\. Memento Pattern
+## Memento Pattern
 
 Memento pattern is used to restore state of an object to a previous state.
 

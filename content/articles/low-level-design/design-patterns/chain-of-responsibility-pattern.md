@@ -1,6 +1,6 @@
 ---
 slug: chain-of-responsibility-pattern
-title: 3\. Chain of Responsibility Pattern
+title: Chain of Responsibility Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 3\. Chain of Responsibility Pattern
+## Chain of Responsibility Pattern
 
 Chain of responsibility pattern is used when a request from client is passed to a chain of objects to process them.
 
-![](/post/design-patterns/chainofresponsibility-pattern-visual.png)
+![](https://gitorko.github.io/post/design-patterns/chainofresponsibility-pattern-visual.png)
 
 ```java
   1package com.demo.basics.designpatterns._15_chainofresponsibility;

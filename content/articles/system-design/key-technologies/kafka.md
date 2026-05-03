@@ -1,6 +1,6 @@
 ---
 slug: kafka
-title: 18\. Kafka
+title: Kafka
 type: system-design
 category: key-technologies
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 18\. Kafka
+## Kafka
 
 Kafka is a distributed & fault-tolerant, high throughput, scalable stream processing & messaging system.
 
@@ -39,9 +39,9 @@ Kafka is a distributed & fault-tolerant, high throughput, scalable stream proces
 -   Consumer: A consumer group can have N consumers, each will read a partition. Consumers cant be more than number of partitions.
 -   Zookeeper: Used to track the offset, consumers, topics etc.
 
-![](/post/spring-apache-kafka/kafka-architecture.png)
+![](https://gitorko.github.io/post/spring-apache-kafka/kafka-architecture.png)
 
-![](/post/spring-apache-kafka/kafka-partition.png)
+![](https://gitorko.github.io/post/spring-apache-kafka/kafka-partition.png)
 
 -   Order is guaranteed only withing a partition and not across partitions.
 -   Within a consumer group a partition can be read only by one consumer.

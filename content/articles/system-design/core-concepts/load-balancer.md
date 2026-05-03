@@ -1,6 +1,6 @@
 ---
 slug: load-balancer
-title: 24\. Load Balancer
+title: Load Balancer
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 24\. Load Balancer
+## Load Balancer
 
 1.  Software based eg: Nginx
 2.  Hardware based eg: F5

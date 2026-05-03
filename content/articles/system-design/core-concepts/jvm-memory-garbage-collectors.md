@@ -1,6 +1,6 @@
 ---
 slug: jvm-memory-garbage-collectors
-title: 22\. JVM Memory & Garbage collectors
+title: JVM Memory & Garbage collectors
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 22\. JVM Memory & Garbage collectors
+## JVM Memory & Garbage collectors
 
 In java memory allocated to program is cleaned up and recovered by the garbage collector. If this doesn't happen then your program will run out of memory space to execute. Garbage collection provides automation memory management in java. Objects are created on the heap in java.
 
-![](/post/grokking-the-system-design-interview/jvm-memory.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/jvm-memory.png)
 
 Objects get created on the heap.
 

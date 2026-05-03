@@ -1,6 +1,6 @@
 ---
 slug: distributed-coordination
-title: 3\. Distributed Coordination
+title: Distributed Coordination
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 3\. Distributed Coordination
+## Distributed Coordination
 
 For distributed systems, achieving coordination and consistency despite unreliable communication requires following protocols
 
@@ -27,7 +27,7 @@ For distributed systems, achieving coordination and consistency despite unreliab
 2.  Three phase commit (prepare, pre-commit & commit) - Non-Blocking protocol as first phase gathers votes and only the second phase blocks with timeout.
 3.  Consensus Algorithms (e.g., Paxos, Raft)
 
-![](/post/grokking-the-system-design-interview/distributed-transaction.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/distributed-transaction.png)
 
 [https://youtu.be/jGJT1FRYGcY](https://youtu.be/jGJT1FRYGcY)
 

@@ -1,6 +1,6 @@
 ---
 slug: count-min-sketch
-title: 34\. Count-Min Sketch
+title: Count-Min Sketch
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 34\. Count-Min Sketch
+## Count-Min Sketch
 
 Count-Min Sketch is a probabilistic algorithm. **Count frequency of event in streaming data**, uses multiple hash to map frequency on to a matrix. Uses less space. In some cases it can over count due to hash collision but never under-count the events.
 
@@ -29,6 +29,6 @@ Count-Min Sketch is a probabilistic algorithm. **Count frequency of event in str
 
 Every event is passed via multiple hash functions and respective matrix row/column updated. The frequency is determined by the minimum of all these counts. For more accuracy you can add more hash functions and wider column. In the example below hash generates numbers 0-6. Lesser hash functions will result in more collisions.
 
-![](/post/grokking-the-system-design-interview/count-min-sketch.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/count-min-sketch.png)
 
 [https://youtu.be/ibxXO-b14j4](https://youtu.be/ibxXO-b14j4)

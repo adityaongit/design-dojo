@@ -1,6 +1,6 @@
 ---
 slug: stream-processing-vs-message-processing
-title: 21\. Stream processing vs Message processing
+title: Stream processing vs Message processing
 type: system-design
 category: patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 21\. Stream processing vs Message processing
+## Stream processing vs Message processing
 
 Message Processing
 

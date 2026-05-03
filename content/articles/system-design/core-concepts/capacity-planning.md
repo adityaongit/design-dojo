@@ -1,6 +1,6 @@
 ---
 slug: capacity-planning
-title: 3\. Capacity planning
+title: Capacity planning
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 3\. Capacity planning
+## Capacity planning
 
 -   How many servers would you need?
 -   How many users (load) are going to access the service?

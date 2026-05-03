@@ -22,7 +22,7 @@ licenseNote: >-
 
 calendar Aug 12, 2020 · 5 min read · [design-pattern](https://gitorko.github.io/tags/design-pattern/ "design-pattern") [scatter-gather-pattern](https://gitorko.github.io/tags/scatter-gather-pattern/ "scatter-gather-pattern")  ·
 
-Share on: [twitter](https://twitter.com/intent/tweet?text=Scatter%20Gather%20Pattern&url=https%3a%2f%2fgitorko.github.io%2fpost%2fscatter-gather-pattern%2f&tw_p=tweetbutton "Share on Twitter") [facebook](https://www.facebook.com/sharer.php?u=https%3a%2f%2fgitorko.github.io%2fpost%2fscatter-gather-pattern%2f&t=Scatter%20Gather%20Pattern "Share on Facebook") [linkedin](#linkedinshare "Share on LinkedIn") [copy](https://gitorko.github.io/post/scatter-gather-pattern/ "Copy Link")
+Share on: [twitter](https://twitter.com/intent/tweet?text=Scatter%20Gather%20Pattern&url=https%3a%2f%2fgitorko.github.io%2fpost%2fscatter-gather-pattern%2f&tw_p=tweetbutton "Share on Twitter") [facebook](https://www.facebook.com/sharer.php?u=https%3a%2f%2fgitorko.github.io%2fpost%2fscatter-gather-pattern%2f&t=Scatter%20Gather%20Pattern "Share on Facebook") [linkedin](#linkedinshare "Share on LinkedIn") [copy](/learn/system-design/patterns/scatter-gather-pattern "Copy Link")
 
 ## Overview
 
@@ -337,7 +337,7 @@ Result
 5125. Generic
 ```
 
-window.disqus\_config=function(){},function(){if(\["localhost","127.0.0.1"\].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
+window.disqus\_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
 
 Please enable JavaScript to view the [comments powered by Disqus.](https://disqus.com/?ref_noscript)
 

@@ -1,6 +1,6 @@
 ---
 slug: design-a-ticket-booking-system
-title: 10\. Design a ticket booking system
+title: Design a ticket booking system
 type: system-design
 category: breakdown
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 10\. Design a ticket booking system
+## Design a ticket booking system
 
 [https://gitorko.github.io/ticket-booking-system/](https://gitorko.github.io/post/ticket-booking-system/)
 
@@ -27,7 +27,7 @@ licenseNote: >-
 
 Use STAR approach to answer a question
 
-![](/post/grokking-the-system-design-interview/star.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/star.png)
 
 Behavioural questions try to understand if the candidate is fit for certain role
 
@@ -91,7 +91,7 @@ Behavioural questions try to understand if the candidate is fit for certain role
 
 [https://tianpan.co/notes/2016-02-13-crack-the-system-design-interview](https://tianpan.co/notes/2016-02-13-crack-the-system-design-interview)
 
-window.disqus\_config=function(){},function(){if(\["localhost","127.0.0.1"\].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
+window.disqus\_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
 
 Please enable JavaScript to view the [comments powered by Disqus.](https://disqus.com/?ref_noscript)
 

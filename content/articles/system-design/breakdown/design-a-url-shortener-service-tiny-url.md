@@ -1,6 +1,6 @@
 ---
 slug: design-a-url-shortener-service-tiny-url
-title: 2\. Design a URL shortener service (Tiny URL)
+title: Design a URL shortener service (Tiny URL)
 type: system-design
 category: breakdown
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 2\. Design a URL shortener service (Tiny URL)
+## Design a URL shortener service (Tiny URL)
 
 Users will provide a long url, your service needs to return a short url. If the users lookup the short url service needs to return the actual url.
 
@@ -28,7 +28,7 @@ Users will provide a long url, your service needs to return a short url. If the 
 -   Ensure that pre-created short url code are not sequential so that someone should not guess what the next key can be simply by incrementing one character.
 -   The ratio of read to write (**READ:WRITE**) are not same. For every 1 write the reads can be 1000. 1:1000. Someone creates a tiny url and shares it with is 1000 followers. There will be more reads compared to writes.
 
-![](/post/grokking-the-system-design-interview/url-shortner.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/url-shortner.png)
 
 -   Since we have more reads than writes we will use CQRS (Command and Query Responsibility Segregation) pattern here.
 -   The Generate key service will populate the queue with the short-url codes. Generate key service will ensure that duplicate keys are not loaded by generating short urls in range eg: A-F, G-N ranges.

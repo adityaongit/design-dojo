@@ -1,6 +1,6 @@
 ---
 slug: partition-criteria
-title: 42\. Partition Criteria
+title: Partition Criteria
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 42\. Partition Criteria
+## Partition Criteria
 
 1.  Hash Based
 2.  List Based

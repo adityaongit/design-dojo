@@ -1,6 +1,6 @@
 ---
 slug: paxos-raft
-title: 37\. Paxos & Raft
+title: Paxos & Raft
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 37\. Paxos & Raft
+## Paxos & Raft
 
 To achieve Consensus over distribute system we use either paxos or raft algorithms.
 
@@ -30,7 +30,7 @@ Paxos - Allows system to reach consensus based on majority votes. There are 2 wa
 
 Raft - Allows system to reach consensus based on what the leader says. After certain timeout the election for leader is held again. Each node stores a log (state information) that is replicated from the leader. Each node holds number of terms it has served as leader. If 2 systems get same votes during election, they will again carry out an election.
 
-![](/post/grokking-the-system-design-interview/consensus-algorithm.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/consensus-algorithm.png)
 
 eg: Consul, etcd, Zookeeper
 

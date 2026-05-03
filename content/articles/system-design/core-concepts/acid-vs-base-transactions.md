@@ -1,6 +1,6 @@
 ---
 slug: acid-vs-base-transactions
-title: 39\. ACID vs BASE transactions
+title: ACID vs BASE transactions
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 39\. ACID vs BASE transactions
+## ACID vs BASE transactions
 
 **ACID**
 

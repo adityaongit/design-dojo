@@ -1,6 +1,6 @@
 ---
 slug: proxy-pattern
-title: 3\. Proxy Pattern
+title: Proxy Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 3\. Proxy Pattern
+## Proxy Pattern
 
 Proxy pattern is used when we want to provide controlled access of a functionality. A real world example would be when a lawyer restricts the questions police would ask a mob boss. You can add only one proxy per class.
 
-![](/post/design-patterns/proxy-pattern-visual.png)
+![](https://gitorko.github.io/post/design-patterns/proxy-pattern-visual.png)
 
 ```java
  1package com.demo.basics.designpatterns._08_proxy;

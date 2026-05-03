@@ -1,6 +1,6 @@
 ---
 slug: adapter-pattern
-title: 1\. Adapter Pattern
+title: Adapter Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 1\. Adapter Pattern
+## Adapter Pattern
 
 Adapter pattern is used when two unrelated interfaces need to work together. There is a AlienCraft which has different type of fire & scan api that takes additional parameter compared to the human readable ship interface. However by writing the adapter we map the appropriate functions for fire and scan.
 
-![](/post/design-patterns/adapter-pattern-visual.png)
+![](https://gitorko.github.io/post/design-patterns/adapter-pattern-visual.png)
 
 ```java
  1package com.demo.basics.designpatterns._06_adapter;
@@ -87,4 +87,4 @@ Adapter pattern is used when two unrelated interfaces need to work together. The
 
 UML Diagram Adapter design pattern.
 
-![](/post/design-patterns/adapter.png)
+![](https://gitorko.github.io/post/design-patterns/adapter.png)

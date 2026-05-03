@@ -54,7 +54,7 @@ Trigger a password generation request and at the same time take a heap dump. You
 1curl --location 'http://localhost:8080/api/job15/60'
 ```
 
-![](/post/distributed-system-essentials/img09.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/img09.png)
 
 Note
 

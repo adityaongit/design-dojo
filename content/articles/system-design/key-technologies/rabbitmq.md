@@ -1,6 +1,6 @@
 ---
 slug: rabbitmq
-title: 19\. RabbitMQ
+title: RabbitMQ
 type: system-design
 category: key-technologies
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 19\. RabbitMQ
+## RabbitMQ
 
 RabbitMQ is a distributed message-broker that support various message protocols.
 
@@ -67,7 +67,7 @@ CP System (CAP)
 
 AP System (CAP)
 
-![](/post/grokking-the-system-design-interview/rabbit-mq.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/rabbit-mq.png)
 
 **RabbitMQ vs Kafka**
 

@@ -1,6 +1,6 @@
 ---
 slug: composite-pattern
-title: 2\. Composite Pattern
+title: Composite Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 2\. Composite Pattern
+## Composite Pattern
 
 Composite pattern is used when we have to represent a part-whole hierarchy.A group of objects should behave in a similar way,tree like structure. Here we have a playlist which can contain songs or other playlist and those playlist can have songs of their own.
 
-![](/post/design-patterns/composite-pattern-visual.png)
+![](https://gitorko.github.io/post/design-patterns/composite-pattern-visual.png)
 
 ```java
  1package com.demo.basics.designpatterns._07_composite;

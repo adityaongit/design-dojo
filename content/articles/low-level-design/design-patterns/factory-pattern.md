@@ -1,6 +1,6 @@
 ---
 slug: factory-pattern
-title: 2\. Factory Pattern
+title: Factory Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 2\. Factory Pattern
+## Factory Pattern
 
 Factory design pattern is used when we have a super class with multiple sub-classes and based on input, we need to return one of the sub-class. The main method doesnt know the details of instantiating a object its deferred to the factory subclass. Factory calls the new operator.
 

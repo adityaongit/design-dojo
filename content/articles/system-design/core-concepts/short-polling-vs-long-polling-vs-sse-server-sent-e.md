@@ -1,6 +1,6 @@
 ---
 slug: short-polling-vs-long-polling-vs-sse-server-sent-e
-title: 1\. Short-Polling vs Long-Polling vs SSE (Server Sent Events) vs Websocket
+title: Short-Polling vs Long-Polling vs SSE (Server Sent Events) vs Websocket
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,14 +19,14 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 1\. Short-Polling vs Long-Polling vs SSE (Server Sent Events) vs Websocket
+## Short-Polling vs Long-Polling vs SSE (Server Sent Events) vs Websocket
 
 1.  Short-Polling - Client continuously asks the server for new data.
 2.  Long-Polling - Client continuously asks the server for new data, but server waits for a few seconds and if data becomes available by then it will return the data.
 3.  Websocket - HTTP connection is upgraded to bidirectional connection.
 4.  Server Sent Events - HTTP connection is kept open by the server and data is pushed to client continuously over it.
 
-![](/post/grokking-the-system-design-interview/client-server.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/client-server.png)
 
 Websocket
 

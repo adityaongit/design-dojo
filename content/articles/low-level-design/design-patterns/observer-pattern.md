@@ -1,6 +1,6 @@
 ---
 slug: observer-pattern
-title: 4\. Observer Pattern
+title: Observer Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 4\. Observer Pattern
+## Observer Pattern
 
 Observer design pattern is used when we want to get notified about state changes of a object. An Observer watches the Subject here and any changes on Subject are notified to the Observer.
 
-![](/post/design-patterns/observer-pattern-visual.png)
+![](https://gitorko.github.io/post/design-patterns/observer-pattern-visual.png)
 
 ```java
  1package com.demo.basics.designpatterns._16_observer;

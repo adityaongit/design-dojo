@@ -37,7 +37,7 @@ Invoke this rest api that takes 60 secs to complete the job.
 7curl --location 'http://localhost:8080/api/time'
 ```
 
-![](/post/distributed-system-essentials/img06.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/img06.png)
 
 Determine if CPU intensive or IO intensive task and delegate the execution to a thread pool so that the core tomcat threads are free to serve requests. The default tomcat threads are 250 and any blocking that happens will affect the whole service.
 
@@ -78,7 +78,7 @@ The below error is seen when the client has closed the connection but server is 
 1w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.context.request.async.AsyncRequestNotUsableException: ServletOutputStream failed to flush: ServletOutputStream failed to flush: java.io.IOException: Broken pipe]
 ```
 
-![](/post/distributed-system-essentials/img07.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/img07.png)
 
 1.  **Spring Reactor** - Reactor is a non-blocking reactive programming model with back-pressure support, which supports NIO (non-blocking IO)
 2.  **Virtual Threads** - Light-weight threads that were introduced in JDK21
@@ -116,7 +116,7 @@ If your code calls a blocking I/O operation in a virtual thread, the runtime sus
 13});
 ```
 
-![](/post/distributed-system-essentials/virtual-threads-jvm.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/virtual-threads-jvm.png)
 
 ```bash
 1spring.threads.virtual.enabled=true
@@ -135,4 +135,4 @@ Since the number of virtual threads created can be unlimited to ensure max concu
 8        concurrency-limit: 10
 ```
 
-![](/post/distributed-system-essentials/img10.png)
+![](https://gitorko.github.io/post/distributed-system-essentials/img10.png)

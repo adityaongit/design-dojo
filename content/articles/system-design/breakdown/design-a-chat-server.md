@@ -1,6 +1,6 @@
 ---
 slug: design-a-chat-server
-title: 7\. Design a chat server
+title: Design a chat server
 type: system-design
 category: breakdown
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 7\. Design a chat server
+## Design a chat server
 
 The chat server needs to support 1-1 and group text based chat. The client can be offline and will receive all the message when they are back online.
 
-![](/post/grokking-the-system-design-interview/chat-server.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/chat-server.png)
 
 -   Publish-Subscribe pattern, asynchronous in nature.
 -   We need to store the data to be read later when consumer is offline, hence Kafka seems a good fit, however Kafka topic and partition management introduces latency hence we use redis queue instead.

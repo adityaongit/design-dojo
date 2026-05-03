@@ -1,6 +1,6 @@
 ---
 slug: data-race-race-conditions
-title: 58\. Data Race & Race conditions
+title: Data Race & Race conditions
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 58\. Data Race & Race conditions
+## Data Race & Race conditions
 
 **Data Race** - Multiple threads access shared variable at same time without synchronization & at least one thread is writing, can cause corruption. Eg: Addition to long/double which are 64 bits.
 

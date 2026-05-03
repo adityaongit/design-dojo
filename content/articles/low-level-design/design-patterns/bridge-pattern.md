@@ -1,6 +1,6 @@
 ---
 slug: bridge-pattern
-title: 6\. Bridge Pattern
+title: Bridge Pattern
 type: low-level-design
 category: design-patterns
 difficulty: medium
@@ -19,11 +19,11 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 6\. Bridge Pattern
+## Bridge Pattern
 
 Bridge Pattern is used to decouple the interfaces from implementation. Prefer Composition over inheritance. There are interface hierarchies in both interfaces as well a implementations.
 
-![](/post/design-patterns/bridge-pattern-visual.png)
+![](https://gitorko.github.io/post/design-patterns/bridge-pattern-visual.png)
 
 By decoupling the switch & electric device from each other each can vary independently. You can add new switches, you can add new electric devices independently without increasing complexity.
 
@@ -125,7 +125,7 @@ By decoupling the switch & electric device from each other each can vary indepen
 
 UML of Bridge Pattern. There is a bridge between Switch class and ElectricDevice class.
 
-![](/post/design-patterns/bridge.png)
+![](https://gitorko.github.io/post/design-patterns/bridge.png)
 
 Bad Design Alert!
 
@@ -224,4 +224,4 @@ Lets look at how a problematic code looks like and its eligibility for bridge pa
 
 UML Diagram of problematic code, you can see that hierarchy exists.
 
-![](/post/design-patterns/bridge-bad.png)
+![](https://gitorko.github.io/post/design-patterns/bridge-bad.png)

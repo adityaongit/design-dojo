@@ -1,6 +1,6 @@
 ---
 slug: types-of-database
-title: 64\. Types of database
+title: Types of database
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 64\. Types of database
+## Types of database
 
 1.  Relational Database - Each row is a record and column is a field in the record. eg: PostgresSQL, MySQL
 2.  Columnar Database - Stores data by columns, handle write-heavy workloads. Eg: Apache Cassandra, HBase

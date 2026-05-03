@@ -1,6 +1,6 @@
 ---
 slug: view-vs-materialized-view
-title: 69\. View vs Materialized View
+title: View vs Materialized View
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 69\. View vs Materialized View
+## View vs Materialized View
 
 1.  `CREATE VIEW` - Virtual table based on the result set of a query. The data is not stored physically in the database; rather, the query is executed each time the view is accessed
 2.  `CREATE MATERIALIZED VIEW` - Stores the result set of the query physically in the database. It is like a snapshot of the data at a particular point in time, Needs manual refresh to reflect changes in the underlying data

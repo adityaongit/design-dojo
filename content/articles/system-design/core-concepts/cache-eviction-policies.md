@@ -1,6 +1,6 @@
 ---
 slug: cache-eviction-policies
-title: 13\. Cache Eviction Policies
+title: Cache Eviction Policies
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 13\. Cache Eviction Policies
+## Cache Eviction Policies
 
 1.  FIFO (First In First Out) - replaces first element that was added to the cache. eg: queue
 2.  LIFO (Last In First Out) - replaces the last element that was added to the cache. eg: stack

@@ -1,6 +1,6 @@
 ---
 slug: tsunami-traffic
-title: 31\. Tsunami Traffic
+title: Tsunami Traffic
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 31\. Tsunami Traffic
+## Tsunami Traffic
 
 A streaming service is hosting a sports event. Millions of users suddenly login to watch the game as the game reaches the end causes a sudden surge in traffic.
 

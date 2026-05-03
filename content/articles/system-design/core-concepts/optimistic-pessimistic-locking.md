@@ -22,7 +22,7 @@ licenseNote: >-
 
 calendar Jun 12, 2024 · 9 min read · [optimistic-locking](https://gitorko.github.io/tags/optimistic-locking/ "optimistic-locking") [pessimistic-locking](https://gitorko.github.io/tags/pessimistic-locking/ "pessimistic-locking") [JPA](https://gitorko.github.io/tags/jpa/ "JPA")  ·
 
-Share on: [twitter](https://twitter.com/intent/tweet?text=Spring%20JPA%20-%20Optimistic%20vs%20Pessimistic%20Locking&url=https%3a%2f%2fgitorko.github.io%2fpost%2foptimistic-pessimistic-locking%2f&tw_p=tweetbutton "Share on Twitter") [facebook](https://www.facebook.com/sharer.php?u=https%3a%2f%2fgitorko.github.io%2fpost%2foptimistic-pessimistic-locking%2f&t=Spring%20JPA%20-%20Optimistic%20vs%20Pessimistic%20Locking "Share on Facebook") [linkedin](#linkedinshare "Share on LinkedIn") [copy](https://gitorko.github.io/post/optimistic-pessimistic-locking/ "Copy Link")
+Share on: [twitter](https://twitter.com/intent/tweet?text=Spring%20JPA%20-%20Optimistic%20vs%20Pessimistic%20Locking&url=https%3a%2f%2fgitorko.github.io%2fpost%2foptimistic-pessimistic-locking%2f&tw_p=tweetbutton "Share on Twitter") [facebook](https://www.facebook.com/sharer.php?u=https%3a%2f%2fgitorko.github.io%2fpost%2foptimistic-pessimistic-locking%2f&t=Spring%20JPA%20-%20Optimistic%20vs%20Pessimistic%20Locking "Share on Facebook") [linkedin](#linkedinshare "Share on LinkedIn") [copy](/learn/system-design/core-concepts/optimistic-pessimistic-locking "Copy Link")
 
 ## Overview
 
@@ -463,7 +463,7 @@ You can also use `TransactionTemplate` to control transactions if you dont want 
 
 [https://spring.io/projects/spring-data-jpa](https://spring.io/projects/spring-data-jpa)
 
-window.disqus\_config=function(){},function(){if(\["localhost","127.0.0.1"\].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
+window.disqus\_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
 
 Please enable JavaScript to view the [comments powered by Disqus.](https://disqus.com/?ref_noscript)
 

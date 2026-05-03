@@ -1,6 +1,6 @@
 ---
 slug: indexing-2
-title: 6\. Indexing
+title: Indexing
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 6\. Indexing
+## Indexing
 
 Database indexes help improve the speed and efficiency of querying data in a database
 

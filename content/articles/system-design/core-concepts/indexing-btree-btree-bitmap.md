@@ -1,6 +1,6 @@
 ---
 slug: indexing-btree-btree-bitmap
-title: '57\. Indexing - Btree, B+tree, BitMap'
+title: 'Indexing - Btree, B+tree, BitMap'
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 57\. Indexing - Btree, B+tree, BitMap
+## Indexing - Btree, B+tree, BitMap
 
 Indexes help find the required data in large data set. Full table scan are costly hence reducing the search space is always preferred.
 
@@ -29,11 +29,11 @@ Indexes help find the required data in large data set. Full table scan are costl
 
 Btree (Max Degree 3)
 
-![](/post/grokking-the-system-design-interview/btree.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/btree.png)
 
 B+tree (Max Degree 3)
 
-![](/post/grokking-the-system-design-interview/bplustree.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/bplustree.png)
 
 [https://youtu.be/UzHl2VzyZS4](https://youtu.be/UzHl2VzyZS4) [https://youtu.be/5-JYVeM3IQg](https://youtu.be/5-JYVeM3IQg)
 

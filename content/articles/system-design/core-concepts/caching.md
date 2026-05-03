@@ -1,6 +1,6 @@
 ---
 slug: caching
-title: 12\. Caching
+title: Caching
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 12\. Caching
+## Caching
 
 **HashMap vs Cache**
 
@@ -29,7 +29,7 @@ Ehcache will only evict elements when putting elements and your cache is above t
 
 **Types of store**
 
-![Cache Store](/post/spring-ehcache/cache-store.png)
+![Cache Store](https://gitorko.github.io/post/spring-ehcache/cache-store.png)
 
 1.  On-Heap Store - stores cache entries in Java heap memory
 2.  Off-Heap Store - primary memory (RAM) to store cache entries, cache entries will be moved to the on-heap memory automatically before they can be used.
@@ -55,4 +55,4 @@ Ehcache will only evict elements when putting elements and your cache is above t
 2.  Write-Behind / Write-Back - Application writes to cache. Cache is pushed to SoR after some delay periodically.
 3.  Write-through - Application writes to cache, cache service immediately writes to SoR.
 
-![Caching Strategy](/post/spring-ehcache/cache-strategy.png)
+![Caching Strategy](https://gitorko.github.io/post/spring-ehcache/cache-strategy.png)

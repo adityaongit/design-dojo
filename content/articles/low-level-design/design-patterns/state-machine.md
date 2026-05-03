@@ -22,7 +22,7 @@ licenseNote: >-
 
 calendar Feb 12, 2020 · 5 min read · [design-pattern](https://gitorko.github.io/tags/design-pattern/ "design-pattern") [state-machine](https://gitorko.github.io/tags/state-machine/ "state-machine")  ·
 
-Share on: [twitter](https://twitter.com/intent/tweet?text=State%20Machine&url=https%3a%2f%2fgitorko.github.io%2fpost%2fstate-machine%2f&tw_p=tweetbutton "Share on Twitter") [facebook](https://www.facebook.com/sharer.php?u=https%3a%2f%2fgitorko.github.io%2fpost%2fstate-machine%2f&t=State%20Machine "Share on Facebook") [linkedin](#linkedinshare "Share on LinkedIn") [copy](https://gitorko.github.io/post/state-machine/ "Copy Link")
+Share on: [twitter](https://twitter.com/intent/tweet?text=State%20Machine&url=https%3a%2f%2fgitorko.github.io%2fpost%2fstate-machine%2f&tw_p=tweetbutton "Share on Twitter") [facebook](https://www.facebook.com/sharer.php?u=https%3a%2f%2fgitorko.github.io%2fpost%2fstate-machine%2f&t=State%20Machine "Share on Facebook") [linkedin](#linkedinshare "Share on LinkedIn") [copy](/learn/low-level-design/design-patterns/state-machine "Copy Link")
 
 ## Overview
 
@@ -39,7 +39,7 @@ Github: [https://github.com/gitorko/project77](https://github.com/gitorko/projec
 
 We will use the shopping cart state machine diagram as a reference to implement our code. If any invalid events are sent then an exception is thrown.
 
-![](/post/state-machine/statemachine.png)
+![](https://gitorko.github.io/post/state-machine/statemachine.png)
 
 ### Code
 
@@ -411,7 +411,7 @@ We can also use the spring state machine libraries
 
 [https://spring.io/projects/spring-statemachine](https://spring.io/projects/spring-statemachine)
 
-window.disqus\_config=function(){},function(){if(\["localhost","127.0.0.1"\].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
+window.disqus\_config=function(){},function(){if(["localhost","127.0.0.1"].indexOf(window.location.hostname)!=-1){document.getElementById("disqus\_thread").innerHTML="Disqus comments not available by default when the website is previewed locally.";return}var t=document,e=t.createElement("script");e.async=!0,e.src="//gitorko.disqus.com/embed.js",e.setAttribute("data-timestamp",+new Date),(t.head||t.body).appendChild(e)}()
 
 Please enable JavaScript to view the [comments powered by Disqus.](https://disqus.com/?ref_noscript)
 

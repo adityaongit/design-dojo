@@ -1,6 +1,6 @@
 ---
 slug: map
-title: 71\. Map
+title: Map
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 71\. Map
+## Map
 
 1.  `new HashMap()` - is not a thread-safe data structure due to its non-synchronized nature.
 2.  `Collections.synchronizedMap()` - provides a synchronized (thread-safe) map. It synchronizes all the methods to ensure that only one thread can access the map at a time. Synchronization can be a bottleneck if many threads access the map concurrently.

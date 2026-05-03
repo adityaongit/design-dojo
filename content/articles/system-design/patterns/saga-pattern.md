@@ -1,6 +1,6 @@
 ---
 slug: saga-pattern
-title: 4\. Saga Pattern
+title: Saga Pattern
 type: system-design
 category: patterns
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 4\. Saga Pattern
+## Saga Pattern
 
 Try to avoid distributed transactions. As it makes the system complex to manage.
 

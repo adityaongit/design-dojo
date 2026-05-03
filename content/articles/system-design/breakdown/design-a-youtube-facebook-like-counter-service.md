@@ -1,6 +1,6 @@
 ---
 slug: design-a-youtube-facebook-like-counter-service
-title: 3\. Design a Youtube / Facebook like counter service
+title: Design a Youtube / Facebook like counter service
 type: system-design
 category: breakdown
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 3\. Design a Youtube / Facebook like counter service
+## Design a Youtube / Facebook like counter service
 
 Users can like a post/video and submit their likes, the service needs to count how many likes a post/video has.
 
@@ -30,7 +30,7 @@ Users can like a post/video and submit their likes, the service needs to count h
 -   If you consider each like counter as a new row you avoid contention of an update but more time is spent in summing up the total by counting all rows.
 -   If the counter can be approx values, then you can use Count-Min Sketch approach.
 
-![](/post/grokking-the-system-design-interview/like-service.png)
+![](https://gitorko.github.io/post/grokking-the-system-design-interview/like-service.png)
 
 -   Redis provides **atomic** operations of increment. We dont want to keep a single video like counter on one node as it can overload it if there are more likes for that video compared to others.
 -   By using **Round Robin** we can scale our service by adding more redis nodes.

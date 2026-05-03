@@ -1,6 +1,6 @@
 ---
 slug: distributed-system-microservices
-title: 9\. Distributed System & Microservices
+title: Distributed System & Microservices
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 9\. Distributed System & Microservices
+## Distributed System & Microservices
 
 **Distributed system**
 

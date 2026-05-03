@@ -1,6 +1,6 @@
 ---
 slug: partition-vs-sharding
-title: 41\. Partition vs Sharding
+title: Partition vs Sharding
 type: system-design
 category: core-concepts
 difficulty: medium
@@ -19,7 +19,7 @@ licenseNote: >-
   Imported with explicit collaboration permission. Site migrating into
   DesignDojo.
 ---
-## 41\. Partition vs Sharding
+## Partition vs Sharding
 
 1.  **Partitioning** - Breaks up data into many smaller blocks within the same database server. Client need not be aware of partitions.
     -   Horizontal partition - Based on key the data is split. eg: All records for 2021 get written to partition\_2021, all 2022 records get written to partition\_2022
