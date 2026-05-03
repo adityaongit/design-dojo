@@ -138,11 +138,7 @@ export function FeedbackView({
             <ArrowRight className="size-3.5" />
           </Button>
         ) : onFinish ? (
-          <Button
-            size="sm"
-            onClick={onFinish}
-            className="bg-emerald-500 text-white hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-600"
-          >
+          <Button size="sm" onClick={onFinish}>
             <Trophy className="size-3.5" />
             View report
           </Button>

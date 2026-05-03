@@ -136,11 +136,7 @@ export default function NotFound() {
 
           {/* 5 — CTAs */}
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button
-              asChild
-              size="lg"
-              className="group bg-emerald-500 px-6 text-white shadow-sm hover:bg-emerald-600 dark:bg-emerald-500 dark:hover:bg-emerald-600"
-            >
+            <Button asChild size="lg" className="group">
               <Link href="/practice/system-design">
                 <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
                 Back to practice

@@ -248,11 +248,7 @@ function EmptyState({
             Ask AI runs through your provider so you control cost and privacy.
             Pick a provider and paste your key once — we&apos;ll remember it.
           </p>
-          <Button
-            size="sm"
-            onClick={onConfigure}
-            className="bg-emerald-500 text-white hover:bg-emerald-600"
-          >
+          <Button size="sm" onClick={onConfigure}>
             Configure provider
           </Button>
         </div>

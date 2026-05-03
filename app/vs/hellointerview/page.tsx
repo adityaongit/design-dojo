@@ -294,13 +294,13 @@ export default function VsHelloInterviewPage() {
             key.
           </p>
           <div className="mt-6 flex flex-col items-stretch justify-center gap-2.5 sm:flex-row sm:items-center">
-            <Button asChild size="lg" className="h-11 px-6 bg-emerald-500 text-white hover:bg-emerald-600 dark:text-black">
+            <Button asChild size="lg">
               <Link href="/practice/system-design">
                 Start a session
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="h-11 px-6">
+            <Button asChild size="lg" variant="outline">
               <Link href="/learn">Read a write-up first</Link>
             </Button>
           </div>

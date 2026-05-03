@@ -279,7 +279,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
           ) : null}
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild className="bg-emerald-500 hover:bg-emerald-600 text-white">
+            <Button asChild>
               <Link href={`/practice/${type}/${article.meta.slug}`}>
                 <Clock className="size-4" />
                 Try this problem
@@ -303,10 +303,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
           <p className="mt-1 text-sm text-muted-foreground">
             Walk through {article.meta.title} stage-by-stage with AI feedback.
           </p>
-          <Button
-            asChild
-            className="mt-4 bg-emerald-500 hover:bg-emerald-600 text-white"
-          >
+          <Button asChild className="mt-4">
             <Link href={`/practice/${type}/${article.meta.slug}`}>
               Start practice
               <ArrowRight className="size-4" />
