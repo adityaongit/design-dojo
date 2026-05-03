@@ -8,6 +8,25 @@ import { Button } from "@/components/ui/button";
 export function MobileBlocker() {
   const [href, setHref] = useState("");
   useEffect(() => setHref(window.location.href), []);
+
+  // Lock body scroll while the blocker is visible so any wide content
+  // rendered in dev/HMR can't bleed past the viewport.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(max-width: 1023px)");
+    const apply = () => {
+      document.documentElement.style.overflow = mql.matches ? "hidden" : "";
+      document.body.style.overflow = mql.matches ? "hidden" : "";
+    };
+    apply();
+    mql.addEventListener("change", apply);
+    return () => {
+      mql.removeEventListener("change", apply);
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center bg-background p-6 lg:hidden">
       <div className="max-w-sm space-y-5 text-center">

@@ -636,8 +636,9 @@ function SessionRunnerInner({
   }, [activeItem, stageTitles]);
 
   return (
-    <div className="flex h-[100dvh] flex-col">
+    <>
       <MobileBlocker />
+      <div className="hidden h-[100dvh] flex-col lg:flex">
       <header className="flex h-12 items-center justify-between border-b border-border/40 bg-background/70 px-3 backdrop-blur">
         <div className="flex items-center gap-3">
           <StageNav
@@ -908,6 +909,7 @@ function SessionRunnerInner({
         getCanvasText={getCanvasText}
         getCodeAnswer={getCodeAnswer}
       />
-    </div>
+      </div>
+    </>
   );
 }
