@@ -17,16 +17,30 @@ const COLUMNS: Array<{
   {
     heading: "Write-ups",
     links: [
-      { href: "/learn/system-design", label: "HLD write-ups" },
-      { href: "/learn/low-level-design", label: "LLD write-ups" },
+      { href: "/learn/system-design", label: "High Level Design" },
+      { href: "/learn/low-level-design", label: "Low-Level Design" },
+    ],
+  },
+  {
+    heading: "Resources",
+    links: [
+      { href: "/faq", label: "FAQ" },
+      { href: "/vs/hellointerview", label: "vs HelloInterview" },
+      { href: GITHUB_URL, label: "GitHub", external: true },
+      { href: "/sitemap.xml", label: "Sitemap", external: true },
     ],
   },
   {
     heading: "Project",
     links: [
-      { href: "/faq", label: "FAQ" },
-      { href: GITHUB_URL, label: "GitHub", external: true },
-      { href: "/sitemap.xml", label: "Sitemap", external: true },
+      { href: "/about", label: "About" },
+      {
+        href: "https://github.com/adityaongit/design-dojo/blob/main/LICENSE",
+        label: "License · MIT",
+        external: true,
+      },
+      { href: "/privacy", label: "Privacy" },
+      { href: "/contact", label: "Contact" },
     ],
   },
 ];
@@ -50,8 +64,8 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-border/40 bg-background/40">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 sm:gap-10">
-          <div className="col-span-2 sm:col-span-1">
+        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-5 sm:gap-10">
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
             <Link href="/" className="inline-flex items-center gap-2">
               <span className="grid size-7 place-items-center rounded-md bg-gradient-to-br from-emerald-400 to-teal-600 text-background shadow-sm">
                 <Workflow className="size-4" strokeWidth={2.5} />

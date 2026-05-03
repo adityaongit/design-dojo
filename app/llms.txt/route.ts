@@ -31,12 +31,22 @@ export async function GET() {
   lines.push("## Key URLs");
   lines.push("");
   lines.push(`- [Home](${SITE.url}/): Overview and entry points.`);
+  lines.push(`- [About](${SITE.url}/about): What DesignDojo is and why.`);
+  lines.push(`- [FAQ](${SITE.url}/faq): BYOK, providers, costs, privacy.`);
   lines.push(
     `- [Practice — System Design](${SITE.url}/practice/system-design): Browse and start HLD problems.`,
   );
   lines.push(
     `- [Practice — Low-Level Design](${SITE.url}/practice/low-level-design): Browse and start LLD problems.`,
   );
+  lines.push(
+    `- [Write-ups index](${SITE.url}/learn): All HLD + LLD interview walkthroughs.`,
+  );
+  lines.push(
+    `- [vs HelloInterview](${SITE.url}/vs/hellointerview): Comparison + non-affiliation disclaimer.`,
+  );
+  lines.push(`- [Privacy](${SITE.url}/privacy): Data handling.`);
+  lines.push(`- [Contact](${SITE.url}/contact): Bug reports + feedback.`);
   lines.push("");
 
   for (const type of types) {
