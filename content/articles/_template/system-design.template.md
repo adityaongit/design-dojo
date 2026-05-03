@@ -2,12 +2,16 @@
 slug: REPLACE-with-question-id
 title: REPLACE with Title
 type: system-design
+category: breakdown
 difficulty: easy
 askedAt: []
 videoUrl: ""
 updatedAt: 2026-05-02
 author: ""
 focusTag: "REPLACE — 1-2 word emphasis (e.g. Scaling Reads)"
+prerequisites: []   # slugs of any required reading (concepts, patterns, tech)
+seeAlso: []         # slugs of related articles
+readMinutes: 25     # rough wall-clock for a thorough read
 ---
 
 ## Understanding the Problem

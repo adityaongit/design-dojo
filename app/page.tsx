@@ -413,7 +413,7 @@ function ProblemList({
         {items.map((q) => (
           <li key={q.id}>
             <Link
-              href={`/learn/${type}/${q.id}`}
+              href={`/learn/${type}/breakdown/${q.id}`}
               className="flex items-center justify-between gap-3 px-5 py-3 text-sm hover:bg-foreground/5"
             >
               <span className="truncate font-medium">{q.title}</span>

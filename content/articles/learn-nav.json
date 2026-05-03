@@ -1,0 +1,53 @@
+{
+  "system-design": {
+    "getting-started": [],
+    "core-concepts": [],
+    "patterns": [],
+    "key-technologies": [],
+    "breakdown": [
+      "bitly",
+      "distributed-cache",
+      "rate-limiter",
+      "leetcode",
+      "fb-news-feed",
+      "fb-live-comments",
+      "fb-post-search",
+      "instagram",
+      "tinder",
+      "whatsapp",
+      "google-docs",
+      "dropbox",
+      "youtube",
+      "youtube-top-k",
+      "uber",
+      "local-delivery",
+      "ticketmaster",
+      "online-auction",
+      "robinhood",
+      "payment-system",
+      "ad-click-aggregator",
+      "metrics-monitoring",
+      "news-aggregator",
+      "yelp",
+      "strava",
+      "price-tracker",
+      "web-crawler",
+      "job-scheduler"
+    ]
+  },
+  "low-level-design": {
+    "getting-started": [],
+    "core-concepts": [],
+    "design-patterns": [],
+    "breakdown": [
+      "parking-lot",
+      "elevator",
+      "connect-four",
+      "movie-booking",
+      "rate-limiter-lld",
+      "inventory-management",
+      "amazon-locker",
+      "file-system"
+    ]
+  }
+}

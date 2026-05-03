@@ -7,16 +7,16 @@ import { listArticleSummaries } from "@/lib/content/articles";
 import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Interview write-ups",
+  title: "Learn",
   description:
-    "Senior-level walkthroughs of system design (HLD) and low-level design (LLD) interview problems. Free, with AI tutor practice mode for each.",
+    "Free interview-prep curriculum: framework, core concepts, patterns, and senior-level walkthroughs of system design (HLD) and low-level design (LLD) problems.",
   alternates: { canonical: `${SITE.url}/learn` },
   openGraph: {
     type: "website",
     url: `${SITE.url}/learn`,
-    title: "Interview write-ups — DesignDojo",
+    title: "Learn — DesignDojo",
     description:
-      "Senior-level walkthroughs of HLD and LLD interview problems.",
+      "Framework, core concepts, patterns, and senior-level walkthroughs of HLD + LLD interview problems.",
   },
 };
 
@@ -32,15 +32,15 @@ export default async function LearnIndex() {
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 pt-10 pb-20 sm:px-6 sm:pt-14">
         <header className="mb-10">
           <div className="text-xs font-semibold uppercase tracking-widest text-emerald-500">
-            Write-ups
+            Curriculum
           </div>
           <h1 className="mt-2 text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
             Read first. Practice second.
           </h1>
           <p className="mt-3 max-w-2xl text-muted-foreground">
-            Senior-level walkthroughs of every problem in the library — what a
-            real interviewer is listening for, where mid-level answers fall
-            short, and what staff+ depth looks like.
+            Each track starts with the framework and core concepts, layers on
+            patterns and key technologies, and ends on senior-level walkthroughs
+            of real interview problems.
           </p>
         </header>
 
@@ -94,7 +94,7 @@ function Card({
         <ArrowRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground" />
       </div>
       <div className="mt-3 text-sm text-muted-foreground">
-        {count} write-up{count === 1 ? "" : "s"}
+        {count} lesson{count === 1 ? "" : "s"}
       </div>
       {preview.length ? (
         <ul className="mt-4 space-y-1.5 text-sm">

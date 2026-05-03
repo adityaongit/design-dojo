@@ -256,7 +256,7 @@ function Row({
   hasArticle: boolean;
 }) {
   const href = `/practice/${type}/${q.id}`;
-  const articleHref = `/learn/${type}/${q.id}`;
+  const articleHref = `/learn/${type}/breakdown/${q.id}`;
   return (
     <TableRow className={cn(!q.ready && "opacity-60")}>
       <TableCell className="font-medium">

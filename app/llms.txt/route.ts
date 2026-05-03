@@ -52,11 +52,11 @@ export async function GET() {
   for (const type of types) {
     lines.push(`## ${TYPE_LABEL[type]} write-ups`);
     lines.push("");
-    const slugs = await listArticleSlugs(type);
+    const articles = await listArticleSlugs(type);
     const titles = new Map(index[type].map((q) => [q.id, q.title]));
-    for (const slug of slugs) {
+    for (const { category, slug } of articles) {
       const title = titles.get(slug) ?? slug;
-      lines.push(`- [${title}](${SITE.url}/learn/${type}/${slug})`);
+      lines.push(`- [${title}](${SITE.url}/learn/${type}/${category}/${slug})`);
     }
     lines.push("");
   }

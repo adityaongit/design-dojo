@@ -66,6 +66,6 @@ export function MobileBlocker() {
 function readArticleHref(pathname: string | null): string {
   if (!pathname) return "/";
   const m = pathname.match(/^\/practice\/(system-design|low-level-design)\/([^/]+)/);
-  if (m) return `/learn/${m[1]}/${m[2]}`;
+  if (m) return `/learn/${m[1]}/breakdown/${m[2]}`;
   return "/";
 }

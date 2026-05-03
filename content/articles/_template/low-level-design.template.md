@@ -2,12 +2,16 @@
 slug: REPLACE-with-question-id
 title: REPLACE with Title
 type: low-level-design
+category: breakdown
 difficulty: easy
 askedAt: []
 videoUrl: ""
 updatedAt: 2026-05-02
 author: ""
 focusTag: "REPLACE — e.g. State Machines"
+prerequisites: []
+seeAlso: []
+readMinutes: 25
 ---
 
 ## Understanding the Problem

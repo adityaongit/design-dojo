@@ -11,6 +11,7 @@ const TYPES: QuestionType[] = ["system-design", "low-level-design"];
 
 async function articleLastModified(
   type: QuestionType,
+  category: string,
   slug: string,
 ): Promise<Date> {
   try {
@@ -19,6 +20,7 @@ async function articleLastModified(
       "content",
       "articles",
       type,
+      category,
       `${slug}.md`,
     );
     const raw = await fs.readFile(file, "utf8");
@@ -116,11 +118,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   for (const type of TYPES) {
-    const slugs = await listArticleSlugs(type);
-    for (const slug of slugs) {
+    const articles = await listArticleSlugs(type);
+    for (const { category, slug } of articles) {
       entries.push({
-        url: `${SITE.url}/learn/${type}/${slug}`,
-        lastModified: await articleLastModified(type, slug),
+        url: `${SITE.url}/learn/${type}/${category}/${slug}`,
+        lastModified: await articleLastModified(type, category, slug),
         changeFrequency: "monthly",
         priority: 0.8,
       });
